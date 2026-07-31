@@ -9,15 +9,15 @@ export interface CaptionChunk {
 }
 
 // Convert HTML hex like #FF0000, 8-digit hex #RRGGBBAA, rgba(), or transparent to ASS format &HAABBGGRR
-function hexToAssColor(hex: string): string {
+export function hexToAssColor(hex: string): string {
   if (!hex || hex === 'transparent') return '&HFF000000';
 
   if (hex.startsWith('rgba') || hex.startsWith('rgb')) {
     const parts = hex.match(/[\d.]+/g);
     if (parts && parts.length >= 3) {
-      const r = parseInt(parts[0]).toString(16).padStart(2, '0');
-      const g = parseInt(parts[1]).toString(16).padStart(2, '0');
-      const b = parseInt(parts[2]).toString(16).padStart(2, '0');
+      const r = parseInt(parts[0]).toString(16).padStart(2, '0').toUpperCase();
+      const g = parseInt(parts[1]).toString(16).padStart(2, '0').toUpperCase();
+      const b = parseInt(parts[2]).toString(16).padStart(2, '0').toUpperCase();
       let assAlpha = '00';
       if (parts.length >= 4) {
         const a = parseFloat(parts[3]);
@@ -27,7 +27,7 @@ function hexToAssColor(hex: string): string {
     }
   }
 
-  let clean = hex.replace('#', '').trim();
+  let clean = hex.replace('#', '').trim().toUpperCase();
   if (clean.length === 3) {
     clean = clean.split('').map(c => c + c).join('');
   }
