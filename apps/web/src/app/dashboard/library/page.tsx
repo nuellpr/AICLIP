@@ -1,0 +1,239 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Download, Video, Loader2, Calendar, Trash2, CheckSquare, Square, AlertCircle, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
+import { getApiUrl } from "@/lib/api";
+
+export default function LibraryPage() {
+  const [mounted, setMounted] = useState(false);
+  const [clips, setClips] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const fetchClips = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(getApiUrl('/api/clips/library'));
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setClips(data);
+        }
+      }
+    } catch (e) {
+      console.error('Fetch error:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setMounted(true);
+    fetchClips();
+  }, []);
+
+  // Toggle single clip selection
+  const toggleSelectClip = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  // Toggle select all
+  const toggleSelectAll = () => {
+    if (selectedIds.length === clips.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(clips.map(c => c.id));
+    }
+  };
+
+  // Delete single clip (Moves file to Recycle Bin)
+  const handleDelete = async (id: string) => {
+    if (!confirm('Pindahkan video klip ini ke Recycle Bin laptop Anda?')) return;
+    
+    try {
+      const res = await fetch(getApiUrl(`/api/clips/${id}`), {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setSelectedIds(prev => prev.filter(item => item !== id));
+        showToast('Klip berhasil dipindahkan ke Recycle Bin!');
+        fetchClips();
+      }
+    } catch (e) {
+      alert('Gagal menghapus klip');
+    }
+  };
+
+  // Batch delete selected clips (Moves all selected files to Recycle Bin)
+  const handleBatchDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`Pindahkan ${selectedIds.length} video klip terpilih ke Recycle Bin laptop Anda?`)) return;
+
+    setIsDeleting(true);
+    try {
+      const res = await fetch(getApiUrl('/api/clips/batch-delete'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clipIds: selectedIds })
+      });
+
+      if (res.ok) {
+        showToast(`${selectedIds.length} Klip berhasil dipindahkan ke Recycle Bin!`);
+        setSelectedIds([]);
+        fetchClips();
+      } else {
+        alert('Gagal menghapus beberapa klip');
+      }
+    } catch (e) {
+      alert('Terjadi kesalahan saat menghapus');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  if (!mounted || isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+      </div>
+    );
+  }
+
+  const isAllSelected = clips.length > 0 && selectedIds.length === clips.length;
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8 relative">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-emerald-500 text-black font-bold px-4 py-3 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-bounce">
+          <CheckCircle2 className="h-5 w-5" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Header & Controls */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/10 pb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Penyimpanan Klip</h1>
+          <p className="text-gray-400 mt-1">Daftar semua klip video yang telah di-render. Pilih & hapus instan ke Recycle Bin laptop.</p>
+        </div>
+
+        {clips.length > 0 && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleSelectAll}
+              className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl text-sm font-semibold border border-white/10 transition-colors"
+            >
+              {isAllSelected ? <CheckSquare className="w-4 h-4 text-cyan-400" /> : <Square className="w-4 h-4 text-gray-400" />}
+              <span>{isAllSelected ? 'Batal Pilih Semua' : 'Pilih Semua'}</span>
+            </button>
+
+            {selectedIds.length > 0 && (
+              <button
+                onClick={handleBatchDelete}
+                disabled={isDeleting}
+                className="flex items-center gap-2 bg-red-500 hover:bg-red-400 text-black px-4 py-2 rounded-xl text-sm font-extrabold transition-all shadow-[0_0_15px_rgba(239,68,68,0.4)] disabled:opacity-50"
+              >
+                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                <span>Hapus Terpilih ({selectedIds.length})</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {clips.length === 0 ? (
+        <div className="rounded-xl border border-white/10 bg-white/5 p-12 text-center">
+          <Video className="mx-auto h-12 w-12 text-gray-500 mb-4" />
+          <h3 className="text-xl font-medium text-white mb-2">Belum ada klip</h3>
+          <p className="text-gray-400 mb-6">Anda belum merender klip apa pun. Buat proyek baru untuk memulai.</p>
+          <Link href="/dashboard/new" className="inline-block bg-cyan-500 hover:bg-cyan-400 text-black px-6 py-2 rounded-lg font-medium transition-colors">
+            Buat Proyek
+          </Link>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {clips.map((clip) => {
+            const isSelected = selectedIds.includes(clip.id);
+            const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id;
+            const filename = `${safeTitle}.mp4`;
+            const rawUrl = clip.renderedFileKey || getApiUrl(`/renders/${filename}`);
+            const videoUrl = typeof window !== 'undefined' ? rawUrl.replace('localhost:3001', `${window.location.hostname}:3001`).replace('127.0.0.1:3001', `${window.location.hostname}:3001`) : rawUrl;
+            
+            return (
+              <div 
+                key={clip.id} 
+                className={`group relative rounded-2xl border transition-all overflow-hidden flex flex-col ${
+                  isSelected ? 'border-cyan-400 bg-cyan-500/10 shadow-[0_0_20px_rgba(6,182,212,0.3)]' : 'border-white/10 bg-white/5 hover:border-white/20'
+                }`}
+              >
+                <div className="relative aspect-[9/16] bg-black">
+                  <video 
+                    src={videoUrl}
+                    className="w-full h-full object-cover"
+                    controls
+                    preload="metadata"
+                  />
+                  
+                  {/* Select Checkbox Box */}
+                  <button
+                    onClick={() => toggleSelectClip(clip.id)}
+                    className="absolute top-3 right-3 z-20 flex items-center justify-center h-8 w-8 rounded-lg bg-black/70 backdrop-blur-md border border-white/20 text-white transition-transform hover:scale-110"
+                    title={isSelected ? "Batal Pilih" : "Pilih Klip"}
+                  >
+                    {isSelected ? <CheckSquare className="w-5 h-5 text-cyan-400" /> : <Square className="w-5 h-5 text-gray-400" />}
+                  </button>
+
+                  {/* Project Title Badge */}
+                  <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md text-xs font-semibold border border-white/10 text-cyan-400">
+                    {clip.project?.title || "Video"}
+                  </div>
+                </div>
+                
+                <div className="p-4 flex flex-col flex-1">
+                  <h3 className="font-bold text-lg mb-1 line-clamp-2">{clip.title}</h3>
+                  <p className="text-sm text-gray-400 line-clamp-2 mb-4 flex-1">"{clip.hook}"</p>
+                  
+                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/10">
+                    <div className="flex items-center text-xs text-gray-500">
+                      <Calendar className="w-3 h-3 mr-1" />
+                      {new Date(clip.createdAt).toLocaleDateString()}
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleDelete(clip.id)}
+                        className="flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl transition-colors"
+                        title="Pindahkan ke Recycle Bin Laptop"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <a 
+                        href={videoUrl} 
+                        download={filename}
+                        target="_blank"
+                        className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+                      >
+                        <Download className="w-4 h-4" /> Unduh
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

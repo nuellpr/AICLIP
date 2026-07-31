@@ -1,0 +1,75 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# Environment files & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+ai-config.json
+*cookies*.txt
+*.key
+*.cert
+*.crt
+
+# SQLite database files / uploads / renders
+*.sqlite
+*.sqlite-journal
+*.db
+*.db-journal
+dev.db
+**/public/renders/
+**/public/uploads/
+**/public/renders/*
+**/public/uploads/*
+
+# Temp / generated files
+apps/worker/*.vtt
+apps/worker/*.mp4
+apps/worker/*.json
+apps/worker/*.ass
+apps/worker/*.wav
+apps/worker/temp_*
+apps/worker/subs_*
+apps/worker/transcript_*
+apps/worker/emoji_*.png
+apps/worker/*player-script.js
+apps/worker/ai_debug_*
+apps/worker/test_output/
+*player-script.js
+temp_*
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Turbo cache
+.turbo/
+
+# Storage
+storage_data/
+backend/clips/
+
+# Legacy (non-monorepo) folders
+/backend/
+/frontend/
+/shared/
+/api/public/renders/
+/api/public/uploads/
+

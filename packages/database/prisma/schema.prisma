@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String?
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  projects      Project[]
+  subscriptions Subscription[]
+}
+
+model Project {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  sourceType    String    // 'URL' | 'UPLOAD'
+  sourceUrl     String?
+  sourceFileKey String?
+  language      String    @default("id")
+  status        String    @default("DRAFT") // DRAFT, QUEUED, DOWNLOADING, EXTRACTING_AUDIO, TRANSCRIBING, ANALYZING, GENERATING_CLIPS, READY, FAILED, CANCELLED
+  progress      Int       @default(0)
+  currentStage  String?
+  errorCode     String?
+  errorMessage  String?
+  duration      Int?      // In seconds
+  clipCount     Int       @default(5)
+  targetDuration String   @default("30-60")
+  layoutMode    String    @default("crop_blur")
+  searchQuery   String?   // Natural language query for golden moments
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  clips         Clip[]
+  transcripts   Transcript[]
+}
+
+model Clip {
+  id              String    @id @default(cuid())
+  projectId       String
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title           String
+  hook            String
+  startTime       Float
+  endTime         Float
+  viralScore      Int
+  reason          String
+  caption         String
+  hashtags        String    // Stored as comma-separated string for SQLite
+  aspectRatio     String    @default("9:16") // 9:16, 1:1, 16:9
+  cropData        String?   // JSON stringified e.g. '{"x":0,"y":0,"scale":1}'
+  subtitleStyle   String    @default("clean")
+  subtitleOffset  Float     @default(-0.2)
+  captionPresetId String?
+  captionSettings String?
+  layoutMode      String?   // Per-clip layout mode override
+  renderStatus    String    @default("PENDING") // PENDING, RENDERING, READY, FAILED
+  renderedFileKey String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Transcript {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  text        String
+  startTime   Float
+  endTime     Float
+  confidence  Float?
+  speaker     String?
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan        String   // FREE, CREATOR, PRO
+  status      String   // ACTIVE, INACTIVE, CANCELLED
+  credits     Int      @default(0) // Available processing minutes
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

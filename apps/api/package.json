@@ -1,0 +1,26 @@
+{
+  "name": "clipforge-api",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@clipforge/database": "workspace:*",
+    "@clipforge/shared": "workspace:*",
+    "@fastify/cors": "^8.5.0",
+    "@fastify/jwt": "^8.0.0",
+    "@fastify/static": "^6.12.0",
+    "@google/genai": "^2.12.0",
+    "fastify": "^4.26.2",
+    "openai": "^6.48.0",
+    "zod": "^3.23.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "nodemon": "^3.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
