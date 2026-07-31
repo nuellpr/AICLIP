@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 
-export const MAX_VTT_CHARS = 12000;
+export const MAX_VTT_CHARS = 4000;
 
 export function limitVttContent(vttContent: string, maxChars: number = MAX_VTT_CHARS): string {
   if (vttContent.length <= maxChars) return vttContent;
@@ -19,6 +19,20 @@ export function limitVttContent(vttContent: string, maxChars: number = MAX_VTT_C
     result = result.substring(0, maxChars);
   }
   return result;
+}
+
+export function getVttWindow(vttContent: string, windowIndex: number, maxChars: number = MAX_VTT_CHARS): string {
+  if (vttContent.length <= maxChars) return vttContent;
+  const offset = (windowIndex * maxChars) % vttContent.length;
+  let window = vttContent.substring(offset, offset + maxChars);
+  if (window.length < maxChars / 2) {
+    window = vttContent.substring(0, maxChars);
+  }
+  const firstCue = window.indexOf('\n\n');
+  if (firstCue > 0) window = window.substring(firstCue + 2);
+  const lastCue = window.lastIndexOf('\n\n');
+  if (lastCue > 0) window = window.substring(0, lastCue);
+  return window.trim();
 }
 
 export async function generateGoldenMoments(vttContent: string, clipCount: number = 5, targetDuration: string = "30-60", searchQuery: string = ""): Promise<{ clips: any[]; error?: string }> {
@@ -58,7 +72,7 @@ Anda WAJIB memprioritaskan momen-momen di dalam VTT yang paling relevan dengan i
   const prompt = `VTT Content:\n${limitVttContent(vttContent)}`;
 
   if (config.provider === 'openai' || config.provider === 'groq' || config.provider === 'custom') {
-    const result = await generateWithOpenAI(config, systemMsg, prompt, clipCount);
+    const result = await generateWithOpenAI(config, systemMsg, vttContent, clipCount, targetDuration, searchQuery);
     return { clips: result.clips, error: result.error };
   } else {
     const result = await generateWithGemini(config, systemMsg, prompt, clipCount);
@@ -66,54 +80,89 @@ Anda WAJIB memprioritaskan momen-momen di dalam VTT yang paling relevan dengan i
   }
 }
 
-async function generateWithOpenAI(config: any, systemMsg: string, prompt: string, clipCount: number): Promise<{ clips: any[]; error?: string }> {
-  try {
-    const openai = new OpenAI({
-      apiKey: config.apiKey,
-      baseURL: config.baseUrl || undefined,
-      timeout: 300000,
-      maxRetries: 1,
-    });
-
-    const systemMsgWithJson = systemMsg + `\n\nReturn ONLY a JSON object with a "clips" array. Example: {"clips": [{"title": "...", "hook": "...", "startTime": 0, "endTime": 10, "viralScore": 90, "reason": "...", "caption": "...", "layoutMode": "crop_blur"}]}`;
-
-    const completion = await openai.chat.completions.create({
-      model: config.model || 'gpt-4o-mini',
-      messages: [
-        { role: "system", content: systemMsgWithJson },
-        { role: "user", content: prompt }
-      ],
-      temperature: 0.7,
-    });
-
-    let text = completion.choices[0].message.content || '{"clips":[]}';
-    
-    try {
-      require('fs').writeFileSync(require('path').join(__dirname, '../ai_debug_last_response.txt'), text);
-    } catch(e) {}
-    
-    // Robust extraction: find the first { and last }
-    const firstBrace = text.indexOf('{');
-    const lastBrace = text.lastIndexOf('}');
-    
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
-      text = text.substring(firstBrace, lastBrace + 1);
-    }
-    
-    const parsed = JSON.parse(text);
-    
-    if (parsed.clips && Array.isArray(parsed.clips)) {
-      return { clips: parsed.clips.slice(0, clipCount) };
-    }
-    return { clips: [] };
-  } catch (error: any) {
-    const errMsg = error?.error?.message || error?.message || String(error);
-    console.error('OpenAI/Compatible error:', errMsg);
-    try {
-      require('fs').writeFileSync(require('path').join(__dirname, '../ai_debug_last_error.txt'), errMsg);
-    } catch(e) {}
-    return { clips: [], error: errMsg };
+function buildCompactSystemMessage(systemMsg: string, clipCount: number, targetDuration: string, searchQuery: string): string {
+  let msg = `Anda adalah ahli strategi konten viral TikTok & Reels. Analisis VTT video dan ekstrak TEPAT ${clipCount} momen emas yang akan viral.`;
+  msg += `\nAturan: (1) Hasilkan TEPAT ${clipCount} klip. (2) Durasi tiap klip ${targetDuration} detik. (3) title, hook, reason dalam Bahasa Indonesia yang clickbait, emosional, gaya Gen-Z. (4) caption = teks ucapan ASLI dari VTT, pertahankan kata tidak baku (gak, nggak, udah, bikin, gimana, kayak, lu, gue, banget, pake). JANGAN ubah ke bahasa baku. (5) startTime & endTime dalam DETIK (bukan milidetik). (6) layoutMode pilih salah satu: crop_blur, split, gameplay, face, fit_blur.`;
+  if (searchQuery && searchQuery.trim() !== "") {
+    msg += `\nPrioritaskan momen yang relevan dengan instruksi pengguna: "${searchQuery}".`;
   }
+  return msg;
+}
+
+async function generateWithOpenAI(config: any, systemMsg: string, vttContent: string, clipCount: number, targetDuration: string = "30-60", searchQuery: string = ""): Promise<{ clips: any[]; error?: string }> {
+  const MAX_ATTEMPTS = 12;
+  const attemptErrors: string[] = [];
+
+  const compactSystemMsg = buildCompactSystemMessage(systemMsg, clipCount, targetDuration, searchQuery);
+
+  const antiReasoning = `\n\nPENTING: Jawab langsung tanpa berpikir panjang. JANGAN melakukan reasoning internal yang bertele-tele. Langsung keluarkan JSON sekarang.`;
+
+  const systemMsgWithJson = compactSystemMsg + antiReasoning + `\n\nReturn ONLY a JSON object with a "clips" array. Example: {"clips": [{"title": "...", "hook": "...", "startTime": 0, "endTime": 10, "viralScore": 90, "reason": "...", "caption": "...", "layoutMode": "crop_blur"}]}`;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      console.log(`AI analysis attempt ${attempt}/${MAX_ATTEMPTS} (provider=${config.provider}, model=${config.model || 'default'})`);
+      const openai = new OpenAI({
+        apiKey: config.apiKey,
+        baseURL: config.baseUrl || undefined,
+        timeout: 60000,
+        maxRetries: 0,
+      });
+
+      const vttWindow = getVttWindow(vttContent, attempt - 1);
+      const prompt = `VTT Content:\n${vttWindow}`;
+
+      const completion = await openai.chat.completions.create({
+        model: config.model || 'gpt-4o-mini',
+        messages: [
+          { role: "system", content: systemMsgWithJson },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 4000,
+      });
+
+      let text = completion.choices[0].message.content || '';
+      const finishReason = completion.choices[0].finish_reason || '';
+      
+      try {
+        require('fs').writeFileSync(require('path').join(__dirname, `../ai_debug_attempt_${attempt}.txt`), text || `(empty, finish_reason=${finishReason})`);
+      } catch(e) {}
+
+      if (!text.trim()) {
+        attemptErrors.push(`Attempt ${attempt}: empty content (finish_reason=${finishReason})`);
+        continue;
+      }
+      
+      // Robust extraction: find the first { and last }
+      const firstBrace = text.indexOf('{');
+      const lastBrace = text.lastIndexOf('}');
+      
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
+        text = text.substring(firstBrace, lastBrace + 1);
+      }
+      
+      const parsed = JSON.parse(text);
+      
+      if (parsed.clips && Array.isArray(parsed.clips) && parsed.clips.length > 0) {
+        try {
+          require('fs').writeFileSync(require('path').join(__dirname, '../ai_debug_last_response.txt'), text);
+        } catch(e) {}
+        return { clips: parsed.clips.slice(0, clipCount) };
+      }
+      attemptErrors.push(`Attempt ${attempt}: JSON had no clips (finish_reason=${finishReason})`);
+    } catch (error: any) {
+      const errMsg = error?.error?.message || error?.message || String(error);
+      attemptErrors.push(`Attempt ${attempt}: ${errMsg}`);
+      console.error('OpenAI/Compatible error:', errMsg);
+    }
+  }
+
+  const errMsg = attemptErrors.join('; ');
+  try {
+    require('fs').writeFileSync(require('path').join(__dirname, '../ai_debug_last_error.txt'), errMsg);
+  } catch(e) {}
+  return { clips: [], error: errMsg };
 }
 
 async function generateWithGemini(config: any, systemMsg: string, prompt: string, clipCount: number): Promise<{ clips: any[]; error?: string }> {
