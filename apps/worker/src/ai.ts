@@ -71,7 +71,7 @@ async function generateWithOpenAI(config: any, systemMsg: string, prompt: string
     const openai = new OpenAI({
       apiKey: config.apiKey,
       baseURL: config.baseUrl || undefined,
-      timeout: 120000,
+      timeout: 300000,
       maxRetries: 1,
     });
 
