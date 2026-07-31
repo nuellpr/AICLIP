@@ -32,12 +32,18 @@ importers:
       '@fastify/jwt':
         specifier: ^8.0.0
         version: 8.0.1
+      '@fastify/rate-limit':
+        specifier: ^9.1.0
+        version: 9.1.0
       '@fastify/static':
         specifier: ^6.12.0
         version: 6.12.0
       '@google/genai':
         specifier: ^2.12.0
-        version: 2.12.0(supports-color@7.2.0)
+        version: 2.12.0(supports-color@5.5.0)
+      bcryptjs:
+        specifier: ^3.0.3
+        version: 3.0.3
       fastify:
         specifier: ^4.26.2
         version: 4.29.1
@@ -48,6 +54,9 @@ importers:
         specifier: ^3.23.6
         version: 3.25.76
     devDependencies:
+      '@types/bcryptjs':
+        specifier: ^3.0.0
+        version: 3.0.0
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
@@ -123,7 +132,7 @@ importers:
         version: link:../../packages/shared
       '@google/genai':
         specifier: ^2.12.0
-        version: 2.12.0(supports-color@5.5.0)
+        version: 2.12.0(supports-color@7.2.0)
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -138,7 +147,7 @@ importers:
         version: 6.48.0(ws@8.21.1)(zod@3.25.76)
       youtube-dl-exec:
         specifier: ^3.1.9
-        version: 3.1.9(debug@4.4.3(supports-color@5.5.0))
+        version: 3.1.9(debug@4.4.3(supports-color@7.2.0))
     devDependencies:
       '@types/fluent-ffmpeg':
         specifier: ^2.1.28
@@ -349,6 +358,9 @@ packages:
 
   '@fastify/merge-json-schemas@0.1.1':
     resolution: {integrity: sha512-fERDVz7topgNjtXsJTTW1JKLy0rhuLRcquYqNR9rF7OcVpCa2OVW49ZPDIhaRRCaUuvVxI+N416xUoF76HNSXA==}
+
+  '@fastify/rate-limit@9.1.0':
+    resolution: {integrity: sha512-h5dZWCkuZXN0PxwqaFQLxeln8/LNwQwH9popywmDCFdKfgpi4b/HoMH1lluy6P+30CG9yzzpSpwTCIPNB9T1JA==}
 
   '@fastify/send@2.1.0':
     resolution: {integrity: sha512-yNYiY6sDkexoJR0D8IDy3aRP3+L4wdqCpvx5WP+VtEU58sn7USmKynBzDQex5X42Zzvw2gNzzYgP90UfWShLFA==}
@@ -952,6 +964,10 @@ packages:
   '@tybys/wasm-util@0.10.3':
     resolution: {integrity: sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==}
 
+  '@types/bcryptjs@3.0.0':
+    resolution: {integrity: sha512-WRZOuCuaz8UcZZE4R5HXTco2goQSI2XxjGY3hbM/xDvwmqFWd4ivooImsMx65OKM6CtNKbnZ5YL+YwAwK7c1dg==}
+    deprecated: This is a stub types definition. bcryptjs provides its own type definitions, so you do not need this installed.
+
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
 
@@ -1341,6 +1357,10 @@ packages:
   baseline-browser-mapping@2.10.43:
     resolution: {integrity: sha512-AjYpR78kDWAY3Efj+cDTFH9t9SCoL7OoTp1BOb0mQV7S+6CiLwnWM3FyxhJtdPufDFKzmCSFoUncKjWgJEZTCQ==}
     engines: {node: '>=6.0.0'}
+    hasBin: true
+
+  bcryptjs@3.0.3:
+    resolution: {integrity: sha512-GlF5wPWnSa/X5LKM1o0wz0suXIINz1iHRLvTS+sLyi7XPbe5ycmYI3DlZqVGZZtDgl4DmasFg7gOB3JYbphV5g==}
     hasBin: true
 
   bignumber.js@9.3.1:
@@ -3591,6 +3611,12 @@ snapshots:
     dependencies:
       fast-deep-equal: 3.1.3
 
+  '@fastify/rate-limit@9.1.0':
+    dependencies:
+      '@lukeed/ms': 2.0.2
+      fastify-plugin: 4.5.1
+      toad-cache: 3.7.4
+
   '@fastify/send@2.1.0':
     dependencies:
       '@lukeed/ms': 2.0.2
@@ -4037,6 +4063,10 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
+  '@types/bcryptjs@3.0.0':
+    dependencies:
+      bcryptjs: 3.0.3
+
   '@types/chai@5.2.3':
     dependencies:
       '@types/deep-eql': 4.0.2
@@ -4434,6 +4464,8 @@ snapshots:
 
   baseline-browser-mapping@2.10.43: {}
 
+  bcryptjs@3.0.3: {}
+
   bignumber.js@9.3.1: {}
 
   binary-extensions@2.3.0: {}
@@ -4583,10 +4615,10 @@ snapshots:
       es-errors: 1.3.0
       is-data-view: 1.0.2
 
-  debug-logfmt@1.4.13(debug@4.4.3(supports-color@5.5.0)):
+  debug-logfmt@1.4.13(debug@4.4.3(supports-color@7.2.0)):
     dependencies:
       '@kikobeats/time-span': 1.0.13
-      debug: 4.4.3(supports-color@5.5.0)
+      debug: 4.4.3(supports-color@7.2.0)
       null-prototype-object: 1.2.7
       pretty-ms: 7.0.1
 
@@ -6689,11 +6721,11 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  youtube-dl-exec@3.1.9(debug@4.4.3(supports-color@5.5.0)):
+  youtube-dl-exec@3.1.9(debug@4.4.3(supports-color@7.2.0)):
     dependencies:
       binary-version-check: 6.1.0
       dargs: 7.0.0
-      debug-logfmt: 1.4.13(debug@4.4.3(supports-color@5.5.0))
+      debug-logfmt: 1.4.13(debug@4.4.3(supports-color@7.2.0))
       is-unix: 2.0.14
       tinyspawn: 1.5.7
     transitivePeerDependencies:

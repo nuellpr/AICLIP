@@ -2,9 +2,12 @@ import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import path from 'path';
 import fastifyStatic from '@fastify/static';
+import rateLimit from '@fastify/rate-limit';
+import jwt from '@fastify/jwt';
 import routes from './routes';
+import authRoutes from './auth';
 
-export function buildServer(): FastifyInstance {
+export function buildServer(opts: { rateLimitMax?: number } = {}): FastifyInstance {
   const server = Fastify({
     logger: true,
   });
@@ -19,7 +22,22 @@ export function buildServer(): FastifyInstance {
     prefix: '/', // So /renders/file.mp4 works
   });
 
+  const rateLimitMax = opts.rateLimitMax ?? parseInt(process.env.RATE_LIMIT_MAX || '100');
+  server.register(rateLimit, { max: rateLimitMax, timeWindow: '1 minute' });
+  server.addHook('onRequest', async (request, reply) => {
+    // Explicit global hook: the plugin's onRoute mutation only covers
+    // routes inside encapsulated plugins on Fastify 4, not root routes.
+    await server.rateLimit().call(server, request, reply);
+  });
+
+  const jwtSecret = process.env.AUTH_SECRET || 'dev-insecure-secret-change-in-production';
+  if (!process.env.AUTH_SECRET) {
+    server.log.warn('AUTH_SECRET not set — using insecure development secret!');
+  }
+  server.register(jwt, { secret: jwtSecret, sign: { expiresIn: '7d' } });
+
   server.register(routes, { prefix: '/api' });
+  server.register(authRoutes, { prefix: '/api' });
 
   server.get('/health', async (request, reply) => {
     return { status: 'ok', service: 'api' };

@@ -4,7 +4,8 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.test.ts'],
     env: {
-      DATABASE_URL: 'file:./dev.db',
+      DATABASE_URL: 'file:../../dev.db',
+      AUTH_SECRET: 'test-secret-key',
     },
   },
 });
