@@ -3,6 +3,24 @@ import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 
+export const MAX_VTT_CHARS = 12000;
+
+export function limitVttContent(vttContent: string, maxChars: number = MAX_VTT_CHARS): string {
+  if (vttContent.length <= maxChars) return vttContent;
+  const cues = vttContent.split(/\r?\n\r?\n/).filter((c) => c.trim().length > 0);
+  const step = Math.max(1, Math.ceil(vttContent.length / maxChars));
+  const sampled: string[] = [];
+  for (let i = 0; i < cues.length; i += step) sampled.push(cues[i]);
+  if (sampled[sampled.length - 1] !== cues[cues.length - 1]) {
+    sampled.push(cues[cues.length - 1]);
+  }
+  let result = sampled.join('\n\n');
+  if (result.length > maxChars) {
+    result = result.substring(0, maxChars);
+  }
+  return result;
+}
+
 export async function generateGoldenMoments(vttContent: string, clipCount: number = 5, targetDuration: string = "30-60", searchQuery: string = ""): Promise<{ clips: any[]; error?: string }> {
   // Load AI config
   const configPath = path.resolve(__dirname, '../../../ai-config.json');
@@ -13,6 +31,8 @@ export async function generateGoldenMoments(vttContent: string, clipCount: numbe
       config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     } catch (e) {}
   }
+
+  console.log(`AI provider: ${config.provider || 'google-gemini'}, model: ${config.model || '(default)'}, baseUrl: ${config.baseUrl || '(default)'}`);
 
   const defaultSystemMsg = `Anda adalah seorang ahli strategi konten viral TikTok & Reels tingkat dunia.
 Tugas Anda adalah menganalisis subtitle VTT video YouTube ini dan mengekstrak TEPAT ${clipCount} momen emas ("golden moments") yang dijamin akan viral.
@@ -35,7 +55,7 @@ Pengguna memberikan instruksi khusus berikut untuk mencari momen tertentu:
 Anda WAJIB memprioritaskan momen-momen di dalam VTT yang paling relevan dengan instruksi pengguna tersebut di atas momen lainnya. Jika instruksi tidak relevan atau tidak ditemukan, barulah Anda mencari momen viral secara umum.`;
   }
 
-  const prompt = `VTT Content:\n${vttContent.substring(0, 50000)}`;
+  const prompt = `VTT Content:\n${limitVttContent(vttContent)}`;
 
   if (config.provider === 'openai' || config.provider === 'groq' || config.provider === 'custom') {
     const result = await generateWithOpenAI(config, systemMsg, prompt, clipCount);
@@ -51,6 +71,8 @@ async function generateWithOpenAI(config: any, systemMsg: string, prompt: string
     const openai = new OpenAI({
       apiKey: config.apiKey,
       baseURL: config.baseUrl || undefined,
+      timeout: 120000,
+      maxRetries: 1,
     });
 
     const systemMsgWithJson = systemMsg + `\n\nReturn ONLY a JSON object with a "clips" array. Example: {"clips": [{"title": "...", "hook": "...", "startTime": 0, "endTime": 10, "viralScore": 90, "reason": "...", "caption": "...", "layoutMode": "crop_blur"}]}`;
