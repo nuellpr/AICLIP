@@ -38,6 +38,8 @@ model Project {
   targetDuration String   @default("30-60")
   layoutMode    String    @default("crop_blur")
   searchQuery   String?   // Natural language query for golden moments
+  aiProvider    String?   // Overrides global AI provider for this project
+  aiModel       String?   // Overrides global AI model for this project
   lockedAt      DateTime? // Added for robust queue tracking
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

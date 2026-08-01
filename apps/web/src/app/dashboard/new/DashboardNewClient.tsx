@@ -17,6 +17,7 @@ export default function NewProjectPage() {
   const [clipCount, setClipCount] = useState(5);
   const [targetDuration, setTargetDuration] = useState("30-60");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedAiModel, setSelectedAiModel] = useState("");
   
   const handleSubmit = async () => {
     if (activeTab === 'url' && !url) {
@@ -38,7 +39,9 @@ export default function NewProjectPage() {
           layoutMode: layoutMode,
           clipCount: clipCount,
           targetDuration: targetDuration,
-          searchQuery: searchQuery
+          searchQuery: searchQuery,
+          aiProvider: selectedAiModel ? selectedAiModel.split(':')[0] : null,
+          aiModel: selectedAiModel ? selectedAiModel.split(':')[1] : null
         })
       });
 
@@ -246,6 +249,23 @@ export default function NewProjectPage() {
             >
               <option value="30-60">🔥 30 - 60 Detik</option>
               <option value="61-180">🎬 61 - 180 Detik</option>
+            </select>
+          </div>
+          
+          <div className="md:col-span-2 glass-card p-6 rounded-xl border border-white/5">
+            <label className="block text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-purple-400" /> Model AI
+            </label>
+            <select 
+              value={selectedAiModel}
+              onChange={(e) => setSelectedAiModel(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-black/80 px-4 py-3.5 text-white font-medium focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+            >
+              <option value="">⚙️ Gunakan Default Server (Sesuai Konfigurasi Admin)</option>
+              <option value="google-gemini:gemini-1.5-flash">⚡ Gemini 1.5 Flash (Google - Sangat Cepat)</option>
+              <option value="google-gemini:gemini-1.5-pro">🧠 Gemini 1.5 Pro (Google - Paling Pintar)</option>
+              <option value="openai:gpt-4o">🌟 GPT-4o (OpenAI - Premium)</option>
+              <option value="openai:gpt-4o-mini">🚀 GPT-4o Mini (OpenAI - Cepat & Efisien)</option>
             </select>
           </div>
           

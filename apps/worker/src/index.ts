@@ -108,8 +108,10 @@ async function processProject(projectId: string) {
       const targetDuration = (projectData as any).targetDuration || '30-60';
       const searchQuery = (projectData as any).searchQuery || '';
       
+      const aiOverride = { provider: (projectData as any).aiProvider, model: (projectData as any).aiModel };
+      
       // Pass undefined for videoFilePath so it only uses VTT text
-      const result = await generateGoldenMoments(vttContent, clipCount, targetDuration, searchQuery, undefined);
+      const result = await generateGoldenMoments(vttContent, clipCount, targetDuration, searchQuery, undefined, aiOverride);
       aiClips = result.clips;
       aiError = result.error;
     }
@@ -496,10 +498,9 @@ async function startConsumers() {
                 '-map', '0:a?',
                 '-threads', '0'
               ])
-              .outputOptions('-c:v h264_qsv')
-              .outputOptions('-preset medium') // Preset lebih lambat agar lebih jernih
-              .outputOptions('-global_quality 20') // Quality 20 (lebih tinggi dari 28) agar tidak pecah
-              .outputOptions('-look_ahead 0') 
+              .outputOptions('-c:v libx264')
+              .outputOptions('-preset fast')
+              .outputOptions('-crf 23')
               .outputOptions('-c:a aac')
               // Audio Polish: loudnorm (Podcast loudness standard) and highpass (noise reduction)
               .outputOptions('-af', 'highpass=f=150,loudnorm=I=-16:TP=-1.5:LRA=11')
@@ -520,7 +521,7 @@ async function startConsumers() {
             where: { id: clip.id },
             data: { 
               renderStatus: 'READY',
-              renderedFileKey: `http://127.0.0.1:3001/renders/${filename}`,
+              renderedFileKey: `/renders/${filename}`,
               lockedAt: null
             }
           });

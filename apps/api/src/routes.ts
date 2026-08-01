@@ -24,7 +24,7 @@ export default async function routes(server: FastifyInstance) {
   });
 
   server.post('/projects', async (request, reply) => {
-    const { title, sourceUrl, sourceType, layoutMode, clipCount, targetDuration, searchQuery } = request.body as any;
+    const { title, sourceUrl, sourceType, layoutMode, clipCount, targetDuration, searchQuery, aiProvider, aiModel } = request.body as any;
     
     // Pre-Flight Check for YouTube URLs
     if (sourceUrl && (sourceUrl.includes('youtube.com') || sourceUrl.includes('youtu.be'))) {
@@ -77,6 +77,8 @@ export default async function routes(server: FastifyInstance) {
         clipCount: parseInt(clipCount) || 5,
         targetDuration: targetDuration || '30-60',
         searchQuery: searchQuery || null,
+        aiProvider: aiProvider || null,
+        aiModel: aiModel || null,
         status: 'QUEUED',
       }
     });

@@ -35,7 +35,7 @@ export function getVttWindow(vttContent: string, windowIndex: number, maxChars: 
   return window.trim();
 }
 
-export async function generateGoldenMoments(vttContent: string, clipCount: number = 5, targetDuration: string = "30-60", searchQuery: string = "", videoFilePath?: string): Promise<{ clips: any[]; error?: string }> {
+export async function generateGoldenMoments(vttContent: string, clipCount: number = 5, targetDuration: string = "30-60", searchQuery: string = "", videoFilePath?: string, aiOverride?: { provider?: string, model?: string }): Promise<{ clips: any[]; error?: string }> {
   // Load AI config
   const configPath = path.resolve(__dirname, '../../../ai-config.json');
   let config: any = { provider: 'google-gemini' };
@@ -45,6 +45,10 @@ export async function generateGoldenMoments(vttContent: string, clipCount: numbe
       config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     } catch (e) {}
   }
+
+  // Override config if provided
+  if (aiOverride?.provider) config.provider = aiOverride.provider;
+  if (aiOverride?.model) config.model = aiOverride.model;
 
   console.log(`AI provider: ${config.provider || 'google-gemini'}, model: ${config.model || '(default)'}, baseUrl: ${config.baseUrl || '(default)'}`);
 
