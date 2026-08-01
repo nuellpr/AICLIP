@@ -38,6 +38,7 @@ model Project {
   targetDuration String   @default("30-60")
   layoutMode    String    @default("crop_blur")
   searchQuery   String?   // Natural language query for golden moments
+  lockedAt      DateTime? // Added for robust queue tracking
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   clips         Clip[]
@@ -65,6 +66,7 @@ model Clip {
   layoutMode      String?   // Per-clip layout mode override
   renderStatus    String    @default("PENDING") // PENDING, RENDERING, READY, FAILED
   renderedFileKey String?
+  lockedAt        DateTime? // Added for robust queue tracking
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }

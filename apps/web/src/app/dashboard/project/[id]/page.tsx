@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { CheckCircle2, Loader2, AlertCircle, Video, Download, Edit, Play, Mic } from "lucide-react";
 import { CaptionCarousel } from "@/components/CaptionCarousel";
 import { PreviewVideo } from "@/components/PreviewVideo";
+import { TimelineSlider } from "@/components/TimelineSlider";
 import { CAPTION_PRESETS, CaptionPreset, getDefaultPreset, Word } from "@clipforge/shared";
 import { getApiUrl } from "@/lib/api";
 
@@ -145,9 +146,9 @@ export default function ProjectPage() {
     }
   };
 
-  if (!mounted) return <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-cyan-500" /></div>;
+  if (!mounted) return <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (error) return <div className="text-red-500 p-8 border border-red-500/20 bg-red-500/10 rounded-2xl">Error: {error}</div>;
-  if (!project) return <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-cyan-500" /></div>;
+  if (!project) return <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   const isCompleted = project.status === 'READY';
   const isFailed = project.status === 'FAILED';
@@ -175,7 +176,7 @@ export default function ProjectPage() {
         <div className="flex items-center justify-between mb-8 relative">
           <div className="absolute top-1/2 left-0 right-0 h-1 bg-white/10 -translate-y-1/2 z-0" />
           <div 
-            className="absolute top-1/2 left-0 h-1 bg-cyan-500 -translate-y-1/2 z-0 transition-all duration-500"
+            className="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 z-0 transition-all duration-500"
             style={{ width: `${(Math.max(0, currentStageIndex) / (stages.length - 1)) * 100}%` }}
           />
 
@@ -184,8 +185,8 @@ export default function ProjectPage() {
             const isCurrent = currentStageIndex === idx;
             
             let circleClass = "bg-[#222] border-white/20 text-gray-500";
-            if (isPast || isCompleted) circleClass = "bg-cyan-500 border-cyan-500 text-black";
-            else if (isCurrent && !isFailed) circleClass = "bg-[#111] border-cyan-500 text-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.5)]";
+            if (isPast || isCompleted) circleClass = "bg-primary border-primary text-black";
+            else if (isCurrent && !isFailed) circleClass = "bg-[#111] border-primary text-primary shadow-[0_0_15px_rgba(6,182,212,0.5)]";
             else if (isCurrent && isFailed) circleClass = "bg-[#111] border-red-500 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]";
 
             return (
@@ -193,7 +194,7 @@ export default function ProjectPage() {
                 <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-colors ${circleClass}`}>
                   {isPast || isCompleted ? <CheckCircle2 className="w-6 h-6" /> : (isCurrent && !isFailed ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCurrent && isFailed ? <AlertCircle className="w-5 h-5" /> : <div className="w-3 h-3 rounded-full bg-current" />))}
                 </div>
-                <span className={`absolute top-12 whitespace-nowrap text-xs font-medium ${isCurrent ? (isFailed ? 'text-red-500' : 'text-cyan-500') : (isPast || isCompleted ? 'text-white' : 'text-gray-500')}`}>
+                <span className={`absolute top-12 whitespace-nowrap text-xs font-medium ${isCurrent ? (isFailed ? 'text-red-500' : 'text-primary') : (isPast || isCompleted ? 'text-white' : 'text-gray-500')}`}>
                   {stage.label}
                 </span>
               </div>
@@ -229,7 +230,7 @@ export default function ProjectPage() {
               const isErrorClip = clip.title?.startsWith?.('Gagal:') || clip.reason?.startsWith?.('Error:') || clip.reason?.startsWith?.('AI gagal:');
 
               return (
-                <div key={idx} className={`flex flex-col rounded-xl border overflow-hidden transition-colors ${isErrorClip ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-white/10 bg-white/5 hover:border-cyan-500/50'}`}>
+                <div key={idx} className={`flex flex-col rounded-xl border overflow-hidden transition-colors ${isErrorClip ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-white/10 bg-white/5 hover:border-primary/50'}`}>
                   <div className="aspect-[9/16] bg-black relative flex items-center justify-center">
                     {isReady && clip.renderedFileKey ? (
                       <video src={clip.renderedFileKey} controls className="w-full h-full object-cover" />
@@ -239,7 +240,7 @@ export default function ProjectPage() {
                         {isErrorClip && <span className="text-yellow-500 text-xs font-bold">AI ERROR</span>}
                       </div>
                     )}
-                    <div className={`absolute top-2 right-2 backdrop-blur-md px-2 py-1 rounded-md text-xs font-bold border ${isErrorClip ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' : 'bg-black/60 text-cyan-400 border-white/10'}`}>
+                    <div className={`absolute top-2 right-2 backdrop-blur-md px-2 py-1 rounded-md text-xs font-bold border ${isErrorClip ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' : 'bg-black/60 text-primary/80 border-white/10'}`}>
                       Score: {clip.viralScore}
                     </div>
                     <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md text-xs font-medium text-white border border-white/10">
@@ -274,7 +275,7 @@ export default function ProjectPage() {
                         <button 
                           onClick={() => handleRender(clip.id)}
                           disabled={isRendering}
-                          className="flex-1 flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black rounded-lg py-2 text-sm font-medium transition-colors disabled:opacity-50"
+                          className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/80 text-black rounded-lg py-2 text-sm font-medium transition-colors disabled:opacity-50"
                         >
                           {isRendering ? (
                             <><Loader2 className="h-4 w-4 animate-spin" /> Render...</>
@@ -322,8 +323,8 @@ export default function ProjectPage() {
                 {/* Subtitle Color Customizer */}
                 <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Kustomisasi Warna Subtitle</h4>
-                    <span className="text-[10px] font-extrabold bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-500/30">TEBAL (BOLD)</span>
+                    <h4 className="text-xs font-bold text-primary/80 uppercase tracking-wider">Kustomisasi Warna Subtitle</h4>
+                    <span className="text-[10px] font-extrabold bg-primary/20 text-primary/80 px-2 py-0.5 rounded-full border border-primary/30">TEBAL (BOLD)</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -448,7 +449,7 @@ export default function ProjectPage() {
                         type="text" 
                         value={editingClip.title}
                         onChange={e => setEditingClip({...editingClip, title: e.target.value})}
-                        className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white focus:border-cyan-500 focus:outline-none"
+                        className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white focus:border-primary focus:outline-none"
                         required
                       />
                     </div>
@@ -461,7 +462,7 @@ export default function ProjectPage() {
                         max="2"
                         value={captionSettings.subtitleOffset !== undefined ? captionSettings.subtitleOffset : 0.0}
                         onChange={e => setCaptionSettings({...captionSettings, subtitleOffset: parseFloat(e.target.value)})}
-                        className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white focus:border-cyan-500 focus:outline-none"
+                        className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white focus:border-primary focus:outline-none"
                       />
                     </div>
                   </div>
@@ -472,7 +473,7 @@ export default function ProjectPage() {
                       <select 
                         value={editingClip.layoutMode || 'fit_blur'}
                         onChange={e => setEditingClip({...editingClip, layoutMode: e.target.value})}
-                        className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white focus:border-cyan-500 focus:outline-none"
+                        className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white focus:border-primary focus:outline-none"
                       >
                         <option value="fit_blur">Fit Penuh + Blur</option>
                         <option value="crop_blur">Crop 1:1 + Blur</option>
@@ -483,27 +484,15 @@ export default function ProjectPage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <label className="block text-sm text-gray-400 mb-1">Waktu Mulai (detik)</label>
-                      <input 
-                        type="number" 
-                        step="0.1"
-                        value={editingClip.startTime}
-                        onChange={e => setEditingClip({...editingClip, startTime: parseFloat(e.target.value)})}
-                        className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white focus:border-cyan-500 focus:outline-none"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm text-gray-400 mb-1">Waktu Selesai (detik)</label>
-                      <input 
-                        type="number" 
-                        step="0.1"
-                        value={editingClip.endTime}
-                        onChange={e => setEditingClip({...editingClip, endTime: parseFloat(e.target.value)})}
-                        className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white focus:border-cyan-500 focus:outline-none"
-                      />
-                    </div>
+                  <div className="mb-4">
+                    <label className="block text-sm text-gray-400 mb-2">Trim Klip</label>
+                    <TimelineSlider
+                      min={Math.max(0, editingClip.startTime - 60)}
+                      max={editingClip.endTime + 60}
+                      startTime={editingClip.startTime}
+                      endTime={editingClip.endTime}
+                      onChange={(start, end) => setEditingClip({ ...editingClip, startTime: start, endTime: end })}
+                    />
                   </div>
 
                   <div>
@@ -530,7 +519,7 @@ export default function ProjectPage() {
                             setIsTranscribing(false);
                           }
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white transition-all disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-secondary hover:bg-secondary/80 text-white transition-all disabled:opacity-50"
                       >
                         {isTranscribing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mic className="h-3 w-3" />}
                         {isTranscribing ? 'Mentranskripsi...' : 'Transkripsi Ulang (Whisper)'}
@@ -539,7 +528,7 @@ export default function ProjectPage() {
                     <textarea 
                       value={editingClip.caption}
                       onChange={e => setEditingClip({...editingClip, caption: e.target.value})}
-                      className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white focus:border-cyan-500 focus:outline-none text-sm"
+                      className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white focus:border-primary focus:outline-none text-sm"
                       rows={3}
                     />
                     <p className="text-[10px] text-gray-500 mt-1">💡 Klik &quot;Transkripsi Ulang&quot; jika kata-kata subtitle tidak sesuai ucapan. Whisper akan mengenali ulang ucapan asli dari audio video.</p>
@@ -559,7 +548,7 @@ export default function ProjectPage() {
                   type="button"
                   onClick={handleEditSave}
                   disabled={isSaving}
-                  className="flex items-center gap-2 px-6 py-2 rounded-lg font-medium bg-cyan-500 text-black hover:bg-cyan-400 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-6 py-2 rounded-lg font-medium bg-primary text-black hover:bg-primary/80 transition-colors disabled:opacity-50"
                 >
                   {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   Simpan Klip

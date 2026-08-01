@@ -35,7 +35,7 @@ export function getVttWindow(vttContent: string, windowIndex: number, maxChars: 
   return window.trim();
 }
 
-export async function generateGoldenMoments(vttContent: string, clipCount: number = 5, targetDuration: string = "30-60", searchQuery: string = ""): Promise<{ clips: any[]; error?: string }> {
+export async function generateGoldenMoments(vttContent: string, clipCount: number = 5, targetDuration: string = "30-60", searchQuery: string = "", videoFilePath?: string): Promise<{ clips: any[]; error?: string }> {
   // Load AI config
   const configPath = path.resolve(__dirname, '../../../ai-config.json');
   let config: any = { provider: 'google-gemini' };
@@ -49,7 +49,7 @@ export async function generateGoldenMoments(vttContent: string, clipCount: numbe
   console.log(`AI provider: ${config.provider || 'google-gemini'}, model: ${config.model || '(default)'}, baseUrl: ${config.baseUrl || '(default)'}`);
 
   const defaultSystemMsg = `Anda adalah seorang ahli strategi konten viral TikTok & Reels tingkat dunia.
-Tugas Anda adalah menganalisis subtitle VTT video YouTube ini dan mengekstrak TEPAT ${clipCount} momen emas ("golden moments") yang dijamin akan viral.
+Tugas Anda adalah menganalisis subtitle VTT video YouTube ini (dan konteks visual video jika tersedia) dan mengekstrak TEPAT ${clipCount} momen emas ("golden moments") yang dijamin akan viral.
 
 ATURAN WAJIB (CRITICAL):
 1. Anda HARUS menghasilkan TEPAT ${clipCount} klip. Tidak boleh kurang dan tidak boleh lebih.
@@ -57,7 +57,7 @@ ATURAN WAJIB (CRITICAL):
 3. 'title', 'hook', dan 'reason' WAJIB ditulis dalam Bahasa Indonesia yang sangat clickbait, emosional, dan bergaya kreator TikTok/Reels Gen-Z. Buat mereka terdengar sangat menarik!
 4. 'caption' WAJIB menggunakan teks ucapan asli 100% dari audio/VTT. JANGAN PERNAH MENGUBAH KE BAHASA INDONESIA BAKU/KBBI! Pertahankan kata-kata tidak baku persis seperti yang diucapkan di audio (contoh: 'gak', 'nggak', 'udah', 'dah', 'bikin', 'gimana', 'kayak', 'kalo', 'nyampe', 'lu', 'gue', 'banget', 'pake').
 5. 'startTime' dan 'endTime' WAJIB dalam satuan DETIK (float/desimal), BUKAN milidetik! Contoh: untuk VTT timestamp 00:01:31.690, tuliskan startTime: 91.69 (BUKAN 91690). Berikan timestamp yang sangat akurat sesuai letak ucapan di VTT.
-6. 'layoutMode': Anda WAJIB memilih salah satu dari [crop_blur, split, gameplay, face, fit_blur] berdasarkan konteks percakapan di klip tersebut.`;
+6. 'layoutMode': Anda WAJIB memilih salah satu dari [crop_blur, split, gameplay, face, fit_blur] berdasarkan konteks percakapan/visual di klip tersebut.`;
 
   let systemMsg = config.systemMessage ? config.systemMessage + `\n\nEkstrak ${clipCount} klip.` : defaultSystemMsg;
   
@@ -66,7 +66,7 @@ ATURAN WAJIB (CRITICAL):
 Pengguna memberikan instruksi khusus berikut untuk mencari momen tertentu:
 "${searchQuery}"
 
-Anda WAJIB memprioritaskan momen-momen di dalam VTT yang paling relevan dengan instruksi pengguna tersebut di atas momen lainnya. Jika instruksi tidak relevan atau tidak ditemukan, barulah Anda mencari momen viral secara umum.`;
+Anda WAJIB memprioritaskan momen-momen di dalam VTT/Video yang paling relevan dengan instruksi pengguna tersebut di atas momen lainnya. Jika instruksi tidak relevan atau tidak ditemukan, barulah Anda mencari momen viral secara umum.`;
   }
 
   const prompt = `VTT Content:\n${limitVttContent(vttContent)}`;
@@ -75,7 +75,7 @@ Anda WAJIB memprioritaskan momen-momen di dalam VTT yang paling relevan dengan i
     const result = await generateWithOpenAI(config, systemMsg, vttContent, clipCount, targetDuration, searchQuery);
     return { clips: result.clips, error: result.error };
   } else {
-    const result = await generateWithGemini(config, systemMsg, prompt, clipCount);
+    const result = await generateWithGemini(config, systemMsg, prompt, clipCount, videoFilePath);
     return { clips: result.clips, error: result.error };
   }
 }
@@ -169,7 +169,7 @@ Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTi
   return { clips: [], error: errMsg };
 }
 
-async function generateWithGemini(config: any, systemMsg: string, prompt: string, clipCount: number): Promise<{ clips: any[]; error?: string }> {
+async function generateWithGemini(config: any, systemMsg: string, prompt: string, clipCount: number, videoFilePath?: string): Promise<{ clips: any[]; error?: string }> {
   try {
     // Fallback to process.env if config key is missing
     const apiKey = config.apiKey || process.env.GEMINI_API_KEY;
@@ -193,16 +193,52 @@ async function generateWithGemini(config: any, systemMsg: string, prompt: string
       }
     };
 
-    const fullPrompt = `${systemMsg}\n\n${prompt}`;
+    let contents: any[] = [systemMsg + '\n\n' + prompt];
+    let uploadedFile: any = null;
+
+    if (videoFilePath && fs.existsSync(videoFilePath)) {
+      console.log('Uploading video to Gemini File API for multimodal analysis...');
+      try {
+        uploadedFile = await ai.files.upload({ file: videoFilePath, mimeType: 'video/mp4' });
+        console.log(`Video uploaded as ${uploadedFile.name}. Polling for ACTIVE state...`);
+        
+        let fileInfo = await ai.files.get({ name: uploadedFile.name });
+        let attempts = 0;
+        while (fileInfo.state === 'PROCESSING' && attempts < 30) {
+          await new Promise(r => setTimeout(r, 5000));
+          fileInfo = await ai.files.get({ name: uploadedFile.name });
+          attempts++;
+        }
+        
+        if (fileInfo.state === 'ACTIVE') {
+          console.log('Video is ACTIVE. Proceeding with multimodal generation.');
+          contents = [uploadedFile, systemMsg + '\n\n' + prompt];
+        } else {
+          console.warn(`Video state is ${fileInfo.state}, proceeding without video context.`);
+        }
+      } catch (err: any) {
+        console.warn('Failed to upload/process video in Gemini API:', err.message);
+      }
+    }
 
     const response = await ai.models.generateContent({
       model: config.model || 'gemini-1.5-flash',
-      contents: fullPrompt,
+      contents: contents,
       config: {
         responseMimeType: 'application/json',
         responseSchema: clipSchema,
       }
     });
+    
+    // Cleanup video from Gemini if uploaded
+    if (uploadedFile) {
+      try {
+        await ai.files.delete({ name: uploadedFile.name });
+        console.log(`Cleaned up temporary video file ${uploadedFile.name} from Gemini API.`);
+      } catch (e: any) {
+        console.warn(`Failed to clean up file ${uploadedFile.name}:`, e.message);
+      }
+    }
     
     const text = response.text || '[]';
     let parsed = JSON.parse(text);

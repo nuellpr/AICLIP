@@ -97,12 +97,27 @@ async function processProject(projectId: string) {
     let aiClips: any[] = [];
     let aiError: string | undefined;
     if (vttContent) {
+      console.log('Downloading low-res video for Gemini Multimodal Analysis...');
+      const lowResVideoPath = path.join(__dirname, `../temp_ai_vid_${projectId}.mp4`);
+      try {
+         await youtubedl(projectData.sourceUrl, {
+           f: 'worstvideo[height<=360][ext=mp4]+worstaudio[ext=m4a]/worst',
+           output: lowResVideoPath,
+           cookies: fs.existsSync(cookiesPath) ? cookiesPath : undefined,
+           noCheckCertificates: true
+         });
+      } catch (e: any) {
+         console.warn('Failed to download low-res video for AI', e.message);
+      }
+
       const clipCount = projectData.clipCount || 5;
       const targetDuration = (projectData as any).targetDuration || '30-60';
       const searchQuery = (projectData as any).searchQuery || '';
-      const result = await generateGoldenMoments(vttContent, clipCount, targetDuration, searchQuery);
+      const result = await generateGoldenMoments(vttContent, clipCount, targetDuration, searchQuery, lowResVideoPath);
       aiClips = result.clips;
       aiError = result.error;
+
+      if (fs.existsSync(lowResVideoPath)) fs.unlinkSync(lowResVideoPath);
     }
     
     // 5. GENERATING_CLIPS
@@ -163,7 +178,8 @@ async function processProject(projectId: string) {
         status: 'READY', 
         currentStage: 'COMPLETED', 
         progress: 100,
-        errorMessage: aiError || undefined
+        errorMessage: aiError || undefined,
+        lockedAt: null
       }
     });
 
@@ -172,7 +188,12 @@ async function processProject(projectId: string) {
   } catch (error: any) {
     await prisma.project.update({
       where: { id: projectId },
-      data: { status: 'FAILED', errorCode: 'WORKER_ERROR', errorMessage: error.message }
+      data: { 
+        status: 'FAILED', 
+        errorCode: 'WORKER_ERROR', 
+        errorMessage: error.message,
+        lockedAt: null
+      }
     });
     console.error(`Failed project ${projectId}: ${error.message}`);
   }
@@ -186,10 +207,13 @@ async function pollQueue() {
     });
 
     if (project) {
-      // Mark as downloading immediately to prevent multiple workers taking it (if scaled)
+      // Mark as downloading immediately and set lockedAt to prevent multiple workers taking it
       await prisma.project.update({
         where: { id: project.id },
-        data: { status: 'DOWNLOADING' }
+        data: { 
+          status: 'DOWNLOADING',
+          lockedAt: new Date()
+        }
       });
       await processProject(project.id);
     }
@@ -212,7 +236,10 @@ async function pollRenderQueue() {
       console.log(`Started rendering clip ${clip.id} from ${clip.project.sourceUrl}`);
       await prisma.clip.update({
         where: { id: clip.id },
-        data: { renderStatus: 'RENDERING' }
+        data: { 
+          renderStatus: 'RENDERING',
+          lockedAt: new Date()
+        }
       });
 
       const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id;
@@ -438,6 +465,19 @@ async function pollRenderQueue() {
       const rawLayout = projectLayout === 'auto' ? (clip.layoutMode || 'fit_blur') : projectLayout;
       const layoutMode = rawLayout === 'auto' ? 'fit_blur' : rawLayout;
 
+      let faceCmdPath: string | null = null;
+      if (layoutMode === 'face') {
+        try {
+          faceCmdPath = path.join(__dirname, `../temp_cmds_${clip.id}.txt`);
+          console.log('Running face tracking for dynamic crop...');
+          const pythonBin = getPythonPath();
+          await execAsync(`"${pythonBin}" "${path.join(__dirname, 'face_tracker.py')}" "${tempPath.replace(/\\/g, '/')}" "${faceCmdPath.replace(/\\/g, '/')}" 608 1080 0.1`, { timeout: 120000 });
+        } catch (err) {
+          console.error('Face tracking failed, falling back to center crop', err);
+          faceCmdPath = null;
+        }
+      }
+
       await new Promise((resolve, reject) => {
         let command = ffmpeg(tempPath);
         
@@ -482,11 +522,21 @@ async function pollRenderQueue() {
             ];
             break;
           case 'face':
-            filterComplex = [
-              { filter: 'crop', options: 'ih*9/16:ih:iw/2-ih*9/32:0', inputs: '0:v', outputs: 'cropped' },
-              { filter: 'scale', options: '1080:1920', inputs: 'cropped', outputs: 'scaled' },
-              { filter: 'subtitles', options: formattedAssPath, inputs: 'scaled', outputs: 'final' }
-            ];
+            if (faceCmdPath && fs.existsSync(faceCmdPath)) {
+              const relativeCmd = path.relative(process.cwd(), faceCmdPath).replace(/\\/g, '/');
+              filterComplex = [
+                { filter: 'sendcmd', options: `f=${relativeCmd}`, inputs: '0:v', outputs: 'cmd_out' },
+                { filter: 'crop', options: 'ih*9/16:ih:x=(in_w-ih*9/16)/2:y=0', inputs: 'cmd_out', outputs: 'cropped' },
+                { filter: 'scale', options: '1080:1920', inputs: 'cropped', outputs: 'scaled' },
+                { filter: 'subtitles', options: formattedAssPath, inputs: 'scaled', outputs: 'final' }
+              ];
+            } else {
+              filterComplex = [
+                { filter: 'crop', options: 'ih*9/16:ih:iw/2-ih*9/32:0', inputs: '0:v', outputs: 'cropped' },
+                { filter: 'scale', options: '1080:1920', inputs: 'cropped', outputs: 'scaled' },
+                { filter: 'subtitles', options: formattedAssPath, inputs: 'scaled', outputs: 'final' }
+              ];
+            }
             break;
           case 'fit_blur':
           default:
@@ -509,10 +559,10 @@ async function pollRenderQueue() {
             '-map', '0:a?',
             '-threads', '0'
           ])
-          .outputOptions('-c:v libx264')
-          .outputOptions('-preset ultrafast')
-          .outputOptions('-crf 28')
-          .outputOptions('-tune fastdecode')
+          .outputOptions('-c:v h264_qsv')
+          .outputOptions('-preset veryfast') // QSV preset
+          .outputOptions('-global_quality 28') // QSV equivalent of CRF
+          .outputOptions('-look_ahead 0') // Faster encoding without lookahead
           .outputOptions('-c:a aac')
           .output(outputPath)
           .on('end', () => resolve(true))
@@ -526,13 +576,15 @@ async function pollRenderQueue() {
       // Cleanup
       if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
       if (fs.existsSync(assPath)) fs.unlinkSync(assPath);
+      if (faceCmdPath && fs.existsSync(faceCmdPath)) fs.unlinkSync(faceCmdPath);
 
       // Mark as READY with local file server URL
       await prisma.clip.update({
         where: { id: clip.id },
         data: { 
           renderStatus: 'READY',
-          renderedFileKey: `http://127.0.0.1:3001/renders/${filename}`
+          renderedFileKey: `http://127.0.0.1:3001/renders/${filename}`,
+          lockedAt: null
         }
       });
       console.log(`Finished rendering clip ${clip.id}`);
@@ -540,32 +592,87 @@ async function pollRenderQueue() {
       // If there's a clip but no sourceUrl, mark as failed
       await prisma.clip.update({
         where: { id: clip.id },
-        data: { renderStatus: 'FAILED' }
+        data: { 
+          renderStatus: 'FAILED',
+          lockedAt: null
+        }
       });
     }
   } catch (err) {
     console.error('Render polling error', err);
     // If a clip was being processed, mark it as FAILED
-    const activeClip = await prisma.clip.findFirst({ where: { renderStatus: 'RENDERING' } });
-    if (activeClip) {
-      await prisma.clip.update({
-        where: { id: activeClip.id },
-        data: { renderStatus: 'FAILED' }
-      });
-    }
+    try {
+      const activeClip = await prisma.clip.findFirst({ where: { renderStatus: 'RENDERING' } });
+      if (activeClip) {
+        await prisma.clip.update({
+          where: { id: activeClip.id },
+          data: { renderStatus: 'FAILED', lockedAt: null }
+        });
+      }
+    } catch (e) {}
   } finally {
     setTimeout(pollRenderQueue, 3000);
   }
 }
 
+// Function to recover jobs that are stuck for more than 15 minutes
+async function recoverStuckJobs() {
+  try {
+    const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
+
+    // Recover stuck Projects
+    const stuckProjects = await prisma.project.findMany({
+      where: {
+        status: { in: ['DOWNLOADING', 'EXTRACTING_AUDIO', 'TRANSCRIBING', 'ANALYZING', 'GENERATING_CLIPS'] },
+        lockedAt: { lt: fifteenMinsAgo }
+      }
+    });
+
+    for (const p of stuckProjects) {
+      console.log(`Recovering stuck project ${p.id}... resetting to QUEUED`);
+      await prisma.project.update({
+        where: { id: p.id },
+        data: { status: 'QUEUED', currentStage: null, lockedAt: null }
+      });
+    }
+
+    // Recover stuck Clips
+    const stuckClips = await prisma.clip.findMany({
+      where: {
+        renderStatus: 'RENDERING',
+        lockedAt: { lt: fifteenMinsAgo }
+      }
+    });
+
+    for (const c of stuckClips) {
+      console.log(`Recovering stuck clip ${c.id}... resetting to QUEUED`);
+      await prisma.clip.update({
+        where: { id: c.id },
+        data: { renderStatus: 'QUEUED', lockedAt: null }
+      });
+    }
+  } catch (err) {
+    console.error('Recover stuck jobs error:', err);
+  } finally {
+    setTimeout(recoverStuckJobs, 5 * 60 * 1000); // Run every 5 minutes
+  }
+}
+
 // Reset any stuck rendering clips from a previous crash back to QUEUED
-prisma.clip.updateMany({
-  where: { renderStatus: 'RENDERING' },
-  data: { renderStatus: 'QUEUED' }
-}).then(() => {
+Promise.all([
+  prisma.clip.updateMany({
+    where: { renderStatus: 'RENDERING' },
+    data: { renderStatus: 'QUEUED', lockedAt: null }
+  }),
+  prisma.project.updateMany({
+    where: { status: { in: ['DOWNLOADING', 'EXTRACTING_AUDIO', 'TRANSCRIBING', 'ANALYZING', 'GENERATING_CLIPS'] } },
+    data: { status: 'QUEUED', lockedAt: null }
+  })
+]).then(() => {
   console.log('Worker started, polling for QUEUED projects & clips...');
   pollQueue();
   pollRenderQueue();
+  recoverStuckJobs();
 });
 
 const server = http.createServer((req, res) => {
