@@ -44,7 +44,7 @@ export default function SettingsPage() {
   const handleLoadModels = async () => {
     setIsLoadingModels(true);
     try {
-      const res = await fetch('http://localhost:3001/api/settings/ai/models', {
+      const res = await fetch(getApiUrl('/api/settings/ai/models'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider, baseUrl, apiKey })
