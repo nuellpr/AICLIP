@@ -5,6 +5,6 @@ async function check() {
     orderBy: { createdAt: 'desc' },
     take: 3
   });
-  console.log(clips.map(c => ({ id: c.id, title: c.title, renderStatus: c.renderStatus, renderedFileKey: c.renderedFileKey })));
+  console.log(clips.map((c: any) => ({ id: c.id, title: c.title, renderStatus: c.renderStatus, renderedFileKey: c.renderedFileKey })));
 }
 check();
