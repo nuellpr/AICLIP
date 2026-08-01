@@ -90,14 +90,14 @@ function buildCompactSystemMessage(systemMsg: string, clipCount: number, targetD
 }
 
 async function generateWithOpenAI(config: any, systemMsg: string, vttContent: string, clipCount: number, targetDuration: string = "30-60", searchQuery: string = ""): Promise<{ clips: any[]; error?: string }> {
-  const MAX_ATTEMPTS = 12;
+  const MAX_ATTEMPTS = 3;
+  const RETRY_DELAY_MS = 2000;
   const attemptErrors: string[] = [];
 
-  const compactSystemMsg = buildCompactSystemMessage(systemMsg, clipCount, targetDuration, searchQuery);
-
-  const antiReasoning = `\n\nPENTING: Jawab langsung tanpa berpikir panjang. JANGAN melakukan reasoning internal yang bertele-tele. Langsung keluarkan JSON sekarang.`;
-
-  const systemMsgWithJson = compactSystemMsg + antiReasoning + `\n\nReturn ONLY a JSON object with a "clips" array. Example: {"clips": [{"title": "...", "hook": "...", "startTime": 0, "endTime": 10, "viralScore": 90, "reason": "...", "caption": "...", "layoutMode": "crop_blur"}]}`;
+  // Use a very compact system message to minimize token usage
+  const systemMsgWithJson = `Analyze VTT subtitles. Extract EXACTLY ${clipCount} viral clip moments.
+Rules: title/hook/reason in Indonesian clickbait style. caption = exact spoken text from VTT (keep informal words). startTime/endTime in SECONDS (float). layoutMode: one of crop_blur/split/gameplay/face/fit_blur. Duration ${targetDuration}s each.${searchQuery ? ` Focus on: "${searchQuery}".` : ''}
+Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTime":30,"viralScore":90,"reason":"...","caption":"...","layoutMode":"fit_blur"}]}`;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
@@ -105,12 +105,13 @@ async function generateWithOpenAI(config: any, systemMsg: string, vttContent: st
       const openai = new OpenAI({
         apiKey: config.apiKey,
         baseURL: config.baseUrl || undefined,
-        timeout: 60000,
+        timeout: 120000,
         maxRetries: 0,
       });
 
-      const vttWindow = getVttWindow(vttContent, attempt - 1);
-      const prompt = `VTT Content:\n${vttWindow}`;
+      // Send less VTT content to reduce token usage — critical for reasoning models
+      const vttWindow = limitVttContent(vttContent, 2500);
+      const prompt = `VTT:\n${vttWindow}`;
 
       const completion = await openai.chat.completions.create({
         model: config.model || 'gpt-4o-mini',
@@ -119,7 +120,7 @@ async function generateWithOpenAI(config: any, systemMsg: string, vttContent: st
           { role: "user", content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 4000,
+        max_tokens: 16000,
       });
 
       let text = completion.choices[0].message.content || '';
@@ -130,8 +131,9 @@ async function generateWithOpenAI(config: any, systemMsg: string, vttContent: st
       } catch(e) {}
 
       if (!text.trim()) {
-        attemptErrors.push(`Attempt ${attempt}: empty content (finish_reason=${finishReason})`);
-        continue;
+      attemptErrors.push(`Attempt ${attempt}: empty content (finish_reason=${finishReason})`);
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+      continue;
       }
       
       // Robust extraction: find the first { and last }
@@ -151,14 +153,16 @@ async function generateWithOpenAI(config: any, systemMsg: string, vttContent: st
         return { clips: parsed.clips.slice(0, clipCount) };
       }
       attemptErrors.push(`Attempt ${attempt}: JSON had no clips (finish_reason=${finishReason})`);
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
     } catch (error: any) {
       const errMsg = error?.error?.message || error?.message || String(error);
       attemptErrors.push(`Attempt ${attempt}: ${errMsg}`);
       console.error('OpenAI/Compatible error:', errMsg);
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
     }
   }
 
-  const errMsg = attemptErrors.join('; ');
+  const errMsg = attemptErrors.slice(-12).join('; ');
   try {
     require('fs').writeFileSync(require('path').join(__dirname, '../ai_debug_last_error.txt'), errMsg);
   } catch(e) {}
