@@ -37,8 +37,8 @@ export function startCleanupCron() {
     cleanupOldFiles(workerDir, ONE_DAY_MS, 'transcript_');
     cleanupOldFiles(workerDir, ONE_DAY_MS, 'subs_');
 
-    // Clean API public renders directory
-    const rendersDir = path.join(__dirname, '../../api/public/renders');
+    // Clean Web public renders directory
+    const rendersDir = path.join(__dirname, '../../web/public/renders');
     cleanupOldFiles(rendersDir, ONE_DAY_MS * 7); // keep rendered files for 7 days
     
     console.log('[Cleanup] Cleanup complete.');

@@ -229,7 +229,10 @@ async function startConsumers() {
 
         const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id;
         const filename = `${safeTitle}.mp4`;
-        const outputPath = path.join(__dirname, `../../api/public/renders/${filename}`);
+        const outputPath = path.join(__dirname, `../../web/public/renders/${filename}`);
+        if (!fs.existsSync(path.dirname(outputPath))) {
+          fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+        }
         const tempPath = path.join(__dirname, `../temp_${clip.id}.mp4`);
         const audioTmpPath = path.join(__dirname, `../temp_audio_${clip.id}.wav`);
 
