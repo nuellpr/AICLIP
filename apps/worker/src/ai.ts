@@ -170,86 +170,100 @@ Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTi
 }
 
 async function generateWithGemini(config: any, systemMsg: string, prompt: string, clipCount: number, videoFilePath?: string): Promise<{ clips: any[]; error?: string }> {
-  try {
-    // Fallback to process.env if config key is missing
-    const apiKey = config.apiKey || process.env.GEMINI_API_KEY;
-    const ai = new GoogleGenAI({ apiKey });
+  const MAX_ATTEMPTS = 3;
+  let lastError = '';
 
-    const clipSchema = {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          title: { type: Type.STRING },
-          hook: { type: Type.STRING },
-          startTime: { type: Type.NUMBER },
-          endTime: { type: Type.NUMBER },
-          viralScore: { type: Type.NUMBER },
-          reason: { type: Type.STRING },
-          caption: { type: Type.STRING },
-          layoutMode: { type: Type.STRING, description: "Pilihan: crop_blur, split, gameplay, face, fit_blur" }
-        },
-        required: ["title", "hook", "startTime", "endTime", "viralScore", "reason", "caption", "layoutMode"]
-      }
-    };
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      // Fallback to process.env if config key is missing
+      const apiKey = config.apiKey || process.env.GEMINI_API_KEY;
+      const ai = new GoogleGenAI({ apiKey });
 
-    let contents: any[] = [systemMsg + '\n\n' + prompt];
-    let uploadedFile: any = null;
-
-    if (videoFilePath && fs.existsSync(videoFilePath)) {
-      console.log('Uploading video to Gemini File API for multimodal analysis...');
-      try {
-        uploadedFile = await ai.files.upload({ file: videoFilePath, mimeType: 'video/mp4' });
-        console.log(`Video uploaded as ${uploadedFile.name}. Polling for ACTIVE state...`);
-        
-        let fileInfo = await ai.files.get({ name: uploadedFile.name });
-        let attempts = 0;
-        while (fileInfo.state === 'PROCESSING' && attempts < 30) {
-          await new Promise(r => setTimeout(r, 5000));
-          fileInfo = await ai.files.get({ name: uploadedFile.name });
-          attempts++;
+      const clipSchema = {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            hook: { type: Type.STRING },
+            startTime: { type: Type.NUMBER },
+            endTime: { type: Type.NUMBER },
+            viralScore: { type: Type.NUMBER },
+            reason: { type: Type.STRING },
+            caption: { type: Type.STRING },
+            layoutMode: { type: Type.STRING, description: "Pilihan: crop_blur, split, gameplay, face, fit_blur" }
+          },
+          required: ["title", "hook", "startTime", "endTime", "viralScore", "reason", "caption", "layoutMode"]
         }
-        
-        if (fileInfo.state === 'ACTIVE') {
-          console.log('Video is ACTIVE. Proceeding with multimodal generation.');
-          contents = [uploadedFile, systemMsg + '\n\n' + prompt];
-        } else {
-          console.warn(`Video state is ${fileInfo.state}, proceeding without video context.`);
-        }
-      } catch (err: any) {
-        console.warn('Failed to upload/process video in Gemini API:', err.message);
-      }
-    }
+      };
 
-    const response = await ai.models.generateContent({
-      model: config.model || 'gemini-1.5-flash',
-      contents: contents,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: clipSchema,
+      let contents: any[] = [systemMsg + '\n\n' + prompt];
+      let uploadedFile: any = null;
+
+      if (videoFilePath && fs.existsSync(videoFilePath)) {
+        console.log('Uploading video to Gemini File API for multimodal analysis...');
+        try {
+          uploadedFile = await ai.files.upload({ file: videoFilePath, config: { mimeType: 'video/mp4' } });
+          console.log(`Video uploaded as ${uploadedFile.name}. Polling for ACTIVE state...`);
+          
+          let fileInfo = await ai.files.get({ name: uploadedFile.name });
+          let pollAttempts = 0;
+          while (fileInfo.state === 'PROCESSING' && pollAttempts < 30) {
+            await new Promise(r => setTimeout(r, 5000));
+            fileInfo = await ai.files.get({ name: uploadedFile.name });
+            pollAttempts++;
+          }
+          
+          if (fileInfo.state === 'ACTIVE') {
+            console.log('Video is ACTIVE. Proceeding with multimodal generation.');
+            contents = [uploadedFile, systemMsg + '\n\n' + prompt];
+          } else {
+            console.warn(`Video state is ${fileInfo.state}, proceeding without video context.`);
+          }
+        } catch (err: any) {
+          console.warn('Failed to upload/process video in Gemini API:', err.message);
+        }
       }
-    });
-    
-    // Cleanup video from Gemini if uploaded
-    if (uploadedFile) {
-      try {
-        await ai.files.delete({ name: uploadedFile.name });
-        console.log(`Cleaned up temporary video file ${uploadedFile.name} from Gemini API.`);
-      } catch (e: any) {
-        console.warn(`Failed to clean up file ${uploadedFile.name}:`, e.message);
+
+      console.log(`Sending request to Gemini API (Attempt ${attempt}/${MAX_ATTEMPTS})...`);
+      const response = await ai.models.generateContent({
+        model: config.model || 'gemini-1.5-flash',
+        contents: contents,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: clipSchema,
+        }
+      });
+      
+      // Cleanup video from Gemini if uploaded
+      if (uploadedFile) {
+        try {
+          await ai.files.delete({ name: uploadedFile.name });
+          console.log(`Cleaned up temporary video file ${uploadedFile.name} from Gemini API.`);
+        } catch (e: any) {
+          console.warn(`Failed to clean up file ${uploadedFile.name}:`, e.message);
+        }
+      }
+      
+      const text = response.text || '[]';
+      let parsed = JSON.parse(text);
+      
+      if (Array.isArray(parsed)) {
+        return { clips: parsed.slice(0, clipCount) };
+      }
+      return { clips: [] };
+    } catch (error: any) {
+      const errMsg = error?.message || String(error);
+      lastError = errMsg;
+      console.warn(`Gemini API Error (Attempt ${attempt}/${MAX_ATTEMPTS}):`, errMsg);
+      
+      if (attempt < MAX_ATTEMPTS) {
+        // If it's a rate limit error (429 or quota exceeded), wait 40 seconds. Otherwise wait 5 seconds.
+        const waitTime = (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('Quota exceeded')) ? 40000 : 5000;
+        console.log(`Waiting ${waitTime / 1000} seconds before retrying...`);
+        await new Promise(r => setTimeout(r, waitTime));
       }
     }
-    
-    const text = response.text || '[]';
-    let parsed = JSON.parse(text);
-    
-    if (Array.isArray(parsed)) {
-      return { clips: parsed.slice(0, clipCount) };
-    }
-    return { clips: [] };
-  } catch (error: any) {
-    const errMsg = error?.message || String(error);
-    console.error('Gemini error:', errMsg);
-    return { clips: [], error: errMsg };
   }
+  return { clips: [], error: lastError };
 }

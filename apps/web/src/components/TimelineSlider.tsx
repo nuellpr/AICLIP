@@ -84,14 +84,14 @@ export function TimelineSlider({ min, max, startTime, endTime, onChange }: Timel
         className="relative h-12 bg-[#222] rounded-lg border border-white/10 cursor-pointer overflow-hidden"
       >
         {/* Background markers (optional visual enhancement) */}
-        <div className="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGxpbmUgeDE9IjAiIHkxPSIwIiB4Mj0iMCIgeTI9IjIwIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMSIvPjwvc3ZnPg==')] pointer-events-none" />
+        <div></div>
 
         {/* Selected Range */}
         <div 
           className="absolute h-full bg-primary/30 border-y-2 border-primary hover:bg-primary/40 transition-colors"
           style={{ 
-            left: \`\${startPercent}%\`, 
-            width: \`\${endPercent - startPercent}%\`,
+            left: `${startPercent}%`, 
+            width: `${endPercent - startPercent}%`,
             cursor: isDragging === 'range' ? 'grabbing' : 'grab'
           }}
           onPointerDown={(e) => handlePointerDown(e, 'range')}
@@ -105,19 +105,19 @@ export function TimelineSlider({ min, max, startTime, endTime, onChange }: Timel
         {/* Left Thumb (Start) */}
         <div 
           className="absolute top-0 bottom-0 w-4 -ml-2 bg-white rounded-sm shadow-md flex items-center justify-center cursor-ew-resize hover:bg-primary/80 z-10 transition-colors"
-          style={{ left: \`\${startPercent}%\` }}
+          style={{ left: `${startPercent}%` }}
           onPointerDown={(e) => handlePointerDown(e, 'start')}
         >
-          <div className="w-0.5 h-4 bg-black/30 rounded-full" />
+          <div className="w-0.5 h-4 bg-black/30 rounded-full"></div>
         </div>
 
         {/* Right Thumb (End) */}
         <div 
           className="absolute top-0 bottom-0 w-4 -ml-2 bg-white rounded-sm shadow-md flex items-center justify-center cursor-ew-resize hover:bg-primary/80 z-10 transition-colors"
-          style={{ left: \`\${endPercent}%\` }}
+          style={{ left: `${endPercent}%` }}
           onPointerDown={(e) => handlePointerDown(e, 'end')}
         >
-          <div className="w-0.5 h-4 bg-black/30 rounded-full" />
+          <div></div>
         </div>
       </div>
       

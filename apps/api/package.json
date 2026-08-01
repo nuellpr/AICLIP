@@ -16,8 +16,11 @@
     "@fastify/static": "^6.12.0",
     "@google/genai": "^2.12.0",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^6.0.2",
     "fastify": "^4.26.2",
+    "ioredis": "^5.11.1",
     "openai": "^6.48.0",
+    "youtube-dl-exec": "^3.1.9",
     "zod": "^3.23.6"
   },
   "devDependencies": {

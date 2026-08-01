@@ -1,5 +1,14 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '@clipforge/database';
+import { Queue } from 'bullmq';
+import youtubedl from 'youtube-dl-exec';
+import Redis from 'ioredis';
+
+const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
+
+const projectQueue = new Queue('projectQueue', { connection });
+const renderQueue = new Queue('renderQueue', { connection });
 
 export default async function routes(server: FastifyInstance) {
   server.get('/projects', async (request, reply) => {
@@ -17,6 +26,37 @@ export default async function routes(server: FastifyInstance) {
   server.post('/projects', async (request, reply) => {
     const { title, sourceUrl, sourceType, layoutMode, clipCount, targetDuration, searchQuery } = request.body as any;
     
+    // Pre-Flight Check for YouTube URLs
+    if (sourceUrl && (sourceUrl.includes('youtube.com') || sourceUrl.includes('youtu.be'))) {
+      try {
+        console.log(`[Pre-Flight] Validating URL: ${sourceUrl}`);
+        const metadata: any = await youtubedl(sourceUrl, {
+          dumpJson: true,
+          noCheckCertificates: true,
+          noWarnings: true,
+          extractorArgs: 'youtube:player_client=android,web'
+        } as any);
+        
+        if (metadata.duration < 60) {
+          return reply.code(400).send({ error: 'Video terlalu pendek (minimal 60 detik).' });
+        }
+        
+        if (metadata.age_limit && metadata.age_limit > 0) {
+          return reply.code(400).send({ error: 'Video ini dibatasi usia (Age Restricted) dan tidak dapat diakses.' });
+        }
+        
+        const hasAutoSubs = metadata.automatic_captions && Object.keys(metadata.automatic_captions).length > 0;
+        const hasSubs = metadata.subtitles && Object.keys(metadata.subtitles).length > 0;
+        
+        if (!hasAutoSubs && !hasSubs) {
+          return reply.code(400).send({ error: 'Video ini tidak memiliki Auto-Subtitle dari YouTube. AI butuh teks untuk menganalisis momen.' });
+        }
+      } catch (err: any) {
+        console.error('[Pre-Flight] Error:', err.message);
+        return reply.code(400).send({ error: 'Video tidak ditemukan, atau bersifat Private.' });
+      }
+    }
+
     // MVP hardcoded user
     const user = await prisma.user.upsert({
       where: { email: 'demo@clipforge.ai' },
@@ -41,7 +81,8 @@ export default async function routes(server: FastifyInstance) {
       }
     });
 
-    // We no longer push to BullMQ. The worker will poll for QUEUED projects.
+    // Add job to BullMQ queue
+    await projectQueue.add('processProject', { projectId: project.id });
 
     return { projectId: project.id };
   });
@@ -58,6 +99,32 @@ export default async function routes(server: FastifyInstance) {
     }
 
     return project;
+  });
+
+  server.get('/projects/:id/stream', async (request, reply) => {
+    const { id } = request.params as any;
+    
+    reply.raw.setHeader('Content-Type', 'text/event-stream');
+    reply.raw.setHeader('Cache-Control', 'no-cache');
+    reply.raw.setHeader('Connection', 'keep-alive');
+
+    const interval = setInterval(async () => {
+      const project = await prisma.project.findUnique({
+        where: { id },
+        select: { status: true, progress: true, currentStage: true, errorMessage: true, clips: true }
+      });
+      if (project) {
+        reply.raw.write(`data: ${JSON.stringify(project)}\n\n`);
+        if (project.status === 'READY' || project.status === 'FAILED') {
+          clearInterval(interval);
+          reply.raw.end();
+        }
+      }
+    }, 1000);
+
+    request.raw.on('close', () => {
+      clearInterval(interval);
+    });
   });
 
   server.put('/clips/:id', async (request, reply) => {
@@ -117,6 +184,8 @@ export default async function routes(server: FastifyInstance) {
       where: { id },
       data: { renderStatus: 'QUEUED' }
     });
+
+    await renderQueue.add('renderClip', { clipId: clip.id });
 
     return clip;
   });
@@ -258,7 +327,7 @@ export default async function routes(server: FastifyInstance) {
         return reply.code(500).send({ error: e.message });
       }
     } else if (provider === 'google-gemini') {
-      return { models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'] };
+      return { models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-3.1-flash', 'gemini-3.1-pro', 'gemini-3.5-flash', 'gemini-3.6-flash'] };
     }
     
     return { models: [] };

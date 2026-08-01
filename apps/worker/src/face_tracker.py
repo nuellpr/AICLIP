@@ -2,8 +2,19 @@ import cv2
 import sys
 import os
 import math
+import mediapipe as mp
 
-def track_faces(video_path, output_cmd_path, target_w=1080, target_h=1920, interval_sec=0.2):
+def smooth_array(arr, window_size):
+    if len(arr) == 0: return arr
+    smoothed = []
+    for i in range(len(arr)):
+        start = max(0, i - window_size)
+        end = min(len(arr), i + window_size + 1)
+        window = arr[start:end]
+        smoothed.append(sum(window) / len(window))
+    return smoothed
+
+def track_faces(video_path, output_cmd_path, target_w=1080, target_h=1920):
     if not os.path.exists(video_path):
         print(f"Error: File not found {video_path}")
         sys.exit(1)
@@ -16,73 +27,106 @@ def track_faces(video_path, output_cmd_path, target_w=1080, target_h=1920, inter
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
-    # Load Haar cascade
-    cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-    face_cascade = cv2.CascadeClassifier(cascade_path)
+    mp_face_detection = mp.solutions.face_detection
+    face_detection = mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5)
 
-    frame_interval = int(fps * interval_sec)
-    if frame_interval < 1:
-        frame_interval = 1
+    scale_factor = 480.0 / float(width) if width > 480 else 1.0
 
-    current_frame = 0
-    commands = []
-    
-    # Initialize last_x_center to middle
-    last_x_center = width / 2
-    
+    raw_centers = []
+
+    # Pass 1: Detect Faces with MediaPipe
     while True:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
         ret, frame = cap.read()
-        
-        if not ret:
-            break
+        if not ret: break
             
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(60, 60))
+        small = cv2.resize(frame, (0, 0), fx=scale_factor, fy=scale_factor) if scale_factor < 1.0 else frame
         
-        best_x_center = last_x_center
-        if len(faces) > 0:
-            largest_face = max(faces, key=lambda rect: rect[2] * rect[3])
-            fx, fy, fw, fh = largest_face
-            best_x_center = fx + fw / 2
-            
-            # Smooth movement
-            best_x_center = (last_x_center * 0.7) + (best_x_center * 0.3)
+        # MediaPipe requires RGB images
+        rgb_frame = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
+        results = face_detection.process(rgb_frame)
+        
+        if results.detections:
+            # Find largest face by bounding box area
+            largest_det = None
+            max_area = 0
+            for det in results.detections:
+                bbox = det.location_data.relative_bounding_box
+                area = bbox.width * bbox.height
+                if area > max_area:
+                    max_area = area
+                    largest_det = det
+                    
+            if largest_det:
+                bbox = largest_det.location_data.relative_bounding_box
+                # bbox properties are relative [0.0, 1.0]
+                center_x_relative = bbox.xmin + (bbox.width / 2)
+                # Convert back to absolute original width
+                center_x = center_x_relative * width
+                raw_centers.append(center_x)
+            else:
+                raw_centers.append(None)
         else:
-            # Drift towards center
-            best_x_center = (last_x_center * 0.9) + ((width / 2) * 0.1)
-
-        crop_x = int(best_x_center - (target_w / 2))
-        
-        # Clamp
-        if crop_x < 0:
-            crop_x = 0
-        elif crop_x > width - target_w:
-            crop_x = max(0, width - target_w)
+            raw_centers.append(None)
             
-        timestamp = current_frame / fps
-        commands.append(f"{timestamp:.2f} crop x '{crop_x}';")
-        
-        last_x_center = best_x_center
-        current_frame += frame_interval
-
     cap.release()
+    face_detection.close()
+
+    if len(raw_centers) == 0:
+        sys.exit(0)
+
+    # Pass 2: Fill gaps (interpolation)
+    filled_centers = []
+    last_valid = width / 2
     
+    for c in raw_centers:
+        if c is not None:
+            last_valid = c
+            break
+
+    for i in range(len(raw_centers)):
+        if raw_centers[i] is not None:
+            filled_centers.append(raw_centers[i])
+            last_valid = raw_centers[i]
+        else:
+            next_valid = last_valid
+            dist = 1
+            for j in range(i + 1, len(raw_centers)):
+                if raw_centers[j] is not None:
+                    next_valid = raw_centers[j]
+                    dist = j - i + 1
+                    break
+            
+            step = (next_valid - last_valid) / dist
+            new_val = filled_centers[-1] + step if len(filled_centers) > 0 else last_valid
+            filled_centers.append(new_val)
+            last_valid = new_val
+
+    # Pass 3: Heavy Smoothing (Moving Average Window)
+    smoothed_centers = smooth_array(filled_centers, window_size=int(fps / 1.5))
+
+    # Pass 4: Generate FFmpeg Commands
+    commands = []
+    for i, best_x in enumerate(smoothed_centers):
+        crop_x = int(best_x - (target_w / 2))
+        
+        if crop_x < 0: crop_x = 0
+        elif crop_x > width - target_w: crop_x = max(0, width - target_w)
+            
+        timestamp = i / fps
+        commands.append(f"{timestamp:.3f} crop x '{crop_x}';")
+        
     with open(output_cmd_path, 'w') as f:
         f.write("\n".join(commands))
         
-    print(f"Face tracking complete. Commands written to {output_cmd_path}")
+    print(f"MediaPipe Face tracking complete. Analyzed {len(raw_centers)} frames.")
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python face_tracker.py <input_video> <output_cmd_txt> [target_w] [target_h] [interval_sec]")
         sys.exit(1)
         
-    video_path = sys.argv[1]
-    output_cmd_path = sys.argv[2]
-    
-    target_w = int(sys.argv[3]) if len(sys.argv) > 3 else 1080
-    target_h = int(sys.argv[4]) if len(sys.argv) > 4 else 1920
-    interval_sec = float(sys.argv[5]) if len(sys.argv) > 5 else 0.2
-    
-    track_faces(video_path, output_cmd_path, target_w, target_h, interval_sec)
+    track_faces(
+        sys.argv[1], 
+        sys.argv[2], 
+        int(sys.argv[3]) if len(sys.argv) > 3 else 1080, 
+        int(sys.argv[4]) if len(sys.argv) > 4 else 1920
+    )
