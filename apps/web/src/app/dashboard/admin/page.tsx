@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Shield, Users, Video, DollarSign, Activity, Server, Plus, RefreshCw, AlertCircle, CheckCircle2, Clock, Flame, ChevronRight, X, Cpu } from 'lucide-react';
+import { Shield, Users, Video, DollarSign, Activity, Server, Plus, RefreshCw, AlertCircle, CheckCircle2, Clock, Flame, ChevronRight, X, Cpu, Sparkles } from 'lucide-react';
 
 interface Stats {
   totalUsers: number;
