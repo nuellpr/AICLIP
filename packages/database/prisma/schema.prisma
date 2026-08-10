@@ -17,6 +17,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   projects      Project[]
   subscriptions Subscription[]
+  transactions  Transaction[]
 }
 
 model Project {
@@ -94,3 +95,20 @@ model Subscription {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model Transaction {
+  id            String    @id @default(cuid())
+  orderId       String    @unique
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan          String    // CREATOR, PRO, TOPUP_30, TOPUP_100
+  amount        Int       // Amount in IDR
+  creditsAdded  Int       // Minutes to add
+  status        String    @default("PENDING") // PENDING, SETTLEMENT, EXPIRED, FAILED, CANCELLED
+  paymentType   String?   // qris, gopay, bank_transfer, etc.
+  snapToken     String?
+  snapUrl       String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
