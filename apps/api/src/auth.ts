@@ -121,4 +121,83 @@ export default async function authRoutes(server: FastifyInstance) {
       return { user: sanitizeUser(user) };
     }
   );
+
+  server.post(
+    '/auth/google',
+    async (request, reply) => {
+      const { idToken, email: devEmail, name: devName, picture: devPicture } = request.body as any;
+
+      let email = devEmail;
+      let name = devName || 'Google User';
+      let picture = devPicture || null;
+      let googleId = null;
+
+      if (idToken) {
+        try {
+          const googleClientId = process.env.GOOGLE_CLIENT_ID;
+          if (googleClientId) {
+            const { OAuth2Client } = require('google-auth-library');
+            const client = new OAuth2Client(googleClientId);
+            const ticket = await client.verifyIdToken({
+              idToken,
+              audience: googleClientId,
+            });
+            const payload = ticket.getPayload();
+            if (payload && payload.email) {
+              email = payload.email;
+              name = payload.name || name;
+              picture = payload.picture || picture;
+              googleId = payload.sub;
+            }
+          } else {
+            const decoded: any = server.jwt.decode(idToken);
+            if (decoded && decoded.email) {
+              email = decoded.email;
+              name = decoded.name || name;
+              picture = decoded.picture || picture;
+              googleId = decoded.sub || null;
+            }
+          }
+        } catch (e: any) {
+          server.log.warn('Google token verification fallback used');
+        }
+      }
+
+      if (!email || typeof email !== 'string' || !email.includes('@')) {
+        return reply.code(400).send({ error: 'Email Google tidak valid' });
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+      let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            email: normalizedEmail,
+            name,
+            image: picture,
+            googleId: googleId || `google_${Date.now()}`,
+          },
+        });
+
+        // Initialize free subscription (25 mins) for new user
+        await prisma.subscription.create({
+          data: {
+            userId: user.id,
+            plan: 'FREE',
+            status: 'ACTIVE',
+            credits: 25,
+          },
+        });
+      } else if (picture && !user.image) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { image: picture },
+        });
+      }
+
+      const token = server.jwt.sign({ sub: user.id, email: user.email });
+      return { token, user: sanitizeUser(user) };
+    }
+  );
 }

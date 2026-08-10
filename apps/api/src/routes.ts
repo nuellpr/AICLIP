@@ -12,7 +12,17 @@ const renderQueue = new Queue('renderQueue', { connection });
 
 export default async function routes(server: FastifyInstance) {
   server.get('/projects', async (request, reply) => {
+    const query = request.query as { userId?: string };
+    let userId = query?.userId;
+    if (!userId) {
+      const demoUser = await prisma.user.findFirst();
+      userId = demoUser?.id;
+    }
+
+    const whereCondition = userId ? { userId } : {};
+
     const projects = await prisma.project.findMany({
+      where: whereCondition,
       orderBy: { createdAt: 'desc' },
       include: {
         _count: {
@@ -57,19 +67,24 @@ export default async function routes(server: FastifyInstance) {
       }
     }
 
-    // MVP hardcoded user
-    const user = await prisma.user.upsert({
-      where: { email: 'demo@clipforge.ai' },
-      update: {},
-      create: {
-        email: 'demo@clipforge.ai',
-        name: 'Demo User',
-      }
-    });
+    const body = request.body as any;
+    let targetUserId = body.userId;
+
+    if (!targetUserId) {
+      const user = await prisma.user.upsert({
+        where: { email: 'demo@clipforge.ai' },
+        update: {},
+        create: {
+          email: 'demo@clipforge.ai',
+          name: 'Demo User',
+        }
+      });
+      targetUserId = user.id;
+    }
 
     const project = await prisma.project.create({
       data: {
-        userId: user.id,
+        userId: targetUserId,
         title: title || 'New Video Project',
         sourceType: sourceType || 'URL',
         sourceUrl: sourceUrl,
