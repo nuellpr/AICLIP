@@ -7,6 +7,7 @@ import rateLimit from '@fastify/rate-limit';
 import jwt from '@fastify/jwt';
 import routes from './routes';
 import authRoutes from './auth';
+import paymentRoutes from './paymentRoutes';
 
 export function buildServer(opts: { rateLimitMax?: number } = {}): FastifyInstance {
   const server = Fastify({
@@ -39,6 +40,7 @@ export function buildServer(opts: { rateLimitMax?: number } = {}): FastifyInstan
 
   server.register(routes, { prefix: '/api' });
   server.register(authRoutes, { prefix: '/api' });
+  server.register(paymentRoutes, { prefix: '/api/payment' });
 
   server.get('/health', async (request, reply) => {
     return { status: 'ok', service: 'api' };
