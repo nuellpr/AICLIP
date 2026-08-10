@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { LayoutDashboard, PlusCircle, Settings, LogOut, Video, FolderKanban, Sparkles, CreditCard } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Settings, LogOut, Video, FolderKanban, Sparkles, CreditCard, Shield } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -62,6 +62,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Link href="/dashboard/billing" className="flex items-center gap-3.5 rounded-2xl px-4 py-3.5 text-gray-300 hover:bg-white/10 hover:text-white transition-all hover:translate-x-1 group font-semibold text-sm">
               <CreditCard className="h-5 w-5 group-hover:text-yellow-400 transition-colors" />
               <span>Langganan & Tagihan</span>
+            </Link>
+
+            <Link href="/dashboard/admin" className="flex items-center gap-3.5 rounded-2xl px-4 py-3.5 text-gray-300 hover:bg-white/10 hover:text-white transition-all hover:translate-x-1 group font-semibold text-sm">
+              <Shield className="h-5 w-5 group-hover:text-cyan-400 transition-colors" />
+              <span>Console Admin</span>
             </Link>
           </nav>
 
