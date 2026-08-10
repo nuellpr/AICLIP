@@ -14,6 +14,7 @@ import { generateAssFromVtt } from './subtitle';
 import { parseYouTubeVttWords } from '@clipforge/shared';
 import { Worker } from 'bullmq';
 import { startCleanupCron } from './cleanup';
+import { uploadRenderedVideo } from './storage';
 import Redis from 'ioredis';
 
 const execAsync = promisify(exec);
@@ -520,15 +521,17 @@ async function startConsumers() {
           if (fs.existsSync(assPath)) fs.unlinkSync(assPath);
           if (faceCmdPath && fs.existsSync(faceCmdPath)) fs.unlinkSync(faceCmdPath);
 
+          const finalFileKey = await uploadRenderedVideo(outputPath, filename);
+
           await prisma.clip.update({
             where: { id: clip.id },
             data: { 
               renderStatus: 'READY',
-              renderedFileKey: `/renders/${filename}`,
+              renderedFileKey: finalFileKey,
               lockedAt: null
             }
           });
-          console.log(`Finished rendering clip ${clip.id}`);
+          console.log(`Finished rendering clip ${clip.id} -> ${finalFileKey}`);
         } catch (err: any) {
           console.error(`Failed to render clip ${clip.id}`, err);
           await prisma.clip.update({
