@@ -1,7 +1,45 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, PlusCircle, Settings, LogOut, Video, FolderKanban, Sparkles, CreditCard, Shield } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { LayoutDashboard, PlusCircle, Settings, LogOut, FolderKanban, Sparkles, CreditCard, Shield } from 'lucide-react';
+import { getStoredUser, clearAuthSession, AuthUser } from '@/lib/auth';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [credits, setCredits] = useState<number>(25);
+
+  useEffect(() => {
+    const currentUser = getStoredUser();
+    if (currentUser) {
+      setUser(currentUser);
+      fetchUserCredits(currentUser.id);
+    }
+  }, []);
+
+  const fetchUserCredits = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/payment/subscription?userId=${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.subscription) {
+          setCredits(data.subscription.credits);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch user credits:', e);
+    }
+  };
+
+  const handleLogout = () => {
+    clearAuthSession();
+    router.push('/login');
+  };
+
+  const userInitial = user?.name ? user.name.substring(0, 2).toUpperCase() : 'DU';
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen text-white selection:bg-cyan-500 selection:text-black relative bg-[#07070b]">
       {/* Background Mesh Animation */}
@@ -15,7 +53,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full border border-cyan-500/30">
-            25m Kredit
+            {credits}m Kredit
           </span>
           <Link href="/dashboard/new" className="bg-gradient-to-r from-cyan-400 to-purple-500 p-2 rounded-xl text-black font-bold">
             <Sparkles className="h-4 w-4" />
@@ -76,7 +114,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/20 rounded-full blur-2xl -mr-10 -mt-10"></div>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 relative z-10">Kredit AI Tersisa</p>
               <div className="flex items-baseline justify-between relative z-10">
-                <p className="text-3xl font-black text-white">25 <span className="text-xs font-semibold text-cyan-400">menit</span></p>
+                <p className="text-3xl font-black text-white">{credits} <span className="text-xs font-semibold text-cyan-400">menit</span></p>
                 <span className="text-[10px] font-bold bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30">AKTIF</span>
               </div>
               <div className="w-full bg-white/10 h-1.5 rounded-full mt-3 overflow-hidden">
@@ -86,16 +124,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Quick User Badge */}
             <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-purple-500 flex items-center justify-center font-bold text-xs text-black">
-                  DU
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-white">Demo User</p>
-                  <p className="text-[10px] text-gray-400">demo@clipforge.ai</p>
+              <div className="flex items-center gap-3 overflow-hidden">
+                {user?.image ? (
+                  <img src={user.image} alt={user.name || 'User'} className="h-9 w-9 rounded-xl object-cover border border-cyan-400/30" />
+                ) : (
+                  <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-purple-500 flex items-center justify-center font-bold text-xs text-black flex-shrink-0">
+                    {userInitial}
+                  </div>
+                )}
+                <div className="overflow-hidden">
+                  <p className="text-xs font-bold text-white truncate">{user?.name || 'Demo User'}</p>
+                  <p className="text-[10px] text-gray-400 truncate">{user?.email || 'demo@clipforge.ai'}</p>
                 </div>
               </div>
-              <button className="text-gray-400 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-white/10" title="Keluar">
+              <button
+                onClick={handleLogout}
+                className="text-gray-400 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-white/10 flex-shrink-0"
+                title="Keluar"
+              >
                 <LogOut className="h-4 w-4" />
               </button>
             </div>
