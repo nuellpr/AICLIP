@@ -16,6 +16,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (currentUser) {
       setUser(currentUser);
       fetchUserCredits(currentUser.id);
+
+      // Refresh user session from backend to get latest role
+      fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentUser.email }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.user) {
+            setUser(data.user);
+            setAuthSession(data.token, data.user);
+          }
+        })
+        .catch(() => {});
     }
   }, []);
 
