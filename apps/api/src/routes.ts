@@ -35,29 +35,6 @@ export default async function routes(server: FastifyInstance) {
 
   server.post('/projects', async (request, reply) => {
     const { title, sourceUrl, sourceType, layoutMode, clipCount, targetDuration, searchQuery, aiProvider, aiModel } = request.body as any;
-    
-    // Pre-Flight Check for YouTube URLs
-    if (sourceUrl && (sourceUrl.includes('youtube.com') || sourceUrl.includes('youtu.be'))) {
-      try {
-        console.log(`[Pre-Flight] Validating URL: ${sourceUrl}`);
-        const metadata: any = await youtubedl(sourceUrl, {
-          dumpJson: true,
-          noCheckCertificates: true,
-          noWarnings: true,
-          extractorArgs: 'youtube:player_client=android,web'
-        } as any);
-        
-        if (metadata && metadata.duration && metadata.duration < 60) {
-          return reply.code(400).send({ error: 'Video terlalu pendek (minimal 60 detik).' });
-        }
-        
-        if (metadata && metadata.age_limit && metadata.age_limit > 0) {
-          return reply.code(400).send({ error: 'Video ini dibatasi usia (Age Restricted) dan tidak dapat diakses.' });
-        }
-      } catch (err: any) {
-        console.warn('[Pre-Flight] Warning, pre-flight check skipped, proceeding to worker queue:', err.message);
-      }
-    }
 
     const body = request.body as any;
     let targetUserId = body.userId;
