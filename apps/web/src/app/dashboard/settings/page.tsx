@@ -3,9 +3,11 @@
 import { Save, User, Key, Settings as SettingsIcon, CheckCircle2, Loader2, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getApiUrl } from "@/lib/api";
+import { getStoredUser, AuthUser } from "@/lib/auth";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'ai' | 'billing'>('profile');
+  const [user, setUser] = useState<AuthUser | null>(null);
   
   const [provider, setProvider] = useState("google-gemini");
   const [baseUrl, setBaseUrl] = useState("");
@@ -30,6 +32,8 @@ export default function SettingsPage() {
         if (data.systemMessage) setSystemMessage(data.systemMessage);
       })
       .catch(console.error);
+    
+    setUser(getStoredUser());
   }, []);
 
   const handleProviderChange = (e: any) => {
@@ -122,11 +126,11 @@ export default function SettingsPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">Nama Lengkap</label>
-                    <input type="text" defaultValue="Demo User" disabled className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-gray-400 cursor-not-allowed" />
+                    <input type="text" value={user?.name || "Demo User"} disabled className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-gray-300 font-bold cursor-not-allowed" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">Alamat Email</label>
-                    <input type="email" defaultValue="demo@clipforge.ai" disabled className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-gray-400 cursor-not-allowed" />
+                    <input type="email" value={user?.email || "demo@clipforge.ai"} disabled className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-gray-300 font-bold cursor-not-allowed" />
                     <p className="text-xs text-gray-500 mt-2">Perubahan email dinonaktifkan pada versi MVP/Demo.</p>
                   </div>
                 </div>
