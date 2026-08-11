@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Shield, Users, Video, DollarSign, Activity, Server, Plus, RefreshCw, AlertCircle, CheckCircle2, Clock, Flame, ChevronRight, X, Cpu, Sparkles } from 'lucide-react';
+import { Shield, Users, Video, DollarSign, Activity, Server, Plus, RefreshCw, AlertCircle, CheckCircle2, Clock, Flame, ChevronRight, X, Cpu, Sparkles, Lock } from 'lucide-react';
+import { getStoredUser, AuthUser } from '@/lib/auth';
 
 interface Stats {
   totalUsers: number;
@@ -37,6 +38,7 @@ interface UserItem {
 }
 
 export default function AdminDashboardPage() {
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [queueData, setQueueData] = useState<QueueData | null>(null);
   const [users, setUsers] = useState<UserItem[]>([]);
@@ -51,6 +53,12 @@ export default function AdminDashboardPage() {
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   useEffect(() => {
+    const user = getStoredUser();
+    setCurrentUser(user);
+    if (user && user.role !== 'ADMIN') {
+      setLoading(false);
+      return;
+    }
     fetchAdminData();
   }, []);
 
@@ -136,6 +144,23 @@ export default function AdminDashboardPage() {
   };
 
   const maxDailyCount = stats?.dailyStats ? Math.max(...stats.dailyStats.map((d) => d.count), 1) : 1;
+
+  if (currentUser && currentUser.role !== 'ADMIN') {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-6 space-y-4">
+        <div className="h-16 w-16 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-2">
+          <Lock className="h-8 w-8 text-red-400" />
+        </div>
+        <h2 className="text-2xl font-black text-white">Akses Ditolak (Hanya Khusus Admin)</h2>
+        <p className="text-sm text-gray-400 max-w-md">
+          Halaman Console Admin hanya dapat diakses oleh Administrator sistem. Akun Anda (<span className="text-cyan-400 font-bold">{currentUser.email}</span>) terdaftar sebagai Pengguna Biasa.
+        </p>
+        <a href="/dashboard" className="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 text-black font-extrabold px-6 py-3 rounded-2xl text-xs transition-transform hover:scale-105">
+          Kembali ke Dashboard Proyek
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
