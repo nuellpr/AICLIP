@@ -284,8 +284,8 @@ export default function ProjectPage() {
                       
                       {isReady ? (
                         <a 
-                          href={clip.renderedFileKey} 
-                          download
+                          href={clip.renderedFileKey?.startsWith('http') ? clip.renderedFileKey : clip.renderedFileKey} 
+                          download={`${(clip.title || 'clip').replace(/[^a-zA-Z0-9_-]/g, '_')}.mp4`}
                           target="_blank"
                           rel="noreferrer"
                           className="flex-1 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 text-black rounded-lg py-2 text-sm font-medium transition-colors"
