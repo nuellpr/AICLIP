@@ -28,50 +28,56 @@ export default function ProjectPage() {
     setMounted(true);
     if (!id) return;
 
-    let eventSource: EventSource | null = null;
+    // Fetch initial project data
+    const fetchProgress = async () => {
+      try {
+        const res = await fetch(getApiUrl(`/api/projects/${id}/progress`));
+        if (res.ok) {
+          const data = await res.json();
+          setProject(data);
 
-    const connectSSE = () => {
+          if (data.status === 'READY' || data.status === 'FAILED') {
+            return true;
+          }
+        }
+      } catch (e: any) {
+        console.error('Failed to fetch project progress:', e);
+      }
+      return false;
+    };
+
+    fetchProgress();
+
+    // Continuous 3-second live polling
+    const pollInterval = setInterval(async () => {
+      const isDone = await fetchProgress();
+      if (isDone) {
+        clearInterval(pollInterval);
+      }
+    }, 3000);
+
+    let eventSource: EventSource | null = null;
+    try {
       const url = getApiUrl(`/api/projects/${id}/stream`);
-      console.log('[DEBUG] Connecting to SSE:', url);
-      
       eventSource = new EventSource(url);
-      
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           setProject(data);
-          
-          const hasActiveClips = data.clips?.some((c: any) => c.renderStatus === 'QUEUED' || c.renderStatus === 'RENDERING');
-          const isProjectDone = data.status === 'READY' || data.status === 'FAILED' || data.status === 'CANCELLED';
-          
-          if (isProjectDone && !hasActiveClips) {
-            console.log('[DEBUG] Project complete, closing SSE connection');
+          if (data.status === 'READY' || data.status === 'FAILED') {
+            clearInterval(pollInterval);
             eventSource?.close();
           }
-        } catch (err) {
-          console.error('[DEBUG] Failed to parse SSE data', err);
-        }
+        } catch (e) {}
       };
-
-      eventSource.onerror = (err) => {
-        console.error('[DEBUG] SSE error:', err);
+      eventSource.onerror = () => {
         eventSource?.close();
-        // Fallback to basic fetch if SSE fails
-        setTimeout(() => {
-          fetch(getApiUrl(`/api/projects/${id}/progress`))
-            .then(res => res.json())
-            .then(data => setProject(data))
-            .catch(e => setError(e.message));
-        }, 5000);
       };
-    };
-
-    connectSSE();
+    } catch (e) {}
 
     return () => {
-      if (eventSource) {
-        eventSource.close();
-      }
+      clearInterval(pollInterval);
+      if (eventSource) eventSource.close();
     };
   }, [id, pollTrigger]);
 
