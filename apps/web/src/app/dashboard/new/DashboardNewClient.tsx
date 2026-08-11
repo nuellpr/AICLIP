@@ -29,6 +29,7 @@ export default function NewProjectPage() {
     setError("");
 
     try {
+      const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('clipforge_user') || '{}') : null;
       const res = await fetch(getApiUrl("/api/projects"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -41,16 +42,19 @@ export default function NewProjectPage() {
           targetDuration: targetDuration,
           searchQuery: searchQuery,
           aiProvider: selectedAiModel ? selectedAiModel.split(':')[0] : null,
-          aiModel: selectedAiModel ? selectedAiModel.split(':')[1] : null
+          aiModel: selectedAiModel ? selectedAiModel.split(':')[1] : null,
+          userId: currentUser?.id,
         })
       });
 
-      if (!res.ok) throw new Error("Gagal membuat proyek");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal membuat proyek");
+      }
 
-      const data = await res.json();
-      router.push(`/dashboard/project/${data.projectId}`);
+      router.push(`/dashboard/project/${data.projectId || data.id}`);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Gagal membuat proyek");
       setLoading(false);
     }
   };

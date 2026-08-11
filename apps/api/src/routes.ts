@@ -47,23 +47,15 @@ export default async function routes(server: FastifyInstance) {
           extractorArgs: 'youtube:player_client=android,web'
         } as any);
         
-        if (metadata.duration < 60) {
+        if (metadata && metadata.duration && metadata.duration < 60) {
           return reply.code(400).send({ error: 'Video terlalu pendek (minimal 60 detik).' });
         }
         
-        if (metadata.age_limit && metadata.age_limit > 0) {
+        if (metadata && metadata.age_limit && metadata.age_limit > 0) {
           return reply.code(400).send({ error: 'Video ini dibatasi usia (Age Restricted) dan tidak dapat diakses.' });
         }
-        
-        const hasAutoSubs = metadata.automatic_captions && Object.keys(metadata.automatic_captions).length > 0;
-        const hasSubs = metadata.subtitles && Object.keys(metadata.subtitles).length > 0;
-        
-        if (!hasAutoSubs && !hasSubs) {
-          return reply.code(400).send({ error: 'Video ini tidak memiliki Auto-Subtitle dari YouTube. AI butuh teks untuk menganalisis momen.' });
-        }
       } catch (err: any) {
-        console.error('[Pre-Flight] Error:', err.message);
-        return reply.code(400).send({ error: 'Video tidak ditemukan, atau bersifat Private.' });
+        console.warn('[Pre-Flight] Warning, pre-flight check skipped, proceeding to worker queue:', err.message);
       }
     }
 
