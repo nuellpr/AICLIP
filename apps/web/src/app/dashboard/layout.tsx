@@ -102,10 +102,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span>Langganan & Tagihan</span>
             </Link>
 
-            <Link href="/dashboard/admin" className="flex items-center gap-3.5 rounded-2xl px-4 py-3.5 text-gray-300 hover:bg-white/10 hover:text-white transition-all hover:translate-x-1 group font-semibold text-sm">
-              <Shield className="h-5 w-5 group-hover:text-cyan-400 transition-colors" />
-              <span>Console Admin</span>
-            </Link>
+            {user?.role === 'ADMIN' && (
+              <Link href="/dashboard/admin" className="flex items-center gap-3.5 rounded-2xl px-4 py-3.5 text-gray-300 hover:bg-white/10 hover:text-white transition-all hover:translate-x-1 group font-semibold text-sm">
+                <Shield className="h-5 w-5 group-hover:text-cyan-400 transition-colors" />
+                <span>Console Admin</span>
+              </Link>
+            )}
           </nav>
 
           {/* Credit Widget & User Profile Footer */}
