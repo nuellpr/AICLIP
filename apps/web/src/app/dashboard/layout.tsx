@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LayoutDashboard, PlusCircle, Settings, LogOut, FolderKanban, Sparkles, CreditCard, Shield } from 'lucide-react';
-import { getStoredUser, clearAuthSession, AuthUser } from '@/lib/auth';
+import { getStoredUser, setAuthSession, clearAuthSession, AuthUser } from '@/lib/auth';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
