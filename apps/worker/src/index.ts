@@ -20,6 +20,12 @@ import Redis from 'ioredis';
 const execAsync = promisify(exec);
 
 const getFfmpegPath = () => {
+  if (fs.existsSync('/usr/bin/ffmpeg')) {
+    return '/usr/bin/ffmpeg';
+  }
+  if (fs.existsSync('/usr/local/bin/ffmpeg')) {
+    return '/usr/local/bin/ffmpeg';
+  }
   if (ffmpegStatic && fs.existsSync(ffmpegStatic as string)) {
     return ffmpegStatic as string;
   }
@@ -248,13 +254,24 @@ async function startConsumers() {
             output: tempPath,
             format: 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4][height<=1080]/best',
             ffmpegLocation: getFfmpegPath(),
-            forceKeyframesAtCuts: true,
             jsRuntimes: 'node',
             noCheckCertificates: true,
             extractorArgs: 'youtube:player_client=android,web',
             noWarnings: true
           };
-          await youtubedl(clip.project.sourceUrl, options);
+
+          try {
+            await youtubedl(clip.project.sourceUrl, options);
+          } catch (dlErr: any) {
+            console.warn('yt-dlp section download failed, checking local file fallback:', dlErr.message);
+            const sourceVideoPath = path.join(__dirname, `../temp_${clip.projectId}.mp4`);
+            if (fs.existsSync(sourceVideoPath)) {
+              console.log('Slicing segment from local source video using native FFmpeg...');
+              await execAsync(`"${getFfmpegPath()}" -y -ss ${clipStartSec} -i "${sourceVideoPath}" -t ${clipEndSec - clipStartSec} -c copy "${tempPath}"`);
+            } else {
+              throw dlErr;
+            }
+          }
 
           // Find VTT file first
           const files = fs.readdirSync(path.join(__dirname, '..'));
