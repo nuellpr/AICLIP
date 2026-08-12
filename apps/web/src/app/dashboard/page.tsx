@@ -1,24 +1,50 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Clock, Search, Filter, Video, Sparkles, Film, PlayCircle, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
+import { Plus, Clock, Search, Filter, Video, Sparkles, Film, PlayCircle, CheckCircle2, AlertCircle, ExternalLink, Loader2 } from 'lucide-react';
 import { MotionDiv } from '@/components/Motion';
+import { getStoredUser } from '@/lib/auth';
+import { getApiUrl } from '@/lib/api';
 
-async function getProjects() {
-  try {
-    const res = await fetch('http://127.0.0.1:3001/api/projects', { 
-      cache: 'no-store' 
-    });
-    if (!res.ok) return [];
-    return await res.json();
-  } catch (err) {
-    console.error(err);
-    return [];
-  }
-}
+export default function DashboardPage() {
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
-export default async function DashboardPage() {
-  const projects = await getProjects();
+  useEffect(() => {
+    const user = getStoredUser();
+    if (!user || !user.id) {
+      setProjects([]);
+      setLoading(false);
+      return;
+    }
+
+    fetch(getApiUrl(`/api/projects?userId=${user.id}`))
+      .then(res => res.ok ? res.json() : [])
+      .then(data => {
+        if (Array.isArray(data)) setProjects(data);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
   const totalClips = projects.reduce((sum: number, p: any) => sum + (p._count?.clips || 0), 0);
   const readyProjects = projects.filter((p: any) => p.status === 'READY').length;
+
+  const filteredProjects = projects.filter((p: any) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (p.title && p.title.toLowerCase().includes(term)) || (p.sourceUrl && p.sourceUrl.toLowerCase().includes(term));
+  });
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10 relative z-10">
@@ -99,18 +125,16 @@ export default async function DashboardPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-cyan-400 transition-colors" />
           <input 
             type="text" 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Cari nama proyek atau video..." 
             className="w-full rounded-2xl border border-white/10 bg-white/5 pl-12 pr-4 py-3.5 text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition-all text-sm"
           />
         </div>
-        <button className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-3.5 text-gray-300 hover:bg-white/10 hover:border-white/30 transition-all font-semibold text-sm">
-          <Filter className="h-4 w-4" />
-          Filter Status
-        </button>
       </MotionDiv>
 
       {/* Projects Grid / Empty State */}
-      {projects.length === 0 ? (
+      {filteredProjects.length === 0 ? (
         <MotionDiv 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -132,7 +156,7 @@ export default async function DashboardPage() {
         </MotionDiv>
       ) : (
         <div className="grid gap-5">
-          {projects.map((project: any, index: number) => (
+          {filteredProjects.map((project: any, index: number) => (
             <MotionDiv
               key={project.id}
               initial={{ opacity: 0, y: 20 }}

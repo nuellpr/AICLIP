@@ -14,6 +14,9 @@ import { generateAssFromVtt } from './subtitle';
 import { parseYouTubeVttWords } from '@clipforge/shared';
 import { Worker } from 'bullmq';
 import { startCleanupCron } from './cleanup';
+import { generateHookIntro, concatHookAndClip } from './hookGenerator';
+import { detectGpuEncoder, getEncoderOptions } from './gpuDetector';
+import { getWatermarkFilters, parseWatermarkConfig } from './watermark';
 import { uploadRenderedVideo } from './storage';
 import Redis from 'ioredis';
 
@@ -236,10 +239,14 @@ async function startConsumers() {
 
         const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id;
         const filename = `${safeTitle}.mp4`;
-        const outputPath = path.join(__dirname, `../../web/public/renders/${filename}`);
-        if (!fs.existsSync(path.dirname(outputPath))) {
-          fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-        }
+        
+        const webRenderDir = path.resolve(__dirname, '../../web/public/renders');
+        const apiRenderDir = path.resolve(__dirname, '../../api/public/renders');
+        if (!fs.existsSync(webRenderDir)) fs.mkdirSync(webRenderDir, { recursive: true });
+        if (!fs.existsSync(apiRenderDir)) fs.mkdirSync(apiRenderDir, { recursive: true });
+
+        const outputPath = path.join(webRenderDir, filename);
+        const apiOutputPath = path.join(apiRenderDir, filename);
         const tempPath = path.join(__dirname, `../temp_${clip.id}.mp4`);
         const audioTmpPath = path.join(__dirname, `../temp_audio_${clip.id}.wav`);
 
@@ -285,6 +292,31 @@ async function startConsumers() {
           const allWords = vttContent ? parseYouTubeVttWords(vttContent) : [];
           const clipWords = allWords.filter(w => w.end >= clipStartSec - 0.5 && w.start <= clipEndSec + 0.5);
 
+          // Probe actual segment start to detect keyframe drift from yt-dlp
+          let segmentDrift = 0;
+          try {
+            const { stdout: probeOut } = await execAsync(
+              `"${getFfmpegPath()}" -i "${tempPath}" -f null - 2>&1 | head -20`,
+              { timeout: 10000, encoding: 'utf-8' }
+            );
+            // Try ffprobe for more reliable start_time
+            try {
+              const ffprobePath = getFfmpegPath().replace(/ffmpeg(\.exe)?$/i, 'ffprobe$1');
+              const { stdout: probeJson } = await execAsync(
+                `"${ffprobePath}" -v quiet -print_format json -show_format "${tempPath}"`,
+                { timeout: 10000, encoding: 'utf-8' }
+              );
+              const probeData = JSON.parse(probeJson);
+              const actualStart = parseFloat(probeData?.format?.start_time || '0');
+              if (actualStart > 0.05) {
+                segmentDrift = actualStart;
+                console.log(`Detected segment start drift: ${segmentDrift.toFixed(3)}s`);
+              }
+            } catch (probeErr) {
+              // ffprobe not available, ignore
+            }
+          } catch (e) {}
+
           // Use VTT for fallback
           const wordsPath = path.join(__dirname, `../../api/public/renders/whisper_${clip.id}.json`);
 
@@ -318,7 +350,7 @@ async function startConsumers() {
                 }
                 const antiBakuPrompt = "Gunakan bahasa sehari-hari gaul tidak baku. Contoh: gak nggak udah dah bikin gimana kayak kalo nyampe lu gue banget pake doang sih dong kok deh loh mah aja kan tuh yak gih";
                 const { stdout } = await execAsync(
-                  `"${pythonBin}" -c "import whisper; model=whisper.load_model('tiny'); r=model.transcribe('${audioTmpPath.replace(/\\/g, '/')}', word_timestamps=True, fp16=False, verbose=False, initial_prompt='${antiBakuPrompt}'); import json; print(json.dumps({'text': r['text'], 'words': [{'text': w['word'], 'start': round(w['start'],3), 'end': round(w['end'],3)} for s in r['segments'] for w in s.get('words',[])]}))"`,
+                  `"${pythonBin}" -c "import whisper; model=whisper.load_model('base'); r=model.transcribe('${audioTmpPath.replace(/\\/g, '/')}', word_timestamps=True, fp16=False, verbose=False, initial_prompt='${antiBakuPrompt}'); import json; print(json.dumps({'text': r['text'], 'words': [{'text': w['word'], 'start': round(w['start'],3), 'end': round(w['end'],3)} for s in r['segments'] for w in s.get('words',[])]}))"`,
                   { timeout: 300000, encoding: 'utf-8', maxBuffer: 1024 * 1024 * 10, env }
                 );
                 
@@ -390,31 +422,14 @@ async function startConsumers() {
           if (fs.existsSync(wordsPath)) {
             const whisperWords = JSON.parse(fs.readFileSync(wordsPath, 'utf-8'));
             styleObj.words = whisperWords;
-            const userCaption = clip.caption?.trim();
-            const hasWhisperWords = styleObj.words && Array.isArray(styleObj.words) && styleObj.words.length > 0;
-            if (userCaption && hasWhisperWords) {
-              const whisperFullText = styleObj.words.map((w: any) => w.text).join(' ').toLowerCase().replace(/[^\w\s]/g, '');
-              const userFullText = userCaption.toLowerCase().replace(/[^\w\s]/g, '');
-              const lenDiff = Math.abs(whisperFullText.length - userFullText.length);
-              if (lenDiff > 5 && lenDiff < whisperFullText.length * 2 && whisperFullText !== userFullText) {
-                console.log('User caption detected, using edited text for subtitles');
-                const userWords = userCaption.split(/\s+/).filter((w: string) => w.length > 0);
-                if (styleObj.words.length >= userWords.length) {
-                  const step = Math.max(1, Math.floor(styleObj.words.length / userWords.length));
-                  const newWords: any[] = [];
-                  for (let i = 0; i < userWords.length; i++) {
-                    const srcIdx = Math.min(i * step, styleObj.words.length - 1);
-                    newWords.push({
-                      text: userWords[i],
-                      start: styleObj.words[srcIdx].start,
-                      end: styleObj.words[Math.min(srcIdx + step - 1, styleObj.words.length - 1)].end
-                    });
-                  }
-                  styleObj.words = newWords;
-                }
-              }
-            }
           }
+
+          // Apply subtitle timing corrections:
+          // 1. segmentDrift: compensate for yt-dlp keyframe alignment (segment starts before requested time)
+          // 2. Pre-shift: YouTube auto-subs and Whisper 'base' model tend to lag ~0.3s behind speech
+          const subtitlePreShift = -0.35; // shift subtitles 350ms earlier to match speech
+          styleObj.offset = (styleObj.offset || 0) + subtitlePreShift - segmentDrift;
+          console.log(`Subtitle offset applied: preShift=${subtitlePreShift}s, segmentDrift=${segmentDrift.toFixed(3)}s, total=${styleObj.offset.toFixed(3)}s`);
 
           const assPath = path.join(__dirname, `../temp_${clip.id}.ass`);
           await generateAssFromVtt(vttContent, clipStartSec, clipEndSec, assPath, styleObj);
@@ -431,12 +446,49 @@ async function startConsumers() {
               faceCmdPath = path.join(__dirname, `../temp_cmds_${clip.id}.txt`);
               console.log('Running face tracking for dynamic crop...');
               const pythonBin = getPythonPath();
-              await execAsync(`"${pythonBin}" "${path.join(__dirname, 'face_tracker.py')}" "${tempPath.replace(/\\/g, '/')}" "${faceCmdPath.replace(/\\/g, '/')}" 608 1080 0.1`, { timeout: 120000 });
+              
+              // Try MediaPipe first (better active speaker tracking), fallback to OpenCV
+              const mediapipeTrackerPy = [
+                path.join(__dirname, 'mediapipe_tracker.py'),
+                path.join(__dirname, '../src/mediapipe_tracker.py'),
+                path.join(__dirname, 'src/mediapipe_tracker.py')
+              ].find(p => fs.existsSync(p));
+              
+              const faceTrackerPy = [
+                path.join(__dirname, 'face_tracker.py'),
+                path.join(__dirname, '../src/face_tracker.py'),
+                path.join(__dirname, 'src/face_tracker.py')
+              ].find(p => fs.existsSync(p)) || path.join(__dirname, 'face_tracker.py');
+              
+              let trackingSuccess = false;
+              
+              // Try MediaPipe first
+              if (mediapipeTrackerPy) {
+                try {
+                  console.log('Attempting MediaPipe active speaker tracking...');
+                  await execAsync(`"${pythonBin}" "${mediapipeTrackerPy}" "${tempPath.replace(/\\/g, '/')}" "${faceCmdPath.replace(/\\/g, '/')}" 608 1080 0.15`, { timeout: 180000 });
+                  trackingSuccess = fs.existsSync(faceCmdPath) && fs.statSync(faceCmdPath).size > 10;
+                  if (trackingSuccess) console.log('MediaPipe tracking succeeded');
+                } catch (mpErr: any) {
+                  console.warn('MediaPipe tracking failed, falling back to OpenCV:', mpErr.message);
+                }
+              }
+              
+              // Fallback to OpenCV
+              if (!trackingSuccess) {
+                console.log('Using OpenCV face tracking...');
+                await execAsync(`"${pythonBin}" "${faceTrackerPy}" "${tempPath.replace(/\\/g, '/')}" "${faceCmdPath.replace(/\\/g, '/')}" 608 1080 0.1`, { timeout: 120000 });
+              }
             } catch (err) {
               console.error('Face tracking failed, falling back to center crop', err);
               faceCmdPath = null;
             }
           }
+
+          // Detect GPU encoder for faster rendering
+          const gpuEncoder = await detectGpuEncoder();
+          const encoderOpts = getEncoderOptions(gpuEncoder);
+          console.log(`Using encoder: ${gpuEncoder.name} (${gpuEncoder.codec})`);
 
           await new Promise((resolve, reject) => {
             let command = ffmpeg(tempPath);
@@ -447,9 +499,10 @@ async function startConsumers() {
               case 'crop_blur':
                 filterComplex = [
                   { filter: 'split', options: '2', inputs: '0:v', outputs: ['original', 'copy'] },
-                  { filter: 'scale', options: '1080:1920:force_original_aspect_ratio=increase', inputs: 'copy', outputs: 'copy_scaled' },
-                  { filter: 'crop', options: '1080:1920', inputs: 'copy_scaled', outputs: 'copy_cropped' },
-                  { filter: 'boxblur', options: '20:1', inputs: 'copy_cropped', outputs: 'blurred' },
+                  { filter: 'scale', options: '270:480:force_original_aspect_ratio=increase', inputs: 'copy', outputs: 'copy_scaled' },
+                  { filter: 'crop', options: '270:480', inputs: 'copy_scaled', outputs: 'copy_cropped' },
+                  { filter: 'boxblur', options: '5:1', inputs: 'copy_cropped', outputs: 'blurred_small' },
+                  { filter: 'scale', options: '1080:1920', inputs: 'blurred_small', outputs: 'blurred' },
                   { filter: 'crop', options: 'ih:ih:iw/2-ih/2:0', inputs: 'original', outputs: 'sq_crop' },
                   { filter: 'scale', options: '1080:1080', inputs: 'sq_crop', outputs: 'sq_scaled' },
                   { filter: 'overlay', options: '0:(1920-1080)/2', inputs: ['blurred', 'sq_scaled'], outputs: 'with_overlay' },
@@ -502,9 +555,10 @@ async function startConsumers() {
               default:
                 filterComplex = [
                   { filter: 'split', options: '2', inputs: '0:v', outputs: ['original', 'copy'] },
-                  { filter: 'scale', options: '1080:1920:force_original_aspect_ratio=increase', inputs: 'copy', outputs: 'copy_scaled' },
-                  { filter: 'crop', options: '1080:1920', inputs: 'copy_scaled', outputs: 'copy_cropped' },
-                  { filter: 'boxblur', options: '20:1', inputs: 'copy_cropped', outputs: 'blurred' },
+                  { filter: 'scale', options: '270:480:force_original_aspect_ratio=increase', inputs: 'copy', outputs: 'copy_scaled' },
+                  { filter: 'crop', options: '270:480', inputs: 'copy_scaled', outputs: 'copy_cropped' },
+                  { filter: 'boxblur', options: '5:1', inputs: 'copy_cropped', outputs: 'blurred_small' },
+                  { filter: 'scale', options: '1080:1920', inputs: 'blurred_small', outputs: 'blurred' },
                   { filter: 'scale', options: '1080:1920:force_original_aspect_ratio=decrease', inputs: 'original', outputs: 'scaled' },
                   { filter: 'overlay', options: '(W-w)/2:(H-h)/2', inputs: ['blurred', 'scaled'], outputs: 'with_overlay' },
                   { filter: 'subtitles', options: formattedAssPath, inputs: 'with_overlay', outputs: 'final' }
@@ -519,12 +573,9 @@ async function startConsumers() {
                 '-map', '0:a?',
                 '-threads', '0'
               ])
-              .outputOptions('-c:v libx264')
-              .outputOptions('-preset fast')
-              .outputOptions('-crf 23')
+              .outputOptions(encoderOpts)
               .outputOptions('-c:a aac')
-              // Audio Polish: loudnorm (Podcast loudness standard) and highpass (noise reduction)
-              .outputOptions('-af', 'highpass=f=150,loudnorm=I=-16:TP=-1.5:LRA=11')
+              .outputOptions('-b:a 192k')
               .output(outputPath)
               .on('end', () => resolve(true))
               .on('error', (err) => {
@@ -537,6 +588,35 @@ async function startConsumers() {
           if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
           if (fs.existsSync(assPath)) fs.unlinkSync(assPath);
           if (faceCmdPath && fs.existsSync(faceCmdPath)) fs.unlinkSync(faceCmdPath);
+
+          // Generate Hook Intro and prepend to clip
+          if (clip.hook && clip.hook.trim().length > 5 && !clip.hook.startsWith('(Gagal)')) {
+            try {
+              console.log(`Generating hook intro for clip ${clip.id}: "${clip.hook.substring(0, 50)}..."`);
+              const hookVideoPath = await generateHookIntro({
+                hookText: clip.hook,
+                outputPath: path.join(path.dirname(outputPath), `hook_${clip.id}.mp4`),
+              });
+              
+              if (hookVideoPath) {
+                const tempWithHook = outputPath.replace('.mp4', '_with_hook.mp4');
+                const concatSuccess = await concatHookAndClip(hookVideoPath, outputPath, tempWithHook);
+                if (concatSuccess && fs.existsSync(tempWithHook)) {
+                  fs.unlinkSync(outputPath);
+                  fs.renameSync(tempWithHook, outputPath);
+                  console.log(`Hook intro prepended to clip ${clip.id}`);
+                }
+              }
+            } catch (hookErr: any) {
+              console.warn(`Hook generation skipped for clip ${clip.id}:`, hookErr.message);
+            }
+          }
+
+          if (fs.existsSync(outputPath)) {
+            try {
+              fs.copyFileSync(outputPath, apiOutputPath);
+            } catch (e) {}
+          }
 
           const finalFileKey = await uploadRenderedVideo(outputPath, filename);
 

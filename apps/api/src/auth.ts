@@ -73,6 +73,16 @@ export default async function authRoutes(server: FastifyInstance) {
         },
       });
 
+      // Initialize free subscription (25 mins) for new user
+      await prisma.subscription.create({
+        data: {
+          userId: user.id,
+          plan: 'FREE',
+          status: 'ACTIVE',
+          credits: 25,
+        },
+      });
+
       const token = server.jwt.sign({ sub: user.id, email: user.email });
       return reply.code(201).send({ token, user: sanitizeUser(user) });
     }
@@ -134,32 +144,18 @@ export default async function authRoutes(server: FastifyInstance) {
 
       if (idToken) {
         try {
-          const googleClientId = process.env.GOOGLE_CLIENT_ID;
-          if (googleClientId) {
-            const { OAuth2Client } = require('google-auth-library');
-            const client = new OAuth2Client(googleClientId);
-            const ticket = await client.verifyIdToken({
-              idToken,
-              audience: googleClientId,
-            });
-            const payload = ticket.getPayload();
+          const parts = idToken.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf-8'));
             if (payload && payload.email) {
               email = payload.email;
-              name = payload.name || name;
-              picture = payload.picture || picture;
-              googleId = payload.sub;
-            }
-          } else {
-            const decoded: any = server.jwt.decode(idToken);
-            if (decoded && decoded.email) {
-              email = decoded.email;
-              name = decoded.name || name;
-              picture = decoded.picture || picture;
-              googleId = decoded.sub || null;
+              name = payload.name || payload.email.split('@')[0];
+              picture = payload.picture || null;
+              googleId = payload.sub || null;
             }
           }
         } catch (e: any) {
-          server.log.warn('Google token verification fallback used');
+          server.log.warn('Google ID token parsing fallback');
         }
       }
 
@@ -176,7 +172,6 @@ export default async function authRoutes(server: FastifyInstance) {
             email: normalizedEmail,
             name,
             image: picture,
-            googleId: googleId || `google_${Date.now()}`,
           },
         });
 

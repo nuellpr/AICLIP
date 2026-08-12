@@ -22,18 +22,19 @@ export default function SettingsPage() {
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
-    fetch(getApiUrl('/api/settings/ai'))
+    const currentUser = getStoredUser();
+    setUser(currentUser);
+    const userIdQuery = currentUser?.id ? `?userId=${currentUser.id}` : '';
+    fetch(getApiUrl(`/api/settings/ai${userIdQuery}`))
       .then(res => res.json())
       .then(data => {
-        if (data.provider) setProvider(data.provider);
-        if (data.baseUrl) setBaseUrl(data.baseUrl);
-        if (data.apiKey) setApiKey(data.apiKey);
-        if (data.model) setModel(data.model);
-        if (data.systemMessage) setSystemMessage(data.systemMessage);
+        if (data.provider !== undefined) setProvider(data.provider);
+        if (data.baseUrl !== undefined) setBaseUrl(data.baseUrl);
+        if (data.apiKey !== undefined) setApiKey(data.apiKey);
+        setModel(data.model || '');
+        if (data.systemMessage !== undefined) setSystemMessage(data.systemMessage);
       })
       .catch(console.error);
-    
-    setUser(getStoredUser());
   }, []);
 
   const handleProviderChange = (e: any) => {
@@ -56,7 +57,7 @@ export default function SettingsPage() {
       const data = await res.json();
       if (data.models) {
         setAvailableModels(data.models);
-        if (data.models.length > 0 && !data.models.includes(model)) {
+        if (data.models.length > 0 && (!model || !data.models.includes(model))) {
           setModel(data.models[0]);
         }
       }
@@ -73,7 +74,7 @@ export default function SettingsPage() {
       await fetch(getApiUrl('/api/settings/ai'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider, baseUrl, apiKey, model, systemMessage })
+        body: JSON.stringify({ provider, baseUrl, apiKey, model, systemMessage, userId: user?.id })
       });
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);

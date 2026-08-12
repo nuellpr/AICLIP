@@ -1,68 +1,53 @@
-# ClipForge AI
+# AICLIP (IndoFinity Tools Streaming Indonesia) 🇮🇩
 
-Aplikasi SaaS AI video clipping yang mengubah video panjang menjadi klip vertikal untuk TikTok, Shorts, dan Reels.
+Aplikasi SaaS AI Video Clipper otomatis untuk mengubah video panjang YouTube (podcast, wawancara, vlog) menjadi klip pendek viral vertikal (9:16) untuk TikTok, Instagram Reels, dan YouTube Shorts.
 
-## Fitur
-- 🎯 **AI Auto-Clipping**: AI menganalisis transkrip dan memilih momen paling menarik secara otomatis.
-- ⚡ **Real-time Pipeline**: Proses background job dengan real-time progress update.
-- 🎨 **Monorepo**: Arsitektur bersih dengan Next.js, Fastify, dan BullMQ.
-- 🚀 **Demo Mode**: Dapat dijalankan tanpa API Key OpenAI asli untuk testing UI/UX.
+## ✨ Fitur Utama
 
-## Teknologi
-- **Frontend**: Next.js (App Router), Tailwind CSS v4, Lucide Icons
+- 🎯 **AI Golden Moment Finder**: Otomatis menganalisis transkrip VTT & audio menggunakan LLM (OpenAI, Gemini, Groq, Anthropic) untuk mendeteksi klip paling berpotensi viral.
+- 🪝 **AI Hook Intro Generator**: Membuat intro video 3–5 detik otomatis dengan animasi teks hook dan suara AI TTS Bahasa Indonesia (`edge-tts` / `gtts`).
+- 🎯 **Active Speaker Tracking (MediaPipe + OpenCV)**: Melacak gerakan bibir (lip gap variance) secara otomatis untuk mengarahkan crop vertikal (9:16) tepat ke pembicara yang sedang aktif pada podcast/interview multi-orang.
+- 🎙️ **Karaoke Animated Captions**: Subtitle word-by-word ala CapCut/Shorts dengan 13+ gaya animasi (karaoke highlight, pop, grow, bounce, typewriter, box highlight) dan sync presisi tinggi via Whisper (`base` model).
+- ⚡ **GPU Hardware Acceleration**: Auto-detect enkoder GPU (**NVIDIA NVENC**, **AMD AMF**, **Intel QSV**, **Apple VideoToolbox**) untuk rendering video hingga 5–10x lebih cepat.
+- 🖼️ **Watermark & Logo Support**: Kustomisasi logo watermark (posisi, ukuran, dan opacity).
+- 📱 **Multi-Layout Re-framing**: Pilihan layout `fit_blur`, `crop_blur`, `split`, `gameplay`, dan `face` (active speaker).
+- 🖥️ **Full Web Dashboard**: Tampilan UI modern (Next.js 16 App Router, Tailwind CSS) lengkap dengan manajemen proyek, autentikasi email & Google, dan library klip.
+
+## 🛠️ Arsitektur & Teknologi
+
+- **Frontend**: Next.js (App Router), Tailwind CSS, Lucide Icons
 - **Backend API**: Fastify, Zod
-- **Worker**: Node.js, BullMQ, Redis
-- **Database**: PostgreSQL, Prisma
-- **Monorepo Tooling**: Turborepo, pnpm
+- **Worker Engine**: Node.js, BullMQ, Redis, FFmpeg, Python (MediaPipe, OpenCV, Whisper, edge-tts)
+- **Database**: SQLite / PostgreSQL via Prisma
+- **Monorepo**: Turborepo, pnpm
 
-## Persyaratan Sistem
+## 🚀 Cara Menjalankan
+
+### Persyaratan System
 - Node.js >= 18
 - pnpm >= 9
-- Docker & Docker Compose (untuk PostgreSQL dan Redis)
+- Python 3.10+ (dengan `mediapipe`, `opencv-python`, `edge-tts`, `openai-whisper`)
+- FFmpeg
 
-## Cara Instalasi
-1. Clone repositori ini.
-2. Salin file `.env.example` menjadi `.env`.
-   ```bash
-   cp .env.example .env
-   ```
-3. Instal dependencies menggunakan pnpm:
-   ```bash
-   pnpm install --ignore-scripts
-   ```
-
-## Cara Menjalankan (Tanpa Docker)
-Aplikasi ini sudah dikonfigurasi menggunakan **SQLite** dan antrean internal, sehingga tidak memerlukan instalasi Docker, PostgreSQL, atau Redis.
-
-Migrasi Database:
+### Inisialisasi Database & App
 ```bash
+# Migrasi Database
 cd packages/database
 npx prisma generate
 npx prisma db push
-```
 
-Jalankan seluruh aplikasi (Web, API, Worker):
-```bash
+# Jalankan Monorepo (Web + API + Worker)
+cd ../..
 pnpm dev
 ```
-- **Web App**: http://localhost:3000
-- **API**: http://localhost:3001
-- **Worker**: Berjalan di background (lihat console).
+- **Web Dashboard**: http://localhost:3000
+- **API Server**: http://localhost:3001
+- **Worker**: Berjalan di background (Port 3002)
 
-## Batasan MVP
-Versi ini merupakan implementasi MVP end-to-end dengan konfigurasi **Demo Mode**:
-- Video belum benar-benar di-crop/trim dengan FFmpeg di production (hanya mock proses dengan delay).
-- Analisis AI (OpenAI) di-mock untuk menghasilkan 3 klip otomatis demi keamanan testing tanpa kredensial.
-- Otentikasi sementara menggunakan user demo statis (`demo@clipforge.ai`).
+## 📁 Struktur Folder Monorepo
 
-## Struktur Folder
-- `apps/web`: Aplikasi Frontend (Next.js)
-- `apps/api`: REST API (Fastify)
-- `apps/worker`: Job queue processor (BullMQ)
+- `apps/web`: Web dashboard & UI Next.js
+- `apps/api`: REST API Fastify & Autentikasi
+- `apps/worker`: Video render engine, Whisper transcriber, FFmpeg & MediaPipe pipeline
 - `packages/database`: Prisma schema & client
-- `packages/shared`: Shared types, schemas & constants
-
-## Rencana Pengembangan Berikutnya
-- Integrasi otentikasi penuh dengan NextAuth/Supabase.
-- Penggunaan library `fluent-ffmpeg` di `apps/worker` untuk trimming video aktual.
-- Integrasi Stripe/Midtrans untuk billing & sistem kredit paket berlangganan.
+- `packages/shared`: Shared types, subtitle parser & helper utilities

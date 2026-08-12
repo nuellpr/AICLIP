@@ -5,6 +5,8 @@ import { Download, Video, Loader2, Calendar, Trash2, CheckSquare, Square, AlertC
 import Link from "next/link";
 import { getApiUrl } from "@/lib/api";
 
+import { getStoredUser } from "@/lib/auth";
+
 export default function LibraryPage() {
   const [mounted, setMounted] = useState(false);
   const [clips, setClips] = useState<any[]>([]);
@@ -21,7 +23,12 @@ export default function LibraryPage() {
   const fetchClips = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(getApiUrl('/api/clips/library'));
+      const currentUser = getStoredUser();
+      if (!currentUser || !currentUser.id) {
+        setClips([]);
+        return;
+      }
+      const res = await fetch(getApiUrl(`/api/clips/library?userId=${currentUser.id}`));
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {

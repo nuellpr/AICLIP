@@ -185,6 +185,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     if (relEnd <= 0) continue;
     if (relStart < 0) relStart = 0;
     if (relEnd <= relStart) relEnd = relStart + 0.3;
+    // Ensure end doesn't exceed clip duration
+    const clipDuration = endTime - startTime;
+    if (relStart >= clipDuration) continue;
+    if (relEnd > clipDuration + 0.5) relEnd = clipDuration + 0.5;
     
     if (animation === 'typewriter') {
        // Typewriter: cumulative word reveal

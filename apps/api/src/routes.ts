@@ -13,16 +13,14 @@ const renderQueue = new Queue('renderQueue', { connection });
 export default async function routes(server: FastifyInstance) {
   server.get('/projects', async (request, reply) => {
     const query = request.query as { userId?: string };
-    let userId = query?.userId;
+    const userId = query?.userId;
+
     if (!userId) {
-      const demoUser = await prisma.user.findFirst();
-      userId = demoUser?.id;
+      return [];
     }
 
-    const whereCondition = userId ? { userId } : {};
-
     const projects = await prisma.project.findMany({
-      where: whereCondition,
+      where: { userId },
       orderBy: { createdAt: 'desc' },
       include: {
         _count: {
@@ -177,8 +175,17 @@ export default async function routes(server: FastifyInstance) {
   });
 
   server.get('/clips/library', async (request, reply) => {
+    const query = request.query as { userId?: string };
+    const userId = query?.userId;
+    if (!userId) {
+      return [];
+    }
+
     const clips = await prisma.clip.findMany({
-      where: { renderStatus: 'READY' },
+      where: { 
+        renderStatus: 'READY',
+        project: { userId }
+      },
       include: { project: true },
       orderBy: { createdAt: 'desc' }
     });
@@ -260,8 +267,33 @@ export default async function routes(server: FastifyInstance) {
   });
 
   server.get('/settings/ai', async (request, reply) => {
+    const query = request.query as { userId?: string };
+    const userId = query?.userId;
     const fs = require('fs');
     const path = require('path');
+
+    if (userId) {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user && user.role === 'ADMIN') {
+        const configPath = path.resolve(__dirname, '../../../ai-config.json');
+        if (fs.existsSync(configPath)) {
+          try { return JSON.parse(fs.readFileSync(configPath, 'utf-8')); } catch (e) {}
+        }
+      } else {
+        const userConfigPath = path.resolve(__dirname, `../../../ai-config_${userId}.json`);
+        if (fs.existsSync(userConfigPath)) {
+          try { return JSON.parse(fs.readFileSync(userConfigPath, 'utf-8')); } catch (e) {}
+        }
+        return {
+          provider: 'google-gemini',
+          baseUrl: '',
+          apiKey: '',
+          model: '',
+          systemMessage: ''
+        };
+      }
+    }
+
     const configPath = path.resolve(__dirname, '../../../ai-config.json');
     if (fs.existsSync(configPath)) {
       try {
@@ -273,17 +305,16 @@ export default async function routes(server: FastifyInstance) {
       provider: 'google-gemini',
       baseUrl: '',
       apiKey: '',
-      model: 'gemini-2.0-flash',
+      model: '',
       systemMessage: ''
     };
   });
 
   server.post('/settings/ai', async (request, reply) => {
-    const { provider, baseUrl, apiKey, model, systemMessage } = request.body as any;
+    const { provider, baseUrl, apiKey, model, systemMessage, userId } = request.body as any;
     
     const fs = require('fs');
     const path = require('path');
-    const configPath = path.resolve(__dirname, '../../../ai-config.json');
     
     const config = {
       provider: provider || 'google-gemini',
@@ -293,7 +324,18 @@ export default async function routes(server: FastifyInstance) {
       systemMessage: systemMessage || ''
     };
 
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    if (userId) {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user && user.role === 'ADMIN') {
+        const globalPath = path.resolve(__dirname, '../../../ai-config.json');
+        fs.writeFileSync(globalPath, JSON.stringify(config, null, 2));
+      }
+      const userConfigPath = path.resolve(__dirname, `../../../ai-config_${userId}.json`);
+      fs.writeFileSync(userConfigPath, JSON.stringify(config, null, 2));
+    } else {
+      const globalPath = path.resolve(__dirname, '../../../ai-config.json');
+      fs.writeFileSync(globalPath, JSON.stringify(config, null, 2));
+    }
 
     return { success: true };
   });
