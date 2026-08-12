@@ -15,24 +15,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Google Account Chooser Modal State
-  const [showGoogleModal, setShowGoogleModal] = useState<boolean>(false);
-  const [customGoogleEmail, setCustomGoogleEmail] = useState<string>('');
-  const [showCustomInput, setShowCustomInput] = useState<boolean>(false);
-
-  const savedGoogleAccounts = [
-    {
-      name: 'Imanuel Wallep',
-      email: 'imanuelwallep@gmail.com',
-      avatar: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-    },
-    {
-      name: 'Studio Ruang Visual',
-      email: 'studioruangvisual@gmail.com',
-      avatar: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-    },
-  ];
-
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -92,7 +74,6 @@ export default function LoginPage() {
   const executeGoogleAuthWithToken = async (idToken: string) => {
     setLoading(true);
     setError(null);
-    setShowGoogleModal(false);
     try {
       const res = await fetch('/api/auth/google', {
         method: 'POST',
@@ -117,7 +98,6 @@ export default function LoginPage() {
   const executeGoogleAuth = async (targetEmail: string, targetName?: string) => {
     setLoading(true);
     setError(null);
-    setShowGoogleModal(false);
     try {
       const res = await fetch('/api/auth/google', {
         method: 'POST',
@@ -254,7 +234,7 @@ export default function LoginPage() {
               {/* Big Google Button */}
               <button
                 type="button"
-                onClick={() => setShowGoogleModal(true)}
+                onClick={handleGoogleButtonClick}
                 disabled={loading}
                 className="w-full bg-white hover:bg-gray-100 text-black font-extrabold py-3.5 px-4 rounded-2xl text-sm transition-all flex items-center justify-center gap-3 shadow-xl hover:scale-[1.02] active:scale-[0.98] border border-gray-200 disabled:opacity-50"
               >
