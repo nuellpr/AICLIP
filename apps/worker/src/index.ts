@@ -340,6 +340,8 @@ async function startConsumers() {
                   .run();
               });
               
+              const indonesianPrompt = "Transkripsi bahasa Indonesia resmi dan akurat dengan ejaan baku. Kata-kata: uangnya, uang, sudah, tidak, bagaimana, seperti, kalau, memakai, hanya, dapat.";
+
               // Local Whisper with Python
               try {
                 const pythonBin = getPythonPath();
@@ -348,9 +350,8 @@ async function startConsumers() {
                 if (ffmpegBin !== 'ffmpeg') {
                   env.PATH = `${path.dirname(ffmpegBin)}${path.delimiter}${env.PATH}`;
                 }
-                const antiBakuPrompt = "Gunakan bahasa sehari-hari gaul tidak baku. Contoh: gak nggak udah dah bikin gimana kayak kalo nyampe lu gue banget pake doang sih dong kok deh loh mah aja kan tuh yak gih";
                 const { stdout } = await execAsync(
-                  `"${pythonBin}" -c "import whisper; model=whisper.load_model('base'); r=model.transcribe('${audioTmpPath.replace(/\\/g, '/')}', word_timestamps=True, fp16=False, verbose=False, initial_prompt='${antiBakuPrompt}'); import json; print(json.dumps({'text': r['text'], 'words': [{'text': w['word'], 'start': round(w['start'],3), 'end': round(w['end'],3)} for s in r['segments'] for w in s.get('words',[])]}))"`,
+                  `"${pythonBin}" -c "import whisper; model=whisper.load_model('base'); r=model.transcribe('${audioTmpPath.replace(/\\/g, '/')}', word_timestamps=True, fp16=False, verbose=False, initial_prompt='${indonesianPrompt}'); import json; print(json.dumps({'text': r['text'], 'words': [{'text': w['word'], 'start': round(w['start'],3), 'end': round(w['end'],3)} for s in r['segments'] for w in s.get('words',[])]}))"`,
                   { timeout: 300000, encoding: 'utf-8', maxBuffer: 1024 * 1024 * 10, env }
                 );
                 
@@ -358,11 +359,30 @@ async function startConsumers() {
                 if (jsonStart === -1) throw new Error('No JSON output found from Whisper');
                 const parsed = JSON.parse(stdout.substring(jsonStart).trim());
                 if (parsed.words && parsed.words.length > 0) {
+                  // Normalize common phonetic misspellings (e.g. 'wangnya' -> 'uangnya')
+                  const wordReplacements: Record<string, string> = {
+                    'wangnya': 'uangnya',
+                    'wang': 'uang',
+                    'wongnya': 'uangnya',
+                    'wong': 'uang',
+                  };
+                  const cleanedWords = parsed.words.map((w: any) => {
+                    const rawText = (w.text || '').trim();
+                    const lowerText = rawText.toLowerCase().replace(/[.,!?]/g, '');
+                    if (wordReplacements[lowerText]) {
+                      const rep = wordReplacements[lowerText];
+                      const punc = rawText.match(/[.,!?]+$/)?.[0] || '';
+                      const isCap = rawText.length > 0 && rawText[0] === rawText[0].toUpperCase();
+                      w.text = (isCap ? rep.charAt(0).toUpperCase() + rep.slice(1) : rep) + punc;
+                    }
+                    return w;
+                  });
+
                   if (!fs.existsSync(path.dirname(wordsPath))) {
                     fs.mkdirSync(path.dirname(wordsPath), { recursive: true });
                   }
-                  fs.writeFileSync(wordsPath, JSON.stringify(parsed.words));
-                  console.log(`Local Whisper small complete: ${parsed.words.length} words`);
+                  fs.writeFileSync(wordsPath, JSON.stringify(cleanedWords));
+                  console.log(`Local Whisper complete: ${cleanedWords.length} words (normalized)`);
                   transcribed = true;
                 }
               } catch (e: any) {
@@ -381,6 +401,7 @@ async function startConsumers() {
                     response_format: 'verbose_json',
                     timestamp_granularities: ['word'],
                     language: 'id',
+                    prompt: indonesianPrompt,
                   });
                   
                   if (transcript.words && transcript.words.length > 0) {
