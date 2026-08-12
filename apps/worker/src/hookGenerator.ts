@@ -192,6 +192,22 @@ export async function generateHookIntro(options: HookOptions): Promise<string | 
 }
 
 /**
+ * Check if a video file contains an audio stream
+ */
+async function hasAudioStream(filePath: string): Promise<boolean> {
+  try {
+    const ffprobeBin = getFfmpegPath().replace(/ffmpeg(\.exe)?$/i, 'ffprobe$1');
+    const { stdout } = await execAsync(
+      `"${ffprobeBin}" -v error -show_entries stream=codec_type -of default=noprint_wrappers=1 "${filePath.replace(/\\/g, '/')}"`,
+      { timeout: 10000, encoding: 'utf-8' }
+    );
+    return stdout.includes('codec_type=audio');
+  } catch (e) {
+    return true; // Default assume true
+  }
+}
+
+/**
  * Concatenate hook intro + main clip into final output
  */
 export async function concatHookAndClip(
@@ -203,13 +219,21 @@ export async function concatHookAndClip(
     const cleanHook = hookVideoPath.replace(/\\/g, '/');
     const cleanMain = mainClipPath.replace(/\\/g, '/');
     
-    // Normalize resolution (1080x1920), SAR (1:1), pixel format (yuv420p), and audio (44100Hz stereo) on both inputs before concat
-    const filterComplex = '[0:v]scale=1080:1920,setsar=1,format=yuv420p[v0];[0:a]aformat=sample_rates=44100:channel_layouts=stereo[a0];[1:v]scale=1080:1920,setsar=1,format=yuv420p[v1];[1:a]aformat=sample_rates=44100:channel_layouts=stereo[a1];[v0][a0][v1][a1]concat=n=2:v=1:a=1[v][a]';
-    
-    await execAsync(
-      `"${getFfmpegPath()}" -y -i "${cleanHook}" -i "${cleanMain}" -filter_complex "${filterComplex}" -map "[v]" -map "[a]" -c:v libx264 -preset fast -crf 18 -c:a aac -ar 44100 -b:a 192k "${outputPath}"`,
-      { timeout: 120000, encoding: 'utf-8' }
-    );
+    const mainHasAudio = await hasAudioStream(mainClipPath);
+    let ffmpegCmd: string;
+
+    if (mainHasAudio) {
+      // Both videos have audio streams
+      const filterComplex = '[0:v]scale=1080:1920,setsar=1,format=yuv420p[v0];[0:a]aformat=sample_rates=44100:channel_layouts=stereo[a0];[1:v]scale=1080:1920,setsar=1,format=yuv420p[v1];[1:a]aformat=sample_rates=44100:channel_layouts=stereo[a1];[v0][a0][v1][a1]concat=n=2:v=1:a=1[v][a]';
+      ffmpegCmd = `"${getFfmpegPath()}" -y -i "${cleanHook}" -i "${cleanMain}" -filter_complex "${filterComplex}" -map "[v]" -map "[a]" -c:v libx264 -preset fast -crf 18 -c:a aac -ar 44100 -b:a 192k "${outputPath}"`;
+    } else {
+      // Main clip has NO audio stream, generate synthetic silent audio stream for input 1
+      const filterComplex = '[0:v]scale=1080:1920,setsar=1,format=yuv420p[v0];[0:a]aformat=sample_rates=44100:channel_layouts=stereo[a0];[1:v]scale=1080:1920,setsar=1,format=yuv420p[v1];[2:a]aformat=sample_rates=44100:channel_layouts=stereo[a1];[v0][a0][v1][a1]concat=n=2:v=1:a=1[v][a]';
+      ffmpegCmd = `"${getFfmpegPath()}" -y -i "${cleanHook}" -i "${cleanMain}" -f lavfi -i "anullsrc=r=44100:cl=stereo" -filter_complex "${filterComplex}" -map "[v]" -map "[a]" -c:v libx264 -preset fast -crf 18 -c:a aac -ar 44100 -b:a 192k "${outputPath}"`;
+    }
+
+    console.log(`Concatenating hook + clip (main clip has audio: ${mainHasAudio})...`);
+    await execAsync(ffmpegCmd, { timeout: 120000, encoding: 'utf-8' });
     
     // Cleanup intro video
     if (fs.existsSync(hookVideoPath)) fs.unlinkSync(hookVideoPath);
@@ -217,6 +241,13 @@ export async function concatHookAndClip(
     return fs.existsSync(outputPath);
   } catch (err: any) {
     console.error('Hook+Clip concat failed:', err.message);
+    // Safe fallback: if concat fails, preserve main clip without hook intro
+    try {
+      if (fs.existsSync(mainClipPath) && !fs.existsSync(outputPath)) {
+        fs.copyFileSync(mainClipPath, outputPath);
+        return true;
+      }
+    } catch (e) {}
     return false;
   }
 }
