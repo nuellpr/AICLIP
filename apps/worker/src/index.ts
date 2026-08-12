@@ -359,16 +359,26 @@ async function startConsumers() {
                 if (jsonStart === -1) throw new Error('No JSON output found from Whisper');
                 const parsed = JSON.parse(stdout.substring(jsonStart).trim());
                 if (parsed.words && parsed.words.length > 0) {
-                  // Normalize common phonetic misspellings (e.g. 'wangnya' -> 'uangnya')
+                  // Normalize common phonetic misspellings & ASR hallucinations
                   const wordReplacements: Record<string, string> = {
+                    'masyumasih': 'masing-masing',
+                    'masyu-masih': 'masing-masing',
+                    'masyumasik': 'masing-masing',
                     'wangnya': 'uangnya',
                     'wang': 'uang',
                     'wongnya': 'uangnya',
                     'wong': 'uang',
+                    'sampe': 'sampai',
+                    'sampek': 'sampai',
+                    'dapet': 'dapat',
+                    'dapetnya': 'dapatnya',
+                    'kalo': 'kalau',
+                    'berfikir': 'berpikir',
+                    'fikir': 'pikir',
                   };
                   const cleanedWords = parsed.words.map((w: any) => {
                     const rawText = (w.text || '').trim();
-                    const lowerText = rawText.toLowerCase().replace(/[.,!?]/g, '');
+                    const lowerText = rawText.toLowerCase().replace(/[.,!?\-]/g, '');
                     if (wordReplacements[lowerText]) {
                       const rep = wordReplacements[lowerText];
                       const punc = rawText.match(/[.,!?]+$/)?.[0] || '';
