@@ -204,7 +204,7 @@ export default async function authRoutes(server: FastifyInstance) {
 
   // Official Google OAuth Authorization Redirect URL
   server.get('/auth/google/url', async (request, reply) => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '205226226089-r9shmia8s6i72878jgqucml68a6gdgt4.apps.googleusercontent.com';
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || 'https://forgeai.web.id'}/api/auth/callback/google`;
     const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
       `client_id=${clientId}` +
@@ -225,7 +225,7 @@ export default async function authRoutes(server: FastifyInstance) {
       return reply.redirect(`${appUrl}/login?error=${encodeURIComponent('Kode otorisasi Google tidak ditemukan')}`);
     }
 
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '205226226089-r9shmia8s6i72878jgqucml68a6gdgt4.apps.googleusercontent.com';
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
     const redirectUri = `${appUrl}/api/auth/callback/google`;
 

@@ -143,9 +143,21 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleButtonClick = () => {
+  const handleGoogleButtonClick = async () => {
     setLoading(true);
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+    setError(null);
+    try {
+      const res = await fetch('/api/auth/google/url');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+          return;
+        }
+      }
+    } catch (e) {}
+
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '205226226089-r9shmia8s6i72878jgqucml68a6gdgt4.apps.googleusercontent.com';
     const redirectUri = `${window.location.origin}/api/auth/callback/google`;
     const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
       `client_id=${clientId}` +
