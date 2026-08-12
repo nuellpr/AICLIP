@@ -17,6 +17,7 @@ import { startCleanupCron } from './cleanup';
 import { generateHookIntro, concatHookAndClip } from './hookGenerator';
 import { detectGpuEncoder, getEncoderOptions } from './gpuDetector';
 import { getWatermarkFilters, parseWatermarkConfig } from './watermark';
+import { detectSfxTriggers, mixSfxIntoVideo } from './sfxEngine';
 import { uploadRenderedVideo } from './storage';
 import Redis from 'ioredis';
 
@@ -650,6 +651,24 @@ async function startConsumers() {
             } catch (hookErr: any) {
               console.warn(`Hook generation skipped for clip ${clip.id}:`, hookErr.message);
             }
+          }
+
+          // Auto Sound Effects (SFX) Engine
+          try {
+            const whisperWords = styleObj.words || [];
+            const sfxEvents = detectSfxTriggers(whisperWords, clip.hook);
+            if (sfxEvents.length > 0) {
+              console.log(`Mixing ${sfxEvents.length} SFX sound effects for clip ${clip.id}...`);
+              const tempWithSfx = outputPath.replace('.mp4', '_with_sfx.mp4');
+              const sfxSuccess = await mixSfxIntoVideo(outputPath, sfxEvents, tempWithSfx);
+              if (sfxSuccess && fs.existsSync(tempWithSfx)) {
+                fs.unlinkSync(outputPath);
+                fs.renameSync(tempWithSfx, outputPath);
+                console.log(`SFX sound effects mixed into clip ${clip.id}`);
+              }
+            }
+          } catch (sfxErr: any) {
+            console.warn(`SFX mixing skipped for clip ${clip.id}:`, sfxErr.message);
           }
 
           if (fs.existsSync(outputPath)) {
