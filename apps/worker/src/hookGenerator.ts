@@ -203,9 +203,11 @@ export async function concatHookAndClip(
     const cleanHook = hookVideoPath.replace(/\\/g, '/');
     const cleanMain = mainClipPath.replace(/\\/g, '/');
     
-    // Explicit stream concat filter to guarantee both audio and video streams match & join seamlessly
+    // Normalize resolution (1080x1920), SAR (1:1), pixel format (yuv420p), and audio (44100Hz stereo) on both inputs before concat
+    const filterComplex = '[0:v]scale=1080:1920,setsar=1,format=yuv420p[v0];[0:a]aformat=sample_rates=44100:channel_layouts=stereo[a0];[1:v]scale=1080:1920,setsar=1,format=yuv420p[v1];[1:a]aformat=sample_rates=44100:channel_layouts=stereo[a1];[v0][a0][v1][a1]concat=n=2:v=1:a=1[v][a]';
+    
     await execAsync(
-      `"${getFfmpegPath()}" -y -i "${cleanHook}" -i "${cleanMain}" -filter_complex "[0:v][0:a][1:v][1:a]concat=n=2:v=1:a=1[v][a]" -map "[v]" -map "[a]" -c:v libx264 -preset fast -crf 18 -c:a aac -ar 44100 -b:a 192k "${outputPath}"`,
+      `"${getFfmpegPath()}" -y -i "${cleanHook}" -i "${cleanMain}" -filter_complex "${filterComplex}" -map "[v]" -map "[a]" -c:v libx264 -preset fast -crf 18 -c:a aac -ar 44100 -b:a 192k "${outputPath}"`,
       { timeout: 120000, encoding: 'utf-8' }
     );
     
