@@ -195,4 +195,96 @@ export default async function authRoutes(server: FastifyInstance) {
       return { token, user: sanitizeUser(user) };
     }
   );
+
+  // Official Google OAuth Authorization Redirect URL
+  server.get('/auth/google/url', async (request, reply) => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || 'https://forgeai.web.id'}/api/auth/callback/google`;
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${clientId}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=code` +
+      `&scope=${encodeURIComponent('openid email profile')}` +
+      `&prompt=select_account`;
+
+    return { url: googleAuthUrl };
+  });
+
+  // Official Google OAuth Callback Code Exchange
+  server.get('/auth/callback/google', async (request, reply) => {
+    const { code } = request.query as { code?: string };
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://forgeai.web.id';
+
+    if (!code) {
+      return reply.redirect(`${appUrl}/login?error=${encodeURIComponent('Kode otorisasi Google tidak ditemukan')}`);
+    }
+
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+    const redirectUri = `${appUrl}/api/auth/callback/google`;
+
+    try {
+      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code',
+        }),
+      });
+
+      const tokenData = await tokenRes.json();
+      if (!tokenData.id_token) {
+        throw new Error(tokenData.error_description || 'Gagal mengambil ID token dari Google');
+      }
+
+      const parts = tokenData.id_token.split('.');
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf-8'));
+      const email = payload.email;
+      const name = payload.name || email.split('@')[0];
+      const picture = payload.picture || null;
+
+      if (!email || !email.includes('@')) {
+        throw new Error('Email Google tidak valid');
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+      let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            email: normalizedEmail,
+            name,
+            image: picture,
+          },
+        });
+
+        await prisma.subscription.create({
+          data: {
+            userId: user.id,
+            plan: 'FREE',
+            status: 'ACTIVE',
+            credits: 25,
+          },
+        });
+      } else if (picture && !user.image) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { image: picture },
+        });
+      }
+
+      const jwtToken = server.jwt.sign({ sub: user.id, email: user.email });
+      const sanitized = sanitizeUser(user);
+
+      return reply.redirect(`${appUrl}/auth/callback?token=${jwtToken}&user=${encodeURIComponent(JSON.stringify(sanitized))}`);
+    } catch (e: any) {
+      server.log.error('Google OAuth callback error:', e);
+      return reply.redirect(`${appUrl}/login?error=${encodeURIComponent('Gagal autentikasi Google: ' + e.message)}`);
+    }
+  });
 }

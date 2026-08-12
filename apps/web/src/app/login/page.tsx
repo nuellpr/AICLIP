@@ -62,7 +62,7 @@ export default function LoginPage() {
     }
   };
 
-  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '205226226089-r9shmia8s6i72878jgqucml68a6gdgt4.apps.googleusercontent.com';
+  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
   React.useEffect(() => {
     // Load Google Identity Services SDK
@@ -144,19 +144,17 @@ export default function LoginPage() {
   };
 
   const handleGoogleButtonClick = () => {
-    if ((window as any).google?.accounts?.id) {
-      try {
-        (window as any).google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            setShowGoogleModal(true);
-          }
-        });
-      } catch (e) {
-        setShowGoogleModal(true);
-      }
-    } else {
-      setShowGoogleModal(true);
-    }
+    setLoading(true);
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+    const redirectUri = `${window.location.origin}/api/auth/callback/google`;
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${clientId}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=code` +
+      `&scope=${encodeURIComponent('openid email profile')}` +
+      `&prompt=select_account`;
+
+    window.location.href = googleAuthUrl;
   };
 
   return (
