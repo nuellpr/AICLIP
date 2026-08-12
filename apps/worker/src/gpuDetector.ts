@@ -83,6 +83,6 @@ export function getEncoderOptions(encoder: GpuEncoder): string[] {
       return ['-c:v', 'h264_videotoolbox', '-q:v', '65'];
     case 'cpu':
     default:
-      return ['-c:v', 'libx264', '-preset', 'superfast', '-crf', '22'];
+      return ['-c:v', 'libx264', '-preset', 'fast', '-crf', '18', '-maxrate', '10M', '-bufsize', '16M'];
   }
 }

@@ -259,7 +259,7 @@ async function startConsumers() {
           const options: any = {
             downloadSections: `*${clipStartSec}-${clipEndSec}`,
             output: tempPath,
-            format: 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4][height<=1080]/best',
+            format: 'bestvideo[height>=1080]+bestaudio/bestvideo[height>=720]+bestaudio/bestvideo+bestaudio/best',
             ffmpegLocation: getFfmpegPath(),
             jsRuntimes: 'node',
             noCheckCertificates: true,
