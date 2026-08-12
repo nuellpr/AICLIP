@@ -37,31 +37,56 @@ export interface HookOptions {
  * Generate a TTS audio file from hook text using edge-tts (Python)
  */
 async function generateTTS(text: string, outputAudioPath: string, voice: string = 'id-ID-ArdiNeural'): Promise<boolean> {
+  const cleanAudioPath = outputAudioPath.replace(/\\/g, '/');
+  const cleanText = text.replace(/"/g, '\\"').replace(/\n/g, ' ');
+
+  // Method 1: Try edge-tts CLI tool directly
   try {
-    const pythonBin = getPythonPath();
-    // Use edge-tts which is free and high quality
-    const escapedText = text.replace(/'/g, "\\'").replace(/"/g, '\\"');
     await execAsync(
-      `"${pythonBin}" -c "import asyncio; import edge_tts; async def main(): communicate = edge_tts.Communicate('${escapedText}', '${voice}'); await communicate.save('${outputAudioPath.replace(/\\/g, '/')}'); asyncio.run(main())"`,
+      `edge-tts --voice "${voice}" --text "${cleanText}" --write-media "${cleanAudioPath}"`,
       { timeout: 30000, encoding: 'utf-8' }
     );
-    return fs.existsSync(outputAudioPath);
-  } catch (err: any) {
-    console.warn('Edge-TTS failed:', err.message);
-    // Fallback: try gTTS
-    try {
-      const pythonBin = getPythonPath();
-      const escapedText = text.replace(/'/g, "\\'").replace(/"/g, '\\"');
-      await execAsync(
-        `"${pythonBin}" -c "from gtts import gTTS; tts = gTTS('${escapedText}', lang='id'); tts.save('${outputAudioPath.replace(/\\/g, '/')}')"`,
-        { timeout: 30000, encoding: 'utf-8' }
-      );
-      return fs.existsSync(outputAudioPath);
-    } catch (e: any) {
-      console.warn('gTTS also failed:', e.message);
-      return false;
+    if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 100) {
+      console.log('Edge-TTS CLI generated audio successfully');
+      return true;
     }
+  } catch (cliErr: any) {
+    // CLI tool not in PATH, fallback to Python module
   }
+
+  // Method 2: Python edge_tts module with valid asyncio.run syntax
+  try {
+    const pythonBin = getPythonPath();
+    const safeText = cleanText.replace(/'/g, "\\'");
+    await execAsync(
+      `"${pythonBin}" -c "import asyncio, edge_tts; asyncio.run(edge_tts.Communicate('${safeText}', '${voice}').save('${cleanAudioPath}'))"`,
+      { timeout: 30000, encoding: 'utf-8' }
+    );
+    if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 100) {
+      console.log('Edge-TTS Python module generated audio successfully');
+      return true;
+    }
+  } catch (err: any) {
+    console.warn('Edge-TTS Python failed:', err.message);
+  }
+
+  // Method 3: Fallback to gTTS
+  try {
+    const pythonBin = getPythonPath();
+    const safeText = cleanText.replace(/'/g, "\\'");
+    await execAsync(
+      `"${pythonBin}" -c "from gtts import gTTS; tts = gTTS('${safeText}', lang='id'); tts.save('${cleanAudioPath}')"`,
+      { timeout: 30000, encoding: 'utf-8' }
+    );
+    if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 100) {
+      console.log('gTTS generated audio successfully');
+      return true;
+    }
+  } catch (e: any) {
+    console.warn('gTTS failed:', e.message);
+  }
+
+  return false;
 }
 
 /**
