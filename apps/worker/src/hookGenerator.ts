@@ -200,19 +200,16 @@ export async function concatHookAndClip(
   outputPath: string
 ): Promise<boolean> {
   try {
-    const concatListPath = hookVideoPath.replace('.mp4', '_concat.txt');
-    // Create concat demuxer list
-    const concatContent = `file '${hookVideoPath.replace(/\\/g, '/')}'\nfile '${mainClipPath.replace(/\\/g, '/')}'`;
-    fs.writeFileSync(concatListPath, concatContent, 'utf-8');
+    const cleanHook = hookVideoPath.replace(/\\/g, '/');
+    const cleanMain = mainClipPath.replace(/\\/g, '/');
     
-    // Re-encode to ensure compatible streams
+    // Explicit stream concat filter to guarantee both audio and video streams match & join seamlessly
     await execAsync(
-      `"${getFfmpegPath()}" -y -f concat -safe 0 -i "${concatListPath}" -c:v libx264 -preset superfast -crf 22 -c:a aac -b:a 192k "${outputPath}"`,
+      `"${getFfmpegPath()}" -y -i "${cleanHook}" -i "${cleanMain}" -filter_complex "[0:v][0:a][1:v][1:a]concat=n=2:v=1:a=1[v][a]" -map "[v]" -map "[a]" -c:v libx264 -preset fast -crf 18 -c:a aac -ar 44100 -b:a 192k "${outputPath}"`,
       { timeout: 120000, encoding: 'utf-8' }
     );
     
-    // Cleanup
-    if (fs.existsSync(concatListPath)) fs.unlinkSync(concatListPath);
+    // Cleanup intro video
     if (fs.existsSync(hookVideoPath)) fs.unlinkSync(hookVideoPath);
     
     return fs.existsSync(outputPath);

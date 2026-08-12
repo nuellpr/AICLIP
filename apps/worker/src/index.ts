@@ -420,18 +420,24 @@ async function startConsumers() {
           } catch(e) {}
 
           const hasWhisperWords = fs.existsSync(wordsPath);
+          let whisperWords: any[] = [];
           if (hasWhisperWords) {
-            const whisperWords = JSON.parse(fs.readFileSync(wordsPath, 'utf-8'));
+            try {
+              whisperWords = JSON.parse(fs.readFileSync(wordsPath, 'utf-8'));
+            } catch (e) {}
+          }
+
+          const clipDurationSec = clipEndSec - clipStartSec;
+          // If whisper returned reasonable word coverage (at least 1 word per 4 seconds)
+          if (whisperWords && whisperWords.length >= Math.max(3, Math.floor(clipDurationSec / 4))) {
             styleObj.words = whisperWords;
-            // Whisper timestamps generated from the audio clip segment are 100% accurate (0.0s relative start)
-            // Do NOT apply pre-shift to Whisper timestamps
             styleObj.offset = 0;
             console.log(`Using frame-accurate Whisper timestamps (${whisperWords.length} words, offset=0s)`);
           } else {
-            // Apply pre-shift ONLY for YouTube VTT auto-sub fallback (YouTube auto-subs lag ~0.35s behind speech)
+            console.log(`Whisper word count low (${whisperWords.length} words for ${clipDurationSec.toFixed(1)}s clip), using VTT fallback...`);
+            delete styleObj.words;
             const subtitlePreShift = -0.35;
             styleObj.offset = (styleObj.offset || 0) + subtitlePreShift - segmentDrift;
-            console.log(`VTT auto-sub fallback timing applied: preShift=${subtitlePreShift}s, segmentDrift=${segmentDrift.toFixed(3)}s, total=${styleObj.offset.toFixed(3)}s`);
           }
 
           const assPath = path.join(__dirname, `../temp_${clip.id}.ass`);
