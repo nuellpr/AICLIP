@@ -40,7 +40,7 @@ importers:
         version: 6.12.0
       '@google/genai':
         specifier: ^2.12.0
-        version: 2.12.0(supports-color@7.2.0)
+        version: 2.12.0(supports-color@5.5.0)
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -56,12 +56,15 @@ importers:
       ioredis:
         specifier: ^5.11.1
         version: 5.11.1(supports-color@7.2.0)
+      nodemailer:
+        specifier: ^9.0.5
+        version: 9.0.5
       openai:
         specifier: ^6.48.0
         version: 6.48.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(ws@8.21.1)(zod@3.25.76)
       youtube-dl-exec:
         specifier: ^3.1.9
-        version: 3.1.9(debug@4.4.3(supports-color@7.2.0))
+        version: 3.1.9(debug@4.4.3(supports-color@5.5.0))
       zod:
         specifier: ^3.23.6
         version: 3.25.76
@@ -72,6 +75,9 @@ importers:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
+      '@types/nodemailer':
+        specifier: ^8.0.1
+        version: 8.0.1
       nodemon:
         specifier: ^3.1.0
         version: 3.1.14
@@ -147,7 +153,7 @@ importers:
         version: link:../../packages/shared
       '@google/genai':
         specifier: ^2.12.0
-        version: 2.12.0(supports-color@5.5.0)
+        version: 2.12.0(supports-color@7.2.0)
       bullmq:
         specifier: ^6.0.2
         version: 6.0.2(ioredis@5.11.1(supports-color@7.2.0))
@@ -168,7 +174,7 @@ importers:
         version: 6.48.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(ws@8.21.1)(zod@3.25.76)
       youtube-dl-exec:
         specifier: ^3.1.9
-        version: 3.1.9(debug@4.4.3(supports-color@5.5.0))
+        version: 3.1.9(debug@4.4.3(supports-color@7.2.0))
     devDependencies:
       '@types/fluent-ffmpeg':
         specifier: ^2.1.28
@@ -1150,6 +1156,9 @@ packages:
 
   '@types/node@20.19.43':
     resolution: {integrity: sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA==}
+
+  '@types/nodemailer@8.0.1':
+    resolution: {integrity: sha512-PxpaInm8V1JQDd4j0ds5HfvWQk8JupS1C0Picb96QJsrrRDjBH+DlK7L4ZdNSqNULhiZRQHc40nLVShaGxXAMw==}
 
   '@types/react-dom@19.2.3':
     resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
@@ -2783,6 +2792,10 @@ packages:
   node-releases@2.0.51:
     resolution: {integrity: sha512-wRNIrw4DmVLKQlbgOMdkMx27Wrpzes2hh5Jtbi2bjPd+4wJstWIqP5A+lscnqbm0xxmT5Bpg8Lec5ItEBwx6BQ==}
     engines: {node: '>=18'}
+
+  nodemailer@9.0.5:
+    resolution: {integrity: sha512-wvjiKvjczmsN7U/8006JOdXubgBk2XFAbioDMbT+sM7cPs0QrhJTa6KBRX7P5REGGkDcLUz/EarWidb8G8C1jQ==}
+    engines: {node: '>=6.0.0'}
 
   nodemon@3.1.14:
     resolution: {integrity: sha512-jakjZi93UtB3jHMWsXL68FXSAosbLfY0In5gtKq3niLSkrWznrVBzXFNOEMJUfc9+Ke7SHWoAZsiMkNP3vq6Jw==}
@@ -4538,6 +4551,10 @@ snapshots:
   '@types/node@20.19.43':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/nodemailer@8.0.1':
+    dependencies:
+      '@types/node': 20.19.43
 
   '@types/react-dom@19.2.3(@types/react@19.2.17)':
     dependencies:
@@ -6367,6 +6384,8 @@ snapshots:
     optional: true
 
   node-releases@2.0.51: {}
+
+  nodemailer@9.0.5: {}
 
   nodemon@3.1.14:
     dependencies:

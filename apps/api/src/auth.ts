@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@clipforge/database';
+import { sendWelcomeEmail } from './services/emailService';
 
 const BCRYPT_ROUNDS = 10;
 const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', BCRYPT_ROUNDS);
@@ -184,6 +185,11 @@ export default async function authRoutes(server: FastifyInstance) {
             credits: 25,
           },
         });
+
+        // Send Welcome Email asynchronously
+        sendWelcomeEmail({ toEmail: normalizedEmail, toName: name, credits: 25 }).catch((err) =>
+          console.error('[Welcome Email Trigger Error]:', err)
+        );
       } else if (picture && !user.image) {
         user = await prisma.user.update({
           where: { id: user.id },
