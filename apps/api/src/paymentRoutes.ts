@@ -256,4 +256,57 @@ export default async function paymentRoutes(server: FastifyInstance) {
       return reply.status(500).send({ error: err.message || 'Gagal mengambil status langganan' });
     }
   });
+
+  // 5. Simulate Payment Success (Sandbox/Testing Helper)
+  server.post('/simulate-success', async (request, reply) => {
+    try {
+      const { orderId } = request.body as { orderId: string };
+      if (!orderId) return reply.status(400).send({ error: 'orderId wajib diisi' });
+
+      const transaction = await (prisma as any).transaction.findUnique({
+        where: { orderId },
+      });
+
+      if (!transaction) return reply.status(404).send({ error: 'Transaksi tidak ditemukan' });
+
+      await (prisma as any).transaction.update({
+        where: { orderId },
+        data: { status: 'SETTLEMENT', paymentType: 'qris_simulated' },
+      });
+
+      let subscription = await prisma.subscription.findFirst({
+        where: { userId: transaction.userId },
+      });
+
+      if (!subscription) {
+        subscription = await prisma.subscription.create({
+          data: {
+            userId: transaction.userId,
+            plan: transaction.plan.startsWith('TOPUP') ? 'FREE' : transaction.plan,
+            status: 'ACTIVE',
+            credits: transaction.creditsAdded,
+          },
+        });
+      } else {
+        subscription = await prisma.subscription.update({
+          where: { id: subscription.id },
+          data: {
+            credits: subscription.credits + transaction.creditsAdded,
+            plan: transaction.plan.startsWith('TOPUP') ? subscription.plan : transaction.plan,
+            status: 'ACTIVE',
+          },
+        });
+      }
+
+      server.log.info(`Simulated payment success for order ${orderId}, added ${transaction.creditsAdded} credits to user ${transaction.userId}`);
+
+      return reply.send({
+        status: 'success',
+        message: `Simulasi pembayaran berhasil! ${transaction.creditsAdded} menit kredit telah ditambahkan ke akun.`,
+        newCredits: subscription.credits,
+      });
+    } catch (e: any) {
+      return reply.status(500).send({ error: e.message });
+    }
+  });
 }

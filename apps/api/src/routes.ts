@@ -49,6 +49,17 @@ export default async function routes(server: FastifyInstance) {
       targetUserId = user.id;
     }
 
+    // Check user subscription and credit minutes
+    const subscription = await prisma.subscription.findFirst({
+      where: { userId: targetUserId }
+    });
+
+    if (subscription && subscription.credits <= 0) {
+      return reply.code(402).send({
+        error: 'Kredit menit AI Anda telah habis (0 Menit). Silakan lakukan Top-Up atau beli paket di menu Langganan & Tagihan.'
+      });
+    }
+
     const project = await prisma.project.create({
       data: {
         userId: targetUserId,

@@ -393,6 +393,7 @@ export default function BillingPage() {
                   <th className="p-4">Kredit</th>
                   <th className="p-4">Status</th>
                   <th className="p-4">Tanggal</th>
+                  <th className="p-4 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -404,6 +405,41 @@ export default function BillingPage() {
                     <td className="p-4">+{tx.creditsAdded} Menit</td>
                     <td className="p-4">{getStatusBadge(tx.status)}</td>
                     <td className="p-4 text-gray-400">{new Date(tx.createdAt).toLocaleDateString('id-ID')}</td>
+                    <td className="p-4 text-right">
+                      {tx.status === 'PENDING' && (
+                        <div className="flex items-center justify-end gap-2">
+                          {tx.snapUrl && (
+                            <a
+                              href={tx.snapUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-2.5 py-1 bg-cyan-500 hover:bg-cyan-400 text-black rounded-lg text-[11px] font-bold transition-all"
+                            >
+                              Bayar Midtrans
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const res = await fetch('/api/payment/simulate-success', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ orderId: tx.orderId })
+                                });
+                                if (res.ok) {
+                                  alert('✅ Simulasi pembayaran sukses! Kredit telah ditambahkan.');
+                                  fetchData();
+                                }
+                              } catch (e) {}
+                            }}
+                            className="px-2.5 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/30 rounded-lg text-[11px] font-bold transition-all"
+                          >
+                            Simulasi Bayar
+                          </button>
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
