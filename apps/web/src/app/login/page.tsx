@@ -62,6 +62,58 @@ export default function LoginPage() {
     }
   };
 
+  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '205226226089-r9shmia8s6i72878jgqucml68a6gdgt4.apps.googleusercontent.com';
+
+  React.useEffect(() => {
+    // Load Google Identity Services SDK
+    if (typeof window !== 'undefined' && !document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        try {
+          if ((window as any).google?.accounts?.id) {
+            (window as any).google.accounts.id.initialize({
+              client_id: GOOGLE_CLIENT_ID,
+              callback: (response: any) => {
+                if (response.credential) {
+                  executeGoogleAuthWithToken(response.credential);
+                }
+              },
+            });
+          }
+        } catch (e) {}
+      };
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  const executeGoogleAuthWithToken = async (idToken: string) => {
+    setLoading(true);
+    setError(null);
+    setShowGoogleModal(false);
+    try {
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Gagal masuk dengan Akun Google');
+      }
+
+      setAuthSession(data.token, data.user);
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Gagal masuk dengan Google');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const executeGoogleAuth = async (targetEmail: string, targetName?: string) => {
     setLoading(true);
     setError(null);
@@ -88,6 +140,22 @@ export default function LoginPage() {
       setError(err.message || 'Gagal masuk dengan Google');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleButtonClick = () => {
+    if ((window as any).google?.accounts?.id) {
+      try {
+        (window as any).google.accounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            setShowGoogleModal(true);
+          }
+        });
+      } catch (e) {
+        setShowGoogleModal(true);
+      }
+    } else {
+      setShowGoogleModal(true);
     }
   };
 
