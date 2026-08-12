@@ -419,17 +419,20 @@ async function startConsumers() {
             }
           } catch(e) {}
 
-          if (fs.existsSync(wordsPath)) {
+          const hasWhisperWords = fs.existsSync(wordsPath);
+          if (hasWhisperWords) {
             const whisperWords = JSON.parse(fs.readFileSync(wordsPath, 'utf-8'));
             styleObj.words = whisperWords;
+            // Whisper timestamps generated from the audio clip segment are 100% accurate (0.0s relative start)
+            // Do NOT apply pre-shift to Whisper timestamps
+            styleObj.offset = 0;
+            console.log(`Using frame-accurate Whisper timestamps (${whisperWords.length} words, offset=0s)`);
+          } else {
+            // Apply pre-shift ONLY for YouTube VTT auto-sub fallback (YouTube auto-subs lag ~0.35s behind speech)
+            const subtitlePreShift = -0.35;
+            styleObj.offset = (styleObj.offset || 0) + subtitlePreShift - segmentDrift;
+            console.log(`VTT auto-sub fallback timing applied: preShift=${subtitlePreShift}s, segmentDrift=${segmentDrift.toFixed(3)}s, total=${styleObj.offset.toFixed(3)}s`);
           }
-
-          // Apply subtitle timing corrections:
-          // 1. segmentDrift: compensate for yt-dlp keyframe alignment (segment starts before requested time)
-          // 2. Pre-shift: YouTube auto-subs and Whisper 'base' model tend to lag ~0.3s behind speech
-          const subtitlePreShift = -0.35; // shift subtitles 350ms earlier to match speech
-          styleObj.offset = (styleObj.offset || 0) + subtitlePreShift - segmentDrift;
-          console.log(`Subtitle offset applied: preShift=${subtitlePreShift}s, segmentDrift=${segmentDrift.toFixed(3)}s, total=${styleObj.offset.toFixed(3)}s`);
 
           const assPath = path.join(__dirname, `../temp_${clip.id}.ass`);
           await generateAssFromVtt(vttContent, clipStartSec, clipEndSec, assPath, styleObj);
