@@ -17,11 +17,11 @@ export default async function adminRoutes(server: FastifyInstance) {
       const totalProjects = await prisma.project.count();
       const totalClips = await prisma.clip.count({ where: { renderStatus: 'READY' } });
 
-      const transactions = await prisma.transaction.findMany({
+      const transactions = await (prisma as any).transaction.findMany({
         where: { status: 'SETTLEMENT' },
         select: { amount: true },
       });
-      const totalRevenue = transactions.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+      const totalRevenue = transactions.reduce((acc: number, curr: any) => acc + (curr.amount || 0), 0);
 
       // Last 7 days video processing stats
       const sevenDaysAgo = new Date();
@@ -130,7 +130,7 @@ export default async function adminRoutes(server: FastifyInstance) {
           id: u.id,
           email: u.email,
           name: u.name || 'User',
-          role: u.role || 'USER',
+          role: (u as any).role || 'USER',
           createdAt: u.createdAt,
           plan: sub?.plan || 'FREE',
           credits: sub?.credits ?? 25,
@@ -201,13 +201,13 @@ export default async function adminRoutes(server: FastifyInstance) {
 
       const updatedUser = await prisma.user.update({
         where: { id: userId },
-        data: { role: newRole },
+        data: { role: newRole } as any,
       });
 
       return reply.send({
         status: 'success',
         userId: updatedUser.id,
-        role: updatedUser.role,
+        role: (updatedUser as any).role,
       });
     } catch (err: any) {
       server.log.error('Admin update role error:', err);

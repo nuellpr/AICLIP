@@ -87,7 +87,7 @@ export default async function paymentRoutes(server: FastifyInstance) {
         },
       });
 
-      const transaction = await prisma.transaction.create({
+      const transaction = await (prisma as any).transaction.create({
         data: {
           orderId,
           userId: user.id,
@@ -139,7 +139,7 @@ export default async function paymentRoutes(server: FastifyInstance) {
         return reply.status(403).send({ error: 'Signature key tidak valid' });
       }
 
-      const transaction = await prisma.transaction.findUnique({
+      const transaction = await (prisma as any).transaction.findUnique({
         where: { orderId: order_id },
       });
 
@@ -165,7 +165,7 @@ export default async function paymentRoutes(server: FastifyInstance) {
       }
 
       // Update Transaction in DB
-      await prisma.transaction.update({
+      await (prisma as any).transaction.update({
         where: { orderId: order_id },
         data: {
           status: newStatus,
@@ -222,7 +222,7 @@ export default async function paymentRoutes(server: FastifyInstance) {
         return reply.send({ transactions: [] });
       }
 
-      const transactions = await prisma.transaction.findMany({
+      const transactions = await (prisma as any).transaction.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
       });

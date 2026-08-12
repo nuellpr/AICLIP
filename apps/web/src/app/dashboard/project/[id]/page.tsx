@@ -6,6 +6,7 @@ import { CheckCircle2, Loader2, AlertCircle, Video, Download, Edit, Play, Mic } 
 import { CaptionCarousel } from "@/components/CaptionCarousel";
 import { PreviewVideo } from "@/components/PreviewVideo";
 import { TimelineSlider } from "@/components/TimelineSlider";
+import { InteractiveWordEditor } from "@/components/InteractiveWordEditor";
 import { CAPTION_PRESETS, CaptionPreset, getDefaultPreset, Word } from "@clipforge/shared";
 import { getApiUrl } from "@/lib/api";
 
@@ -505,8 +506,19 @@ export default function ProjectPage() {
                     </div>
                   </div>
 
+                  {/* Interactive Word-by-Word Editor */}
+                  <InteractiveWordEditor
+                    clipId={editingClip.id}
+                    words={previewWords}
+                    onWordsChange={(updatedWords) => {
+                      setPreviewWords(updatedWords);
+                      const newCaption = updatedWords.map(w => w.text).join(' ');
+                      setEditingClip({ ...editingClip, caption: newCaption });
+                    }}
+                  />
+
                   <div className="mb-4">
-                    <label className="block text-sm text-gray-400 mb-2">Trim Klip</label>
+                    <label className="block text-sm text-gray-400 mb-2 font-medium">Trim Klip (Timeline)</label>
                     <TimelineSlider
                       min={Math.max(0, editingClip.startTime - 60)}
                       max={editingClip.endTime + 60}

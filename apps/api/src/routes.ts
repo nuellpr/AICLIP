@@ -143,23 +143,60 @@ export default async function routes(server: FastifyInstance) {
     const path = require('path');
     const { parseYouTubeVttWords } = require('@clipforge/shared');
 
-    // The VTT files are in apps/worker
+    // 1. Check if custom edited/whisper JSON file exists first
+    const whisperFile = path.join(__dirname, `../public/renders/whisper_${id}.json`);
+    if (fs.existsSync(whisperFile)) {
+      try {
+        const whisperWords = JSON.parse(fs.readFileSync(whisperFile, 'utf-8'));
+        if (Array.isArray(whisperWords) && whisperWords.length > 0) {
+          return whisperWords;
+        }
+      } catch (e) {}
+    }
+
+    // 2. Fallback to VTT file
     const workerDir = path.join(__dirname, '../../worker');
-    if (!fs.existsSync(workerDir)) return reply.code(404).send({ error: 'Worker directory not found' });
+    if (!fs.existsSync(workerDir)) return [];
 
     const files = fs.readdirSync(workerDir);
     let subFile = files.find((f: string) => f.startsWith(`transcript_${clip.projectId}_`) && f.endsWith('.id.vtt'));
     if (!subFile) subFile = files.find((f: string) => f.startsWith(`transcript_${clip.projectId}_`) && f.endsWith('.vtt'));
     
-    if (!subFile) return reply.code(404).send({ error: 'VTT not found' });
+    if (!subFile) return [];
 
     const vttContent = fs.readFileSync(path.join(workerDir, subFile), 'utf-8');
     const allWords = parseYouTubeVttWords(vttContent);
-    
-    // Filter to clip boundaries with a small padding
     const clipWords = allWords.filter((w: any) => w.end >= clip.startTime - 0.5 && w.start <= clip.endTime + 0.5);
 
     return clipWords;
+  });
+
+  server.put('/clips/:id/words', async (request, reply) => {
+    const { id } = request.params as any;
+    const { words } = request.body as { words: any[] };
+
+    if (!Array.isArray(words)) {
+      return reply.code(400).send({ error: 'Words must be an array' });
+    }
+
+    const fs = require('fs');
+    const path = require('path');
+    const rendersDir = path.join(__dirname, '../public/renders');
+    if (!fs.existsSync(rendersDir)) {
+      fs.mkdirSync(rendersDir, { recursive: true });
+    }
+
+    const whisperFile = path.join(rendersDir, `whisper_${id}.json`);
+    fs.writeFileSync(whisperFile, JSON.stringify(words, null, 2), 'utf-8');
+
+    // Also update caption summary in database
+    const newCaptionText = words.map(w => w.text).join(' ');
+    await prisma.clip.update({
+      where: { id },
+      data: { caption: newCaptionText }
+    });
+
+    return { success: true, count: words.length };
   });
 
   server.post('/clips/:id/render', async (request, reply) => {
@@ -274,7 +311,7 @@ export default async function routes(server: FastifyInstance) {
 
     if (userId) {
       const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (user && user.role === 'ADMIN') {
+      if (user && (user as any).role === 'ADMIN') {
         const configPath = path.resolve(__dirname, '../../../ai-config.json');
         if (fs.existsSync(configPath)) {
           try { return JSON.parse(fs.readFileSync(configPath, 'utf-8')); } catch (e) {}
@@ -326,7 +363,7 @@ export default async function routes(server: FastifyInstance) {
 
     if (userId) {
       const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (user && user.role === 'ADMIN') {
+      if (user && (user as any).role === 'ADMIN') {
         const globalPath = path.resolve(__dirname, '../../../ai-config.json');
         fs.writeFileSync(globalPath, JSON.stringify(config, null, 2));
       }
