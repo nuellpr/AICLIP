@@ -24,16 +24,57 @@ def main():
 
     try:
         import cv2
-        import mediapipe as mp
         import numpy as np
-    except ImportError as e:
-        print(f"Required package not installed: {e}. Falling back to center crop.")
-        # Write center crop commands as fallback
-        with open(output_path, 'w') as f:
-            f.write("# No mediapipe available, center crop\n")
+        
+        # Robust MediaPipe solutions import
+        mp_face_mesh = None
+        try:
+            import mediapipe as mp
+            if hasattr(mp, 'solutions') and hasattr(mp.solutions, 'face_mesh'):
+                mp_face_mesh = mp.solutions.face_mesh
+            else:
+                from mediapipe.python.solutions import face_mesh as mp_fm
+                mp_face_mesh = mp_fm
+        except Exception:
+            pass
+            
+        if not mp_face_mesh:
+            # Fallback: Use OpenCV face tracker if MediaPipe solutions is unavailable
+            print("MediaPipe face_mesh unavailable, falling back to OpenCV face tracker...")
+            cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+            face_cascade = cv2.CascadeClassifier(cascade_path)
+            
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened(): sys.exit(1)
+            fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            
+            commands = []
+            frame_idx = 0
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret: break
+                if frame_idx % 3 == 0:
+                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4, minSize=(30, 30))
+                    center_x = width / 2
+                    if len(faces) > 0:
+                        largest = max(faces, key=lambda f: f[2] * f[3])
+                        center_x = largest[0] + largest[2] / 2.0
+                    crop_x = max(0, min(width - crop_w, center_x - crop_w / 2.0))
+                    timestamp = frame_idx / fps
+                    commands.append(f"{timestamp:.3f} crop x {int(crop_x)};")
+                frame_idx += 1
+            cap.release()
+            
+            with open(output_path, 'w') as f:
+                for cmd in commands: f.write(cmd + "\n")
+            print(f"OpenCV fallback face tracking complete: {len(commands)} keyframes")
+            sys.exit(0)
+    except Exception as e:
+        print(f"Tracking error: {e}")
         sys.exit(0)
-
-    mp_face_mesh = mp.solutions.face_mesh
     face_mesh = mp_face_mesh.FaceMesh(
         max_num_faces=4,
         refine_landmarks=True,

@@ -2,7 +2,6 @@ import cv2
 import sys
 import os
 import math
-import mediapipe as mp
 
 def smooth_array(arr, window_size):
     if len(arr) == 0: return arr
@@ -14,7 +13,7 @@ def smooth_array(arr, window_size):
         smoothed.append(sum(window) / len(window))
     return smoothed
 
-def track_faces(video_path, output_cmd_path, target_w=1080, target_h=1920):
+def track_faces(video_path, output_cmd_path):
     if not os.path.exists(video_path):
         print(f"Error: File not found {video_path}")
         sys.exit(1)
@@ -26,58 +25,43 @@ def track_faces(video_path, output_cmd_path, target_w=1080, target_h=1920):
 
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    
-    mp_face_detection = mp.solutions.face_detection
-    face_detection = mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5)
+
+    # Use OpenCV Haar Cascade classifier for zero-dependency face detection
+    cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+    face_cascade = cv2.CascadeClassifier(cascade_path)
 
     scale_factor = 480.0 / float(width) if width > 480 else 1.0
-
     raw_centers = []
 
-    # Pass 1: Detect Faces with MediaPipe
+    # Pass 1: Detect Faces with OpenCV
     while True:
         ret, frame = cap.read()
         if not ret: break
-            
+
         small = cv2.resize(frame, (0, 0), fx=scale_factor, fy=scale_factor) if scale_factor < 1.0 else frame
+        gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
         
-        # MediaPipe requires RGB images
-        rgb_frame = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
-        results = face_detection.process(rgb_frame)
-        
-        if results.detections:
-            # Find largest face by bounding box area
-            largest_det = None
-            max_area = 0
-            for det in results.detections:
-                bbox = det.location_data.relative_bounding_box
-                area = bbox.width * bbox.height
-                if area > max_area:
-                    max_area = area
-                    largest_det = det
-                    
-            if largest_det:
-                bbox = largest_det.location_data.relative_bounding_box
-                # bbox properties are relative [0.0, 1.0]
-                center_x_relative = bbox.xmin + (bbox.width / 2)
-                # Convert back to absolute original width
-                center_x = center_x_relative * width
-                raw_centers.append(center_x)
-            else:
-                raw_centers.append(None)
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4, minSize=(30, 30))
+
+        if len(faces) > 0:
+            # Find largest face by area (w * h)
+            largest_face = max(faces, key=lambda f: f[2] * f[3])
+            fx, fy, fw, fh = largest_face
+            # Convert scaled coordinates back to original frame size
+            center_x = (fx + fw / 2.0) / scale_factor
+            raw_centers.append(center_x)
         else:
             raw_centers.append(None)
-            
+
     cap.release()
-    face_detection.close()
 
     if len(raw_centers) == 0:
         sys.exit(0)
 
-    # Pass 2: Fill gaps (interpolation)
+    # Pass 2: Fill gaps (linear interpolation)
     filled_centers = []
     last_valid = width / 2
-    
+
     for c in raw_centers:
         if c is not None:
             last_valid = c
@@ -99,34 +83,35 @@ def track_faces(video_path, output_cmd_path, target_w=1080, target_h=1920):
             step = (next_valid - last_valid) / dist
             new_val = filled_centers[-1] + step if len(filled_centers) > 0 else last_valid
             filled_centers.append(new_val)
-            last_valid = new_val
 
-    # Pass 3: Heavy Smoothing (Moving Average Window)
-    smoothed_centers = smooth_array(filled_centers, window_size=int(fps / 1.5))
+    # Pass 3: Smooth with moving average filter
+    smoothed_centers = smooth_array(filled_centers, window_size=15)
 
-    # Pass 4: Generate FFmpeg Commands
-    commands = []
-    for i, best_x in enumerate(smoothed_centers):
-        crop_x = int(best_x - (target_w / 2))
-        
-        if crop_x < 0: crop_x = 0
-        elif crop_x > width - target_w: crop_x = max(0, width - target_w)
-            
-        timestamp = i / fps
-        commands.append(f"{timestamp:.3f} crop x '{crop_x}';")
-        
+    # Calculate 9:16 crop width for target 1080x1920
+    crop_w = int(height * (9.0 / 16.0))
+    if crop_w > width:
+        crop_w = width
+
+    half_crop = crop_w / 2.0
+
+    # Write sendcmd commands file for FFmpeg
     with open(output_cmd_path, 'w') as f:
-        f.write("\n".join(commands))
-        
-    print(f"MediaPipe Face tracking complete. Analyzed {len(raw_centers)} frames.")
+        for i, center_x in enumerate(smoothed_centers):
+            crop_x = center_x - half_crop
+            if crop_x < 0: crop_x = 0
+            if crop_x > (width - crop_w): crop_x = width - crop_w
+            
+            timestamp = i / fps
+            f.write(f"{timestamp:.3f} crop x {int(crop_x)};\n")
+
+    print(f"OpenCV Face tracking completed. Generated {len(smoothed_centers)} keyframes.")
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
+        print("Usage: python face_tracker.py <input_video> <output_cmd_file> [crop_w] [crop_h] [smoothing]")
         sys.exit(1)
-        
-    track_faces(
-        sys.argv[1], 
-        sys.argv[2], 
-        int(sys.argv[3]) if len(sys.argv) > 3 else 1080, 
-        int(sys.argv[4]) if len(sys.argv) > 4 else 1920
-    )
+    
+    video_input = sys.argv[1]
+    cmd_output = sys.argv[2]
+    
+    track_faces(video_input, cmd_output)
