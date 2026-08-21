@@ -3,74 +3,17 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, User as UserIcon, CheckCircle2, ArrowRight, AlertCircle, X, Sparkles } from 'lucide-react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { setAuthSession } from '@/lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [isRegister, setIsRegister] = useState<boolean>(false);
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [name, setName] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
-    const payload = isRegister ? { email, password, name } : { email, password };
-
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Autentikasi gagal');
-      }
-
-      setAuthSession(data.token, data.user);
-      router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Terjadi kesalahan saat masuk');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
-  React.useEffect(() => {
-    // Load Google Identity Services SDK
-    if (typeof window !== 'undefined' && !document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        try {
-          if ((window as any).google?.accounts?.id) {
-            (window as any).google.accounts.id.initialize({
-              client_id: GOOGLE_CLIENT_ID,
-              callback: (response: any) => {
-                if (response.credential) {
-                  executeGoogleAuthWithToken(response.credential);
-                }
-              },
-            });
-          }
-        } catch (e) {}
-      };
-      document.body.appendChild(script);
-    }
-  }, []);
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const executeGoogleAuthWithToken = async (idToken: string) => {
     setLoading(true);
     setError(null);
@@ -88,40 +31,42 @@ export default function LoginPage() {
 
       setAuthSession(data.token, data.user);
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Gagal masuk dengan Google');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Gagal masuk dengan Google';
+      setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const executeGoogleAuth = async (targetEmail: string, targetName?: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: targetEmail,
-          name: targetName || targetEmail.split('@')[0],
-          picture: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Gagal masuk dengan Akun Google');
-      }
-
-      setAuthSession(data.token, data.user);
-      router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Gagal masuk dengan Google');
-    } finally {
-      setLoading(false);
+  React.useEffect(() => {
+    // Load Google Identity Services SDK
+    if (typeof window !== 'undefined' && !document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        try {
+          const w = window as unknown as { google?: { accounts?: { id?: { initialize: (opts: unknown) => void } } } };
+          if (w.google?.accounts?.id) {
+            w.google.accounts.id.initialize({
+              client_id: GOOGLE_CLIENT_ID,
+              callback: (response: unknown) => {
+                const cred = (response as { credential?: string })?.credential;
+                if (cred) {
+                  executeGoogleAuthWithToken(cred);
+                }
+              },
+            } as unknown);
+          }
+        } catch (_e) { /* ignore */ }
+      };
+      document.body.appendChild(script);
     }
-  };
+  }, [GOOGLE_CLIENT_ID, executeGoogleAuthWithToken]);
+
+
 
   const handleGoogleButtonClick = async () => {
     setLoading(true);
@@ -135,9 +80,14 @@ export default function LoginPage() {
           return;
         }
       }
-    } catch (e) {}
+    } catch (_e) { /* ignore */ }
 
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '205226226089-r9shmia8s6i72878jgqucml68a6gdgt4.apps.googleusercontent.com';
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      setError('Google Client ID belum dikonfigurasi. Hubungi admin.');
+      setLoading(false);
+      return;
+    }
     const redirectUri = `${window.location.origin}/api/auth/callback/google`;
     const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
       `client_id=${clientId}` +
@@ -154,6 +104,7 @@ export default function LoginPage() {
       {/* Top Navbar */}
       <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between z-20">
         <Link href="/home" className="flex items-center gap-3 group">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="ClipForge AI" className="h-10 object-contain drop-shadow-[0_0_15px_rgba(34,211,238,0.4)] group-hover:scale-105 transition-transform" />
           <span className="font-extrabold text-xl tracking-tight text-white">KlipAja<span className="text-cyan-400">.id</span></span>
         </Link>

@@ -1,6 +1,10 @@
 packages:
   - "apps/*"
   - "packages/*"
+overrides:
+  fast-jwt: ^6.3.2
+  sharp: ^0.35.0
+  postcss: ^8.5.12
 allowBuilds:
   '@google/genai': true
   '@prisma/client': true

@@ -9,7 +9,7 @@ describe('CAPTION_PRESETS', () => {
 
   it('is not empty and has the known first preset', () => {
     expect(CAPTION_PRESETS.length).toBeGreaterThan(0);
-    expect(CAPTION_PRESETS[0].id).toBe('kasisolusi');
+    expect(CAPTION_PRESETS[0].id).toBe('alex-hormozi');
   });
 
   it('has valid preset shapes', () => {

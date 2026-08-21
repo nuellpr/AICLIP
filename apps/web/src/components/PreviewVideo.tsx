@@ -114,6 +114,7 @@ export function PreviewVideo({ videoSrc, previewWords, captionSettings, startTim
               fontFamily: captionSettings.fontFamily,
               fontWeight: captionSettings.fontWeight || 900,
               fontStyle: captionSettings.fontStyle || 'normal',
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               textTransform: captionSettings.textTransform as any,
               backgroundColor: captionSettings.backgroundColor !== 'transparent' ? captionSettings.backgroundColor : 'transparent',
               padding: captionSettings.backgroundColor !== 'transparent' ? '8px 16px' : '0',

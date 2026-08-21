@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Shield, Users, Video, DollarSign, Activity, Server, Plus, RefreshCw, AlertCircle, CheckCircle2, Clock, Flame, ChevronRight, X, Cpu, Sparkles, Lock } from 'lucide-react';
+import { Shield, Users, Video, DollarSign, Activity, Server, Plus, RefreshCw, AlertCircle, CheckCircle2, X, Cpu, Sparkles, Lock } from 'lucide-react';
 import { getStoredUser, AuthUser } from '@/lib/auth';
 
 interface Stats {
@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
         const uData = await usersRes.json();
         setUsers(uData.users || []);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching admin data:', err);
       setError('Gagal memuat data konsol admin');
     } finally {
@@ -115,8 +115,8 @@ export default function AdminDashboardPage() {
         setSelectedUser(null);
         setActionSuccess(null);
       }, 1500);
-    } catch (err: any) {
-      setError(err.message || 'Terjadi kesalahan saat menambah kredit');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Terjadi kesalahan saat menambah kredit');
     } finally {
       setActionLoading(false);
     }

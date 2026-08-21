@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, Sparkles, CheckCircle2 } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, Sparkles, CheckCircle2 } from "lucide-react";
 
 export function TutorialVideoPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -61,7 +61,6 @@ export function TutorialVideoPlayer() {
           preload="metadata"
         >
           <source src="/tutorial.mp4" type="video/mp4" />
-          <source src="http://127.0.0.1:3001/renders/cmrsz6iv2000110bjhrlm07je.mp4" type="video/mp4" />
         </video>
 
         {/* Ambient Gradient Glow overlay when paused */}

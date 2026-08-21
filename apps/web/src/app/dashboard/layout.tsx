@@ -63,6 +63,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Top Header for Mobile */}
       <header className="flex md:hidden items-center justify-between p-4 border-b border-white/10 glass-panel sticky top-0 z-40">
         <Link href="/home" className="flex items-center gap-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="ClipForge AI" className="h-8 w-auto object-contain" />
         </Link>
 
@@ -84,6 +85,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Brand Logo */}
           <Link href="/home" className="flex items-center gap-3 mb-10 z-10 pt-2 group" title="Kembali ke Tampilan Depan">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="ClipForge AI" className="h-12 w-auto object-contain drop-shadow-[0_0_15px_rgba(34,211,238,0.4)] group-hover:scale-105 transition-transform" />
           </Link>
 
@@ -143,6 +145,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
               <div className="flex items-center gap-3 overflow-hidden">
                 {user?.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={user.image} alt={user.name || 'User'} className="h-9 w-9 rounded-xl object-cover border border-cyan-400/30" />
                 ) : (
                   <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-purple-500 flex items-center justify-center font-bold text-xs text-black flex-shrink-0">

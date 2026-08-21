@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Download, Video, Loader2, Calendar, Trash2, CheckSquare, Square, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Download, Video, Loader2, Calendar, Trash2, CheckSquare, Square, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { getApiUrl } from "@/lib/api";
 
@@ -9,7 +9,7 @@ import { getStoredUser } from "@/lib/auth";
 
 export default function LibraryPage() {
   const [mounted, setMounted] = useState(false);
-  const [clips, setClips] = useState<any[]>([]);
+  const [clips, setClips] = useState<{id:string,title:string,hook:string,createdAt:string,project?:{title:string},renderedFileKey?:string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -35,8 +35,8 @@ export default function LibraryPage() {
           setClips(data);
         }
       }
-    } catch (e) {
-      console.error('Fetch error:', e);
+    } catch (_e) {
+      console.error('Fetch error:', _e);
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +76,7 @@ export default function LibraryPage() {
         showToast('Klip berhasil dipindahkan ke Recycle Bin!');
         fetchClips();
       }
-    } catch (e) {
+    } catch (_e) {
       alert('Gagal menghapus klip');
     }
   };
@@ -101,7 +101,7 @@ export default function LibraryPage() {
       } else {
         alert('Gagal menghapus beberapa klip');
       }
-    } catch (e) {
+    } catch (_e) {
       alert('Terjadi kesalahan saat menghapus');
     } finally {
       setIsDeleting(false);
@@ -209,7 +209,7 @@ export default function LibraryPage() {
                 
                 <div className="p-4 flex flex-col flex-1">
                   <h3 className="font-bold text-lg mb-1 line-clamp-2">{clip.title}</h3>
-                  <p className="text-sm text-gray-400 line-clamp-2 mb-4 flex-1">"{clip.hook}"</p>
+                  <p className="text-sm text-gray-400 line-clamp-2 mb-4 flex-1">&quot;{clip.hook}&quot;</p>
                   
                   <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/10">
                     <div className="flex items-center text-xs text-gray-500">

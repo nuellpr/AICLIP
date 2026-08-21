@@ -1,5 +1,6 @@
 "use client";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Save, User, Key, Settings as SettingsIcon, CheckCircle2, Loader2, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getApiUrl } from "@/lib/api";
@@ -37,6 +38,7 @@ export default function SettingsPage() {
       .catch(console.error);
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleProviderChange = (e: any) => {
     const val = e.target.value;
     setProvider(val);

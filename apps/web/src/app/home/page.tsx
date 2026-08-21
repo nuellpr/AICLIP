@@ -12,6 +12,7 @@ export default function Home() {
       <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#060609]/70 backdrop-blur-xl">
         <div className="container mx-auto flex h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/home" className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="ClipForge AI" className="h-12 w-auto object-contain drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]" />
           </Link>
 

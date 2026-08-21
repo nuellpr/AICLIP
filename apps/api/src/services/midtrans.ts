@@ -20,7 +20,7 @@ export interface CreateSnapTransactionParams {
 }
 
 export async function createSnapTransaction(params: CreateSnapTransactionParams): Promise<{ token: string; redirect_url: string }> {
-  const serverKey = process.env.MIDTRANS_SERVER_KEY || 'SB-Mid-server-DUMMY_KEY';
+  const serverKey = process.env.MIDTRANS_SERVER_KEY || '';
   const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
 
   const baseUrl = isProduction
@@ -41,8 +41,8 @@ export async function createSnapTransaction(params: CreateSnapTransactionParams)
     },
   };
 
-  if (!process.env.MIDTRANS_SERVER_KEY || process.env.MIDTRANS_SERVER_KEY.includes('DUMMY')) {
-    console.log('MIDTRANS_SERVER_KEY is placeholder. Using Mock Sandbox Transaction for testing mode.');
+  if (!process.env.MIDTRANS_SERVER_KEY) {
+    console.log('MIDTRANS_SERVER_KEY not configured. Using Mock Sandbox Transaction for testing mode.');
     return {
       token: `mock-snap-${Date.now()}`,
       redirect_url: `https://app.sandbox.midtrans.com/snap/v2/vtweb/${params.orderId}`,
@@ -84,7 +84,7 @@ export function verifyMidtransSignature(
   grossAmount: string,
   signatureKey: string
 ): boolean {
-  const serverKey = process.env.MIDTRANS_SERVER_KEY || 'SB-Mid-server-DUMMY_KEY';
+  const serverKey = process.env.MIDTRANS_SERVER_KEY || '';
   const rawString = `${orderId}${statusCode}${grossAmount}${serverKey}`;
   const calculatedHash = crypto.createHash('sha512').update(rawString).digest('hex');
   return calculatedHash.toLowerCase() === signatureKey.toLowerCase();

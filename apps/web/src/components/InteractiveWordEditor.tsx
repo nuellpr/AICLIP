@@ -78,6 +78,7 @@ export function InteractiveWordEditor({
       } else {
         alert("Gagal menyimpan perubahan kata");
       }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       alert("Error: " + e.message);
     } finally {

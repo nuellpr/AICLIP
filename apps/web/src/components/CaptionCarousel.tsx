@@ -33,8 +33,8 @@ function AnimatedPresetPreview({ preset }: { preset: CaptionPreset }) {
         let bg = 'transparent';
         let transform = 'scale(1)';
         let textDecoration = 'none';
-        let borderRadius = '4px';
-        let padding = '2px 4px';
+        const borderRadius = '4px';
+        const padding = '2px 4px';
         let glowShadow = 'none';
 
         if (preset.animation === 'boxHighlight' || preset.id === 'smart-bg-focus' || preset.id === 'box-highlight') {

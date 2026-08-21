@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Link as LinkIcon, Settings2, ArrowRight, Loader2, Sparkles, PlaySquare, Crop, SplitSquareVertical, Gamepad2, User, Zap, ScanFace } from "lucide-react";
+import { Upload, Link as LinkIcon, Settings2, ArrowRight, Loader2, Sparkles, PlaySquare, Crop, SplitSquareVertical, Zap, ScanFace } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MotionDiv, MotionButton } from "@/components/Motion";
+import { MotionDiv } from "@/components/Motion";
 import { getApiUrl } from "@/lib/api";
 
 export default function NewProjectPage() {
@@ -53,6 +53,7 @@ export default function NewProjectPage() {
       }
 
       router.push(`/dashboard/project/${data.projectId || data.id}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.message || "Gagal membuat proyek");
       setLoading(false);

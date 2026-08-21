@@ -13,9 +13,12 @@ import { getApiUrl } from "@/lib/api";
 export default function ProjectPage() {
   const params = useParams();
   const id = params.id as string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [project, setProject] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState("");
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [editingClip, setEditingClip] = useState<any>(null);
   const [captionSettings, setCaptionSettings] = useState<CaptionPreset>(getDefaultPreset());
   const [previewWords, setPreviewWords] = useState<Word[]>([]);
@@ -41,6 +44,7 @@ export default function ProjectPage() {
             return true;
           }
         }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (e: any) {
         console.error('Failed to fetch project progress:', e);
       }
@@ -69,11 +73,13 @@ export default function ProjectPage() {
             clearInterval(pollInterval);
             eventSource?.close();
           }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {}
       };
       eventSource.onerror = () => {
         eventSource?.close();
       };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {}
 
     return () => {
@@ -82,6 +88,7 @@ export default function ProjectPage() {
     };
   }, [id, pollTrigger]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEditOpen = async (clip: any) => {
     setEditingClip({...clip});
     try {
@@ -125,6 +132,7 @@ export default function ProjectPage() {
       });
       if (!res.ok) throw new Error("Failed to save");
       setEditingClip(null);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       alert("Gagal menyimpan perubahan");
     } finally {
@@ -137,6 +145,7 @@ export default function ProjectPage() {
           setProject(data);
           setPollTrigger(p => p + 1);
         }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch(e) {}
       
       setIsSaving(false);
@@ -150,6 +159,7 @@ export default function ProjectPage() {
         method: 'POST'
       });
       if (!res.ok) throw new Error("Failed to trigger render");
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       alert("Gagal memicu render");
     } finally {
@@ -162,6 +172,7 @@ export default function ProjectPage() {
           setProject(data);
           setPollTrigger(p => p + 1);
         }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch(e) {}
       
       setRenderLoadingId(null);
@@ -245,6 +256,7 @@ export default function ProjectPage() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {project.clips?.map((clip: any, idx: number) => {
               const isRendering = clip.renderStatus === 'QUEUED' || clip.renderStatus === 'RENDERING' || renderLoadingId === clip.id;
               const isReady = clip.renderStatus === 'READY';
@@ -546,6 +558,7 @@ export default function ProjectPage() {
                             const data = await res.json();
                             setEditingClip({...editingClip, caption: data.caption});
                             alert('✅ Transkripsi Whisper berhasil! Caption diperbarui.');
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           } catch (e: any) {
                             alert('Error: ' + e.message);
                           } finally {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 
 interface TimelineSliderProps {
   min: number;
@@ -30,7 +30,6 @@ export function TimelineSlider({ min, max, startTime, endTime, onChange }: Timel
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         const clientX = e.clientX;
-        const pxPerSec = rect.width / safeDuration;
         const clickTime = min + ((clientX - rect.left) / rect.width) * safeDuration;
         setDragOffset(clickTime - startTime);
       }

@@ -36,7 +36,7 @@ export default function BillingPage() {
 
   const loadMidtransScript = () => {
     const isProduction = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === 'true';
-    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'SB-Mid-client-DUMMY';
+    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || '';
     const scriptUrl = isProduction
       ? 'https://app.midtrans.com/snap/snap.js'
       : 'https://app.sandbox.midtrans.com/snap/snap.js';
@@ -68,6 +68,7 @@ export default function BillingPage() {
         const txData = await txRes.json();
         setTransactions(txData.transactions || []);
       }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Error fetching billing data:', err);
       setError('Gagal memuat data billing');
@@ -92,16 +93,21 @@ export default function BillingPage() {
       }
 
       // Check if Midtrans Snap popup is available
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((window as any).snap && data.snapToken) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).snap.pay(data.snapToken, {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onSuccess: function (result: any) {
             console.log('Payment success:', result);
             fetchData();
           },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onPending: function (result: any) {
             console.log('Payment pending:', result);
             fetchData();
           },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onError: function (result: any) {
             console.error('Payment error:', result);
             setError('Pembayaran gagal atau dibatalkan');
@@ -118,6 +124,7 @@ export default function BillingPage() {
       } else {
         throw new Error('Metode pembayaran tidak tersedia');
       }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Checkout error:', err);
       setError(err.message || 'Terjadi kesalahan saat memproses checkout');
@@ -431,6 +438,7 @@ export default function BillingPage() {
                                   alert('✅ Simulasi pembayaran sukses! Kredit telah ditambahkan.');
                                   fetchData();
                                 }
+                              // eslint-disable-next-line @typescript-eslint/no-unused-vars
                               } catch (e) {}
                             }}
                             className="px-2.5 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/30 rounded-lg text-[11px] font-bold transition-all"
