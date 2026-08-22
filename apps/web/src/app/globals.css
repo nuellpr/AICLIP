@@ -1,19 +1,33 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0F172A;
+  --background: #05060B;
   --foreground: #F8FAFC;
-  --primary: #EC4899;
-  --primary-glow: rgba(236, 72, 153, 0.5);
-  --secondary: #DB2777;
-  --accent: #2563EB;
+  --primary: #2563EB;
+  --primary-glow: rgba(37, 99, 235, 0.35);
+  --secondary: #7C3AED;
+  --accent: #8B5CF6;
   --muted: #1E293B;
   --border: rgba(255, 255, 255, 0.08);
   --destructive: #DC2626;
-  --ring: #EC4899;
+  --ring: #2563EB;
+  /* KlipChip brand — hijau-cyan neon */
+  --klipchip-cyan: #22D3EE;
+  --klipchip-lime: #A3E635;
+  --klipchip-cyan-glow: rgba(34, 211, 238, 0.45);
+  --klipchip-lime-glow: rgba(163, 230, 53, 0.35);
+  /* ClipForge AI — ungu-pink + biru-cyan neon (dua aksen, ungu-pink primary) */
+  --cf-cyan: #22D3EE;
+  --cf-purple: #A855F7;
+  --cf-pink: #EC4899;
+  --cf-blue: #3B82F6;
+  --cf-glow: rgba(168, 85, 247, 0.35);
+  --cf-cyan-glow: rgba(34, 211, 238, 0.3);
 }
 
 @theme inline {
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-space-grotesk);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
@@ -29,6 +43,39 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   overflow-x: hidden;
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(37, 99, 235, 0.35);
+  color: var(--foreground);
+}
+
+/* Base typography — display font untuk heading, Inter untuk body */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-space-grotesk);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* Aksesibilitas: focus ring global + kurangi motion */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Custom Scrollbar */
@@ -68,10 +115,9 @@ body {
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--primary);
-  box-shadow: 0 0 25px var(--primary-glow);
-  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
 }
 
 /* Glow & Animation Utilities */
@@ -80,7 +126,7 @@ body {
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, #ffffff 0%, #EC4899 50%, #2563EB 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #60A5FA 50%, #A855F7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -98,7 +144,7 @@ body {
   z-index: -1;
   margin: -1.5px;
   border-radius: inherit;
-  background: linear-gradient(135deg, #EC4899, #DB2777, #2563EB);
+  background: linear-gradient(135deg, #2563EB, #8B5CF6, #EC4899);
   background-size: 200% 200%;
   animation: border-spin 4s linear infinite;
   opacity: 0.6;
@@ -113,4 +159,52 @@ body {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
+}
+
+/* KlipChip — utilities (dipakai hanya di /klipchip, tidak ganggu dashboard) */
+.klipchip-mesh {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(700px 400px at 20% 10%, rgba(34,211,238,0.18), transparent 60%),
+    radial-gradient(900px 600px at 85% 30%, rgba(163,230,53,0.14), transparent 60%),
+    radial-gradient(600px 500px at 50% 95%, rgba(34,211,238,0.08), transparent 60%);
+  pointer-events: none;
+}
+.klipchip-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 10%, black 30%, transparent 70%);
+}
+
+/* ClipForge — mesh + animated counters */
+.cf-mesh {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(700px 420px at 18% 8%, rgba(168,85,247,0.18), transparent 62%),
+    radial-gradient(820px 520px at 88% 18%, rgba(34,211,238,0.14), transparent 60%),
+    radial-gradient(600px 460px at 50% 96%, rgba(236,72,153,0.08), transparent 62%);
+  pointer-events: none;
+}
+@keyframes cf-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(168,85,247,0.45), 0 8px 32px rgba(168,85,247,0.25); }
+  50% { box-shadow: 0 0 0 8px rgba(168,85,247,0), 0 12px 40px rgba(168,85,247,0.35); }
+}
+.cf-cta-pulse { animation: cf-pulse 2.4s ease-in-out infinite; }
+
+/* ClipForge v2 — gradien teks biru → cyan + angka heading */
+.text-gradient-blue {
+  background: linear-gradient(100deg, #60A5FA 0%, #22D3EE 45%, #A855F7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.cf-num {
+  background: linear-gradient(120deg, #7DD3FC 0%, #22D3EE 40%, #C084FC 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }

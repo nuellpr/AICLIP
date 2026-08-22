@@ -36,7 +36,7 @@ function clearLoginAttempts(key: string) {
 
 function sanitizeUser(user: any) {
   const { password, ...safe } = user;
-  return safe;
+  return { ...safe, hasPassword: !!password };
 }
 
 // ---------- Google OAuth helpers ----------
@@ -302,6 +302,71 @@ export default async function authRoutes(server: FastifyInstance) {
         return reply.code(404).send({ error: 'User tidak ditemukan' });
       }
       return { user: sanitizeUser(user) };
+    }
+  );
+
+  // PATCH /api/auth/profile -> update name, image, birthDate, phone, bio
+  server.patch(
+    '/auth/profile',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const { sub } = request.user as any;
+      const { name, image, birthDate, phone, bio } = request.body as any;
+      const data: any = {};
+      if (typeof name === 'string' && name.trim().length > 0) {
+        if (name.trim().length < 2) return reply.code(400).send({ error: 'Nama minimal 2 karakter' });
+        data.name = name.trim();
+      }
+      if (image !== undefined) {
+        if (image === null || image === '') data.image = null;
+        else if (typeof image === 'string' && image.length < 2000000) data.image = image; // allow data URL or https
+        else return reply.code(400).send({ error: 'Foto profil tidak valid' });
+      }
+      if (birthDate !== undefined) {
+        if (birthDate === null || birthDate === '') data.birthDate = null;
+        else {
+          const d = new Date(birthDate);
+          if (isNaN(d.getTime())) return reply.code(400).send({ error: 'Tanggal lahir tidak valid (YYYY-MM-DD)' });
+          if (d > new Date()) return reply.code(400).send({ error: 'Tanggal lahir tidak boleh di masa depan' });
+          data.birthDate = d;
+        }
+      }
+      if (phone !== undefined) {
+        if (phone === null || phone === '') data.phone = null;
+        else if (typeof phone === 'string' && phone.length <= 20) data.phone = phone.trim();
+        else return reply.code(400).send({ error: 'No HP tidak valid' });
+      }
+      if (bio !== undefined) {
+        if (bio === null || bio === '') data.bio = null;
+        else if (typeof bio === 'string' && bio.length <= 500) data.bio = bio.trim();
+        else return reply.code(400).send({ error: 'Bio maksimal 500 karakter' });
+      }
+      if (Object.keys(data).length === 0) return reply.code(400).send({ error: 'Tidak ada data untuk diupdate' });
+      const updated = await prisma.user.update({ where: { id: sub }, data });
+      return { user: sanitizeUser(updated) };
+    }
+  );
+
+  // POST /api/auth/password -> set/change password
+  server.post(
+    '/auth/password',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const { sub } = request.user as any;
+      const { oldPassword, newPassword } = request.body as any;
+      if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+        return reply.code(400).send({ error: 'Password baru minimal 8 karakter' });
+      }
+      const user = await prisma.user.findUnique({ where: { id: sub } });
+      if (!user) return reply.code(404).send({ error: 'User tidak ditemukan' });
+      if (user.password) {
+        if (!oldPassword) return reply.code(400).send({ error: 'Password lama wajib diisi' });
+        const ok = await bcrypt.compare(oldPassword, user.password);
+        if (!ok) return reply.code(400).send({ error: 'Password lama salah' });
+      }
+      const hashed = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+      await prisma.user.update({ where: { id: sub }, data: { password: hashed } });
+      return { success: true };
     }
   );
 

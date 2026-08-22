@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '@clipforge/database';
-import { createSnapTransaction, verifyMidtransSignature } from './services/midtrans';
+import { createMayarInvoice, parseMayarWebhook } from './services/mayar';
 import { authenticate, getUserId } from './guards';
 
 export interface PlanConfig {
@@ -11,19 +11,20 @@ export interface PlanConfig {
   type: 'SUBSCRIPTION' | 'TOPUP';
 }
 
+// Satu sumber kebenaran harga — disamakan dengan landing page (/home).
 export const PLANS: Record<string, PlanConfig> = {
-  CREATOR: {
-    id: 'CREATOR',
-    name: 'Paket Creator (100 Menit)',
-    price: 99000,
-    credits: 100,
+  STANDAR: {
+    id: 'STANDAR',
+    name: 'Paket Standar (30 Menit)',
+    price: 30000,
+    credits: 30,
     type: 'SUBSCRIPTION',
   },
   PRO: {
     id: 'PRO',
-    name: 'Paket Pro (300 Menit)',
-    price: 249000,
-    credits: 300,
+    name: 'Paket Pro (100 Menit)',
+    price: 50000,
+    credits: 100,
     type: 'SUBSCRIPTION',
   },
   TOPUP_30: {
@@ -43,11 +44,11 @@ export const PLANS: Record<string, PlanConfig> = {
 };
 
 export default async function paymentRoutes(server: FastifyInstance) {
-  // 1. Create Checkout Session
+  // 1. Create Checkout Session (Mayar invoice)
   server.post('/checkout', { preHandler: [authenticate] }, async (request, reply) => {
     try {
-      const body = request.body as { planId?: string; email?: string; name?: string };
-      const planId = body?.planId || 'CREATOR';
+      const body = request.body as { planId?: string };
+      const planId = body?.planId || 'STANDAR';
       const selectedPlan = PLANS[planId];
 
       if (!selectedPlan) {
@@ -63,21 +64,20 @@ export default async function paymentRoutes(server: FastifyInstance) {
 
       const orderId = `TRX-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-      const snapResult = await createSnapTransaction({
-        orderId,
-        amount: selectedPlan.price,
+      const mayarResult = await createMayarInvoice({
+        invoiceId: orderId,
+        customer: {
+          name: user.name || 'Pelanggan ClipForge',
+          email: user.email,
+          mobile: user.phone || '081234567890',
+        },
         items: [
           {
-            id: selectedPlan.id,
-            name: selectedPlan.name,
-            price: selectedPlan.price,
             quantity: 1,
+            rate: selectedPlan.price,
+            description: selectedPlan.name,
           },
         ],
-        customer: {
-          first_name: user.name || 'Pelanggan ClipForge',
-          email: user.email,
-        },
       });
 
       const transaction = await (prisma as any).transaction.create({
@@ -88,16 +88,15 @@ export default async function paymentRoutes(server: FastifyInstance) {
           amount: selectedPlan.price,
           creditsAdded: selectedPlan.credits,
           status: 'PENDING',
-          snapToken: snapResult.token,
-          snapUrl: snapResult.redirect_url,
+          snapToken: mayarResult.id,
+          snapUrl: mayarResult.link,
         },
       });
 
       return reply.send({
         status: 'success',
         orderId: transaction.orderId,
-        snapToken: snapResult.token,
-        snapUrl: snapResult.redirect_url,
+        paymentUrl: mayarResult.link,
       });
     } catch (err: any) {
       server.log.error('Checkout error:', err);
@@ -105,96 +104,68 @@ export default async function paymentRoutes(server: FastifyInstance) {
     }
   });
 
-  // 2. Midtrans Notification Webhook
+  // 2. Mayar Webhook (payment.received)
   server.post('/webhook', async (request, reply) => {
     try {
       const payload = request.body as any;
-      const {
-        order_id,
-        status_code,
-        gross_amount,
-        signature_key,
-        transaction_status,
-        payment_type,
-        fraud_status,
-      } = payload;
+      const { orderId, paid, amount } = parseMayarWebhook(payload);
 
-      server.log.info(`Received Midtrans notification for Order ${order_id}, Status: ${transaction_status}`);
+      server.log.info(`Received Mayar webhook. event=${payload?.event?.received || payload?.eventType}, orderId=${orderId}, paid=${paid}`);
 
-      if (!order_id || !status_code || !gross_amount || !signature_key) {
-        return reply.status(400).send({ error: 'Invalid payload' });
-      }
-
-      // Verify SHA512 signature key
-      const isValidSignature = verifyMidtransSignature(order_id, status_code, gross_amount, signature_key);
-      if (!isValidSignature) {
-        server.log.warn(`Invalid signature for order ${order_id}`);
-        return reply.status(403).send({ error: 'Signature key tidak valid' });
+      if (!paid || !orderId) {
+        return reply.send({ status: 'ignored' });
       }
 
       const transaction = await (prisma as any).transaction.findUnique({
-        where: { orderId: order_id },
+        where: { orderId },
       });
 
       if (!transaction) {
-        server.log.warn(`Transaction order ${order_id} not found in database`);
+        server.log.warn(`Transaction order ${orderId} not found in database`);
         return reply.status(404).send({ error: 'Transaksi tidak ditemukan' });
       }
 
-      let newStatus = transaction.status;
-
-      if (transaction_status === 'capture') {
-        if (fraud_status === 'accept') {
-          newStatus = 'SETTLEMENT';
-        }
-      } else if (transaction_status === 'settlement') {
-        newStatus = 'SETTLEMENT';
-      } else if (transaction_status === 'cancel' || transaction_status === 'deny') {
-        newStatus = 'CANCELLED';
-      } else if (transaction_status === 'expire') {
-        newStatus = 'EXPIRED';
-      } else if (transaction_status === 'pending') {
-        newStatus = 'PENDING';
+      if (amount !== null && amount !== transaction.amount) {
+        server.log.warn(`Amount mismatch for order ${orderId}: expected ${transaction.amount}, got ${amount}`);
+        return reply.status(400).send({ error: 'Amount tidak cocok' });
       }
 
-      // Update Transaction in DB
+      // If already settled, idempotent — no double credit.
+      if (transaction.status === 'SETTLEMENT') {
+        return reply.send({ status: 'ok', orderId, newStatus: 'SETTLEMENT' });
+      }
+
       await (prisma as any).transaction.update({
-        where: { orderId: order_id },
-        data: {
-          status: newStatus,
-          paymentType: payment_type || transaction.paymentType,
-        },
+        where: { orderId },
+        data: { status: 'SETTLEMENT', paymentType: 'mayar' },
       });
 
-      // If SETTLEMENT, top-up user subscription credits!
-      if (newStatus === 'SETTLEMENT' && transaction.status !== 'SETTLEMENT') {
-        let subscription = await prisma.subscription.findFirst({
-          where: { userId: transaction.userId },
+      let subscription = await prisma.subscription.findFirst({
+        where: { userId: transaction.userId },
+      });
+
+      if (!subscription) {
+        subscription = await prisma.subscription.create({
+          data: {
+            userId: transaction.userId,
+            plan: transaction.plan.startsWith('TOPUP') ? 'FREE' : transaction.plan,
+            status: 'ACTIVE',
+            credits: transaction.creditsAdded,
+          },
         });
-
-        if (!subscription) {
-          subscription = await prisma.subscription.create({
-            data: {
-              userId: transaction.userId,
-              plan: transaction.plan.startsWith('TOPUP') ? 'FREE' : transaction.plan,
-              status: 'ACTIVE',
-              credits: transaction.creditsAdded,
-            },
-          });
-        } else {
-          await prisma.subscription.update({
-            where: { id: subscription.id },
-            data: {
-              credits: subscription.credits + transaction.creditsAdded,
-              plan: transaction.plan.startsWith('TOPUP') ? subscription.plan : transaction.plan,
-              status: 'ACTIVE',
-            },
-          });
-        }
-        server.log.info(`Successfully added ${transaction.creditsAdded} credits to user ${transaction.userId}`);
+      } else {
+        await prisma.subscription.update({
+          where: { id: subscription.id },
+          data: {
+            credits: subscription.credits + transaction.creditsAdded,
+            plan: transaction.plan.startsWith('TOPUP') ? subscription.plan : transaction.plan,
+            status: 'ACTIVE',
+          },
+        });
       }
+      server.log.info(`Successfully added ${transaction.creditsAdded} credits to user ${transaction.userId}`);
 
-      return reply.send({ status: 'ok', orderId: order_id, newStatus });
+      return reply.send({ status: 'ok', orderId, newStatus: 'SETTLEMENT' });
     } catch (err: any) {
       server.log.error('Webhook error:', err);
       return reply.status(500).send({ error: err.message || 'Gagal memproses webhook' });

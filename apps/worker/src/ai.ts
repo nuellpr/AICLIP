@@ -35,9 +35,10 @@ export function getVttWindow(vttContent: string, windowIndex: number, maxChars: 
   return window.trim();
 }
 
-export async function generateGoldenMoments(vttContent: string, clipCount: number = 5, targetDuration: string = "30-60", searchQuery: string = "", videoFilePath?: string, aiOverride?: { provider?: string, model?: string }): Promise<{ clips: any[]; error?: string }> {
-  // Load AI config
-  const configPath = path.resolve(__dirname, '../../../ai-config.json');
+export async function generateGoldenMoments(vttContent: string, clipCount: number = 5, targetDuration: string = "30-60", searchQuery: string = "", videoFilePath?: string, aiOverride?: { provider?: string, model?: string }, userId?: string): Promise<{ clips: any[]; error?: string }> {
+  // Load AI config — setiap akun memakai konfigurasi AI miliknya sendiri (ai-config_<userId>.json)
+  const configFileName = userId ? `ai-config_${userId}.json` : 'ai-config.json';
+  const configPath = path.resolve(__dirname, '../../../', configFileName);
   let config: any = { provider: 'google-gemini' };
   
   if (fs.existsSync(configPath)) {
@@ -50,7 +51,12 @@ export async function generateGoldenMoments(vttContent: string, clipCount: numbe
   if (aiOverride?.provider) config.provider = aiOverride.provider;
   if (aiOverride?.model) config.model = aiOverride.model;
 
-  console.log(`AI provider: ${config.provider || 'google-gemini'}, model: ${config.model || '(default)'}, baseUrl: ${config.baseUrl || '(default)'}`);
+  console.log(`AI provider: ${config.provider || 'google-gemini'}, model: ${config.model || '(default)'}, baseUrl: ${config.baseUrl || '(default)'} (config: ${configFileName})`);
+
+  // Setiap akun WAJIB memakai API key miliknya sendiri — tidak ada fallback ke key admin/server
+  if (!config.apiKey) {
+    return { clips: [], error: 'AI Models belum dikonfigurasi. Buka Dashboard → Pengaturan → AI Models untuk memasang model & API key milik Anda sendiri.' };
+  }
 
   const defaultSystemMsg = `Anda adalah seorang ahli strategi konten viral TikTok & Reels tingkat dunia.
 Tugas Anda adalah menganalisis subtitle VTT video YouTube ini (dan konteks visual video jika tersedia) dan mengekstrak TEPAT ${clipCount} momen emas ("golden moments") yang dijamin akan viral.
@@ -179,8 +185,7 @@ async function generateWithGemini(config: any, systemMsg: string, prompt: string
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      // Fallback to process.env if config key is missing
-      const apiKey = config.apiKey || process.env.GEMINI_API_KEY;
+      const apiKey = config.apiKey;
       const ai = new GoogleGenAI({ apiKey });
 
       const clipSchema = {

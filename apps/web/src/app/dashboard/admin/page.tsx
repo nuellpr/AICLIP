@@ -154,9 +154,9 @@ export default function AdminDashboardPage() {
         </div>
         <h2 className="text-2xl font-black text-white">Akses Ditolak (Hanya Khusus Admin)</h2>
         <p className="text-sm text-gray-400 max-w-md">
-          Halaman Console Admin hanya dapat diakses oleh Administrator sistem. Akun Anda (<span className="text-cyan-400 font-bold">{currentUser.email}</span>) terdaftar sebagai Pengguna Biasa.
+          Halaman Console Admin hanya dapat diakses oleh Administrator sistem. Akun Anda (<span className="text-blue-400 font-bold">{currentUser.email}</span>) terdaftar sebagai Pengguna Biasa.
         </p>
-        <a href="/dashboard" className="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 text-black font-extrabold px-6 py-3 rounded-2xl text-xs transition-transform hover:scale-105">
+        <a href="/dashboard" className="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 text-black font-extrabold px-6 py-3 rounded-2xl text-xs transition-transform hover:scale-105">
           Kembali ke Dashboard Proyek
         </a>
       </div>
@@ -169,12 +169,12 @@ export default function AdminDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
+            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-500/30">
               Admin Console
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
-            <Shield className="h-8 w-8 text-cyan-400" />
+            <Shield className="h-8 w-8 text-blue-400" />
             <span>Manajemen Pengguna & Server</span>
           </h1>
           <p className="text-sm text-gray-400 mt-1">
@@ -185,7 +185,7 @@ export default function AdminDashboardPage() {
         <button
           onClick={fetchAdminData}
           disabled={loading}
-          className="self-start md:self-auto flex items-center gap-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+          className="self-start md:self-auto flex items-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh Realtime</span>
@@ -201,10 +201,10 @@ export default function AdminDashboardPage() {
 
       {/* 4 Summary Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="rounded-3xl glass-card p-6 border border-white/10 relative overflow-hidden group hover:border-cyan-500/40 transition-all">
+        <div className="rounded-3xl glass-card p-6 border border-white/10 relative overflow-hidden group hover:border-blue-500/40 transition-all">
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Pengguna</p>
-            <div className="p-2.5 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <div className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
               <Users className="w-5 h-5" />
             </div>
           </div>
@@ -256,7 +256,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Activity className="w-5 h-5 text-cyan-400" />
+                <Activity className="w-5 h-5 text-blue-400" />
                 <span>Pemrosesan Video (7 Hari Terakhir)</span>
               </h2>
               <p className="text-xs text-gray-400 mt-0.5">Grafik jumlah klip video yang diproses per hari</p>
@@ -273,12 +273,12 @@ export default function AdminDashboardPage() {
               const dayName = new Date(d.date).toLocaleDateString('id-ID', { weekday: 'short' });
               return (
                 <div key={index} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
-                  <div className="text-[10px] font-bold text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="text-[10px] font-bold text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
                     {d.count}
                   </div>
                   <div
                     style={{ height: `${heightPercent}%` }}
-                    className="w-full bg-gradient-to-t from-cyan-500/40 via-cyan-400 to-purple-500 rounded-t-xl group-hover:from-cyan-400 group-hover:to-pink-500 transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+                    className="w-full bg-gradient-to-t from-blue-500/40 via-blue-400 to-purple-500 rounded-t-xl group-hover:from-blue-400 group-hover:to-pink-500 transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)]"
                   ></div>
                   <span className="text-[10px] text-gray-400 font-semibold mt-1">{dayName}</span>
                 </div>
@@ -300,16 +300,16 @@ export default function AdminDashboardPage() {
             {queueData?.queues?.map((q, idx) => (
               <div key={idx} className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-cyan-400">{q.name}</p>
+                  <p className="text-xs font-bold text-blue-400">{q.name}</p>
                   <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30">
                     {q.active} Aktif
                   </span>
                 </div>
 
                 <div className="grid grid-cols-4 gap-2 text-center text-[10px]">
-                  <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
+                  <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
                     <p className="text-gray-400 font-semibold">Aktif</p>
-                    <p className="text-sm font-black text-cyan-400 mt-0.5">{q.active}</p>
+                    <p className="text-sm font-black text-blue-400 mt-0.5">{q.active}</p>
                   </div>
                   <div className="p-2 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
                     <p className="text-gray-400 font-semibold">Antri</p>
@@ -371,7 +371,7 @@ export default function AdminDashboardPage() {
                     </button>
                   </td>
                   <td className="p-4">
-                    <span className="font-semibold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 text-[10px]">
+                    <span className="font-semibold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 text-[10px]">
                       {u.plan}
                     </span>
                   </td>
@@ -382,7 +382,7 @@ export default function AdminDashboardPage() {
                   <td className="p-4 text-right">
                     <button
                       onClick={() => setSelectedUser(u)}
-                      className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 px-3 py-1.5 rounded-xl text-xs font-bold border border-cyan-500/30 transition-all inline-flex items-center gap-1.5"
+                      className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 px-3 py-1.5 rounded-xl text-xs font-bold border border-blue-500/30 transition-all inline-flex items-center gap-1.5"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Tambah Kredit</span>
@@ -398,7 +398,7 @@ export default function AdminDashboardPage() {
       {/* Credit Top-up Modal */}
       {selectedUser && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="rounded-3xl glass-panel p-6 sm:p-8 max-w-md w-full border border-cyan-500/40 shadow-[0_0_50px_rgba(6,182,212,0.2)] relative space-y-6">
+          <div className="rounded-3xl glass-panel p-6 sm:p-8 max-w-md w-full border border-blue-500/40 shadow-[0_0_50px_rgba(37,99,235,0.2)] relative space-y-6">
             <button
               onClick={() => setSelectedUser(null)}
               className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
@@ -408,7 +408,7 @@ export default function AdminDashboardPage() {
 
             <div>
               <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-cyan-400" />
+                <Sparkles className="w-5 h-5 text-blue-400" />
                 <span>Tambah Kredit Menit AI</span>
               </h3>
               <p className="text-xs text-gray-400 mt-1">
@@ -432,7 +432,7 @@ export default function AdminDashboardPage() {
                     onClick={() => setCreditMode('ADD')}
                     className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
                       creditMode === 'ADD'
-                        ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40'
+                        ? 'bg-blue-500/20 text-blue-400 border-blue-500/40'
                         : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
                     }`}
                   >
@@ -458,7 +458,7 @@ export default function AdminDashboardPage() {
                   type="number"
                   value={creditAmount}
                   onChange={(e) => setCreditAmount(parseInt(e.target.value) || 0)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-bold focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm font-bold focus:outline-none focus:border-blue-400"
                 />
               </div>
 
@@ -489,7 +489,7 @@ export default function AdminDashboardPage() {
                 type="button"
                 onClick={handleUpdateCredits}
                 disabled={actionLoading}
-                className="px-5 py-2.5 rounded-xl text-xs font-extrabold text-black bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-300 hover:to-purple-400 transition-all disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl text-xs font-extrabold text-black bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-300 hover:to-purple-400 transition-all disabled:opacity-50"
               >
                 {actionLoading ? 'Menyimpan...' : 'Simpan Kredit'}
               </button>

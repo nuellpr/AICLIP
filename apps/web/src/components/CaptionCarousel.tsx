@@ -136,7 +136,7 @@ export function CaptionCarousel({ selectedId, onSelect }: CaptionCarouselProps) 
               }}
               className={`snap-start shrink-0 rounded-xl border-2 transition-all duration-200 
                 ${preset.isLocked ? 'cursor-not-allowed opacity-90' : 'cursor-pointer'} 
-                ${isSelected && !preset.isLocked ? 'border-cyan-500 bg-cyan-500/10' : 'border-white/10 bg-[#1A1A1A] hover:border-white/30'}`}
+                ${isSelected && !preset.isLocked ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 bg-[#1A1A1A] hover:border-white/30'}`}
               style={{ width: '160px' }}
             >
               <div className="h-28 w-full flex items-center justify-center rounded-t-lg overflow-hidden p-2 relative bg-black/40">
@@ -156,7 +156,7 @@ export function CaptionCarousel({ selectedId, onSelect }: CaptionCarouselProps) 
                 )}
               </div>
               <div className="p-3 text-center border-t border-white/10">
-                <p className={`text-sm font-semibold ${isSelected ? 'text-cyan-400' : 'text-gray-300'}`}>
+                <p className={`text-sm font-semibold ${isSelected ? 'text-blue-400' : 'text-gray-300'}`}>
                   {preset.name}
                 </p>
               </div>

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { setAuthSession } from '@/lib/auth';
 import { getApiUrl } from '@/lib/api';
+import { ClipForgeLogo } from '@/components/clipforge/Logo';
 
 function LoginContent() {
   const router = useRouter();
@@ -14,6 +15,15 @@ function LoginContent() {
   const [error, setError] = useState<string | null>(null);
 
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+
+  // If already authenticated, skip login
+  useEffect(() => {
+    const token = localStorage.getItem('clipforge_token');
+    const user = localStorage.getItem('clipforge_user');
+    if (token && user) {
+      router.replace('/dashboard');
+    }
+  }, [router]);
 
   // Show error from OAuth callback redirect (?error=...)
   useEffect(() => {
@@ -129,18 +139,10 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#060609] text-white flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+    <div className="min-h-screen bg-[#05060B] text-white flex flex-col justify-between selection:bg-blue-500 selection:text-black">
       <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between z-20">
         <Link href="/home" className="flex items-center gap-3 group">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo.png"
-            alt="ClipForge AI"
-            className="h-10 object-contain drop-shadow-[0_0_15px_rgba(34,211,238,0.4)] group-hover:scale-105 transition-transform"
-          />
-          <span className="font-extrabold text-xl tracking-tight text-white">
-            ClipForge<span className="text-cyan-400"> AI</span>
-          </span>
+          <ClipForgeLogo />
         </Link>
         <Link href="/home" className="text-xs font-semibold text-gray-400 hover:text-white transition-colors">
           ← Kembali ke Beranda
@@ -311,7 +313,7 @@ function LoginContent() {
       </main>
 
       <footer className="w-full max-w-7xl mx-auto px-6 py-4 border-t border-white/5 flex items-center justify-between text-[11px] text-gray-500">
-        <p>© 2026 ClipForge AI — All rights reserved.</p>
+        <p>© 2026 ClipForge AI · All rights reserved.</p>
         <div className="flex items-center gap-4">
           <Link href="#" className="hover:text-gray-400">
             Privasi
@@ -332,8 +334,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#060609] text-white flex flex-col items-center justify-center p-6 space-y-4">
-          <Loader2 className="w-10 h-10 animate-spin text-cyan-400" />
+        <div className="min-h-screen bg-[#05060B] text-white flex flex-col items-center justify-center p-6 space-y-4">
+          <Loader2 className="w-10 h-10 animate-spin text-blue-400" />
           <p className="text-sm font-semibold text-gray-300">Memuat...</p>
         </div>
       }

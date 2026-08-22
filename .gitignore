@@ -59,6 +59,10 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Local tooling
+.omo/
+.playwright-mcp/
+
 # Turbo cache
 .turbo/
 

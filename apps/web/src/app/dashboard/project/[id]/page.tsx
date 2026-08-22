@@ -195,7 +195,8 @@ export default function ProjectPage() {
     { key: 'COMPLETED', label: 'Selesai' }
   ];
 
-  const currentStageIndex = stages.findIndex(s => s.key === project.currentStage);
+  const rawStageIndex = stages.findIndex(s => s.key === project.currentStage);
+  const currentStageIndex = rawStageIndex === -1 && !isCompleted && !isFailed ? 0 : rawStageIndex;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 relative">
@@ -218,13 +219,18 @@ export default function ProjectPage() {
             
             let circleClass = "bg-[#222] border-white/20 text-gray-500";
             if (isPast || isCompleted) circleClass = "bg-primary border-primary text-black";
-            else if (isCurrent && !isFailed) circleClass = "bg-[#111] border-primary text-primary shadow-[0_0_15px_rgba(6,182,212,0.5)]";
+            else if (isCurrent && !isFailed) circleClass = "bg-[#111] border-primary text-primary shadow-[0_0_15px_rgba(37,99,235,0.5)]";
             else if (isCurrent && isFailed) circleClass = "bg-[#111] border-red-500 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]";
 
             return (
               <div key={stage.key} className="relative z-10 flex flex-col items-center gap-3">
-                <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-colors ${circleClass}`}>
-                  {isPast || isCompleted ? <CheckCircle2 className="w-6 h-6" /> : (isCurrent && !isFailed ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCurrent && isFailed ? <AlertCircle className="w-5 h-5" /> : <div className="w-3 h-3 rounded-full bg-current" />))}
+                <div className="relative">
+                  {isCurrent && !isFailed && !isCompleted && (
+                    <div className="absolute -inset-1 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                  )}
+                  <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-colors ${circleClass}`}>
+                    {isPast || isCompleted ? <CheckCircle2 className="w-6 h-6" /> : (isCurrent && !isFailed ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCurrent && isFailed ? <AlertCircle className="w-5 h-5" /> : <div className="w-3 h-3 rounded-full bg-current" />))}
+                  </div>
                 </div>
                 <span className={`absolute top-12 whitespace-nowrap text-xs font-medium ${isCurrent ? (isFailed ? 'text-red-500' : 'text-primary') : (isPast || isCompleted ? 'text-white' : 'text-gray-500')}`}>
                   {stage.label}
@@ -242,7 +248,7 @@ export default function ProjectPage() {
         
         {project.errorMessage && !isFailed && (
           <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 text-yellow-400">
-            <strong>⚠️ Peringatan AI:</strong> {project.errorMessage}
+            <strong>Peringatan AI:</strong> {project.errorMessage}
           </div>
         )}
       </div>
@@ -556,7 +562,7 @@ export default function ProjectPage() {
                             }
                             const data = await res.json();
                             setEditingClip({...editingClip, caption: data.caption});
-                            alert('✅ Transkripsi Whisper berhasil! Caption diperbarui.');
+                            alert('Transkripsi Whisper berhasil. Caption diperbarui.');
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           } catch (e: any) {
                             alert('Error: ' + e.message);
@@ -576,7 +582,7 @@ export default function ProjectPage() {
                       className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white focus:border-primary focus:outline-none text-sm"
                       rows={3}
                     />
-                    <p className="text-[10px] text-gray-500 mt-1">💡 Klik &quot;Transkripsi Ulang&quot; jika kata-kata subtitle tidak sesuai ucapan. Whisper akan mengenali ulang ucapan asli dari audio video.</p>
+                    <p className="text-[10px] text-gray-500 mt-1">Klik &quot;Transkripsi Ulang&quot; jika kata-kata subtitle tidak sesuai ucapan. Whisper akan mengenali ulang ucapan asli dari audio video.</p>
                   </div>
                 </div>
               </div>

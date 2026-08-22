@@ -73,7 +73,7 @@ export function InteractiveWordEditor({
         body: JSON.stringify({ words }),
       });
       if (res.ok) {
-        setSuccessMessage("✅ Perubahan kata subtitle berhasil disimpan!");
+        setSuccessMessage("Perubahan kata subtitle berhasil disimpan.");
         setTimeout(() => setSuccessMessage(""), 3000);
       } else {
         alert("Gagal menyimpan perubahan kata");

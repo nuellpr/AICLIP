@@ -32,24 +32,7 @@ export default function BillingPage() {
 
   useEffect(() => {
     fetchData();
-    loadMidtransScript();
   }, []);
-
-  const loadMidtransScript = () => {
-    const isProduction = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === 'true';
-    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || '';
-    const scriptUrl = isProduction
-      ? 'https://app.midtrans.com/snap/snap.js'
-      : 'https://app.sandbox.midtrans.com/snap/snap.js';
-
-    if (!document.querySelector(`script[src="${scriptUrl}"]`)) {
-      const script = document.createElement('script');
-      script.src = scriptUrl;
-      script.setAttribute('data-client-key', clientKey);
-      script.async = true;
-      document.body.appendChild(script);
-    }
-  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -93,35 +76,10 @@ export default function BillingPage() {
         throw new Error(data.error || 'Gagal membuat sesi pembayaran');
       }
 
-      // Check if Midtrans Snap popup is available
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((window as any).snap && data.snapToken) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).snap.pay(data.snapToken, {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          onSuccess: function (result: any) {
-            console.log('Payment success:', result);
-            fetchData();
-          },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          onPending: function (result: any) {
-            console.log('Payment pending:', result);
-            fetchData();
-          },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          onError: function (result: any) {
-            console.error('Payment error:', result);
-            setError('Pembayaran gagal atau dibatalkan');
-            fetchData();
-          },
-          onClose: function () {
-            console.log('Customer closed the snap popup');
-            fetchData();
-          },
-        });
-      } else if (data.snapUrl) {
-        // Fallback: Redirect directly to Midtrans Payment Page
-        window.open(data.snapUrl, '_blank');
+      // Open Mayar payment page (QRIS, VA, e-wallet, Alfamart, dll)
+      if (data.paymentUrl) {
+        window.open(data.paymentUrl, '_blank');
+        setTimeout(fetchData, 5000);
       } else {
         throw new Error('Metode pembayaran tidak tersedia');
       }
@@ -173,7 +131,7 @@ export default function BillingPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
-            <CreditCard className="h-8 w-8 text-cyan-400" />
+            <CreditCard className="h-8 w-8 text-blue-400" />
             <span>Langganan & Pembelian Kredit</span>
           </h1>
           <p className="text-sm text-gray-400 mt-1">
@@ -199,13 +157,13 @@ export default function BillingPage() {
       )}
 
       {/* Credit Summary Card */}
-      <div className="relative rounded-3xl glass-card p-6 md:p-8 overflow-hidden border border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 via-purple-950/20 to-black shadow-[0_0_50px_rgba(34,211,238,0.1)]">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+      <div className="relative rounded-3xl glass-card p-6 md:p-8 overflow-hidden border border-blue-500/30 bg-gradient-to-r from-blue-950/40 via-purple-950/20 to-black shadow-[0_0_50px_rgba(37,99,235,0.1)]">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
                 Status Paket Anda
               </span>
               <span className="text-xs font-bold text-green-400 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">
@@ -221,10 +179,10 @@ export default function BillingPage() {
           </div>
 
           <div className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10">
-            <ShieldCheck className="w-8 h-8 text-cyan-400 flex-shrink-0" />
+            <ShieldCheck className="w-8 h-8 text-blue-400 flex-shrink-0" />
             <div className="text-xs">
               <p className="font-bold text-white">Pembayaran Aman 100%</p>
-              <p className="text-gray-400">Didukung oleh Midtrans Official Gateway</p>
+              <p className="text-gray-400">Didukung oleh Mayar Payment Gateway</p>
             </div>
           </div>
         </div>
@@ -241,50 +199,50 @@ export default function BillingPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Creator Plan */}
-          <div className="relative rounded-3xl glass-panel p-6 sm:p-8 border border-cyan-500/40 bg-gradient-to-b from-cyan-950/30 to-black flex flex-col justify-between hover:border-cyan-400 transition-all shadow-[0_0_30px_rgba(6,182,212,0.15)] group">
-            <div className="absolute top-4 right-4 bg-gradient-to-r from-cyan-400 to-purple-500 text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
+          {/* Standar Plan */}
+          <div className="relative rounded-3xl glass-panel p-6 sm:p-8 border border-blue-500/40 bg-gradient-to-b from-blue-950/30 to-black flex flex-col justify-between hover:border-blue-400 transition-all shadow-[0_0_30px_rgba(37,99,235,0.15)] group">
+            <div className="absolute top-4 right-4 bg-gradient-to-r from-blue-400 to-purple-500 text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
               Paling Populer
             </div>
 
             <div>
-              <p className="text-lg font-bold text-cyan-400">Paket Creator</p>
+              <p className="text-lg font-bold text-blue-400">Paket Standar</p>
               <div className="flex items-baseline gap-1 mt-2">
-                <span className="text-3xl sm:text-4xl font-black text-white">{formatRupiah(99000)}</span>
+                <span className="text-3xl sm:text-4xl font-black text-white">{formatRupiah(30000)}</span>
                 <span className="text-xs text-gray-400">/ bulan</span>
               </div>
               <p className="text-xs text-gray-400 mt-2">Cocok untuk kreator konten harian TikTok & Shorts.</p>
 
               <div className="my-6 border-t border-white/10 pt-6 space-y-3">
                 <div className="flex items-center gap-3 text-xs text-gray-200">
-                  <Check className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-                  <span><strong>100 Menit</strong> Kredit AI Video</span>
+                  <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                  <span><strong>30 Menit</strong> Kredit AI Video</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-200">
-                  <Check className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                  <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
                   <span>Akses Semua Model AI (DeepSeek, Gemini, GPT-4o)</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-200">
-                  <Check className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                  <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
                   <span>Export Video 1080p HD Tanpa Watermark</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-200">
-                  <Check className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                  <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
                   <span>Auto Subtitle Bahasa Gaul & Animasi</span>
                 </div>
               </div>
             </div>
 
             <button
-              onClick={() => handleBuyPlan('CREATOR')}
-              disabled={checkoutLoading === 'CREATOR'}
-              className="w-full bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-300 hover:to-purple-400 text-black font-extrabold py-3.5 rounded-2xl text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(34,211,238,0.4)] disabled:opacity-50"
+              onClick={() => handleBuyPlan('STANDAR')}
+              disabled={checkoutLoading === 'STANDAR'}
+              className="w-full bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-300 hover:to-purple-400 text-black font-extrabold py-3.5 rounded-2xl text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(37,99,235,0.4)] disabled:opacity-50"
             >
-              {checkoutLoading === 'CREATOR' ? (
+              {checkoutLoading === 'STANDAR' ? (
                 <span>Memproses...</span>
               ) : (
                 <>
-                  <span>Beli Paket Creator</span>
+                  <span>Beli Paket Standar</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -294,17 +252,17 @@ export default function BillingPage() {
           {/* Pro Plan */}
           <div className="relative rounded-3xl glass-panel p-6 sm:p-8 border border-white/10 bg-gradient-to-b from-purple-950/20 to-black flex flex-col justify-between hover:border-purple-500/50 transition-all group">
             <div>
-              <p className="text-lg font-bold text-purple-400">Paket Pro Agensi</p>
+              <p className="text-lg font-bold text-purple-400">Paket Pro</p>
               <div className="flex items-baseline gap-1 mt-2">
-                <span className="text-3xl sm:text-4xl font-black text-white">{formatRupiah(249000)}</span>
+                <span className="text-3xl sm:text-4xl font-black text-white">{formatRupiah(50000)}</span>
                 <span className="text-xs text-gray-400">/ bulan</span>
               </div>
-              <p className="text-xs text-gray-400 mt-2">Untuk agensi media sosial & podcaster profesional.</p>
+              <p className="text-xs text-gray-400 mt-2">Untuk kreator konten yang lebih produktif & agensi kecil.</p>
 
               <div className="my-6 border-t border-white/10 pt-6 space-y-3">
                 <div className="flex items-center gap-3 text-xs text-gray-200">
                   <Check className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                  <span><strong>300 Menit</strong> Kredit AI Video</span>
+                  <span><strong>100 Menit</strong> Kredit AI Video</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-200">
                   <Check className="w-4 h-4 text-purple-400 flex-shrink-0" />
@@ -409,7 +367,7 @@ export default function BillingPage() {
                   <tr key={tx.id} className="hover:bg-white/5 transition-colors">
                     <td className="p-4 font-mono font-bold text-white">{tx.orderId}</td>
                     <td className="p-4 font-semibold text-gray-200">{tx.plan}</td>
-                    <td className="p-4 font-bold text-cyan-400">{formatRupiah(tx.amount)}</td>
+                    <td className="p-4 font-bold text-blue-400">{formatRupiah(tx.amount)}</td>
                     <td className="p-4">+{tx.creditsAdded} Menit</td>
                     <td className="p-4">{getStatusBadge(tx.status)}</td>
                     <td className="p-4 text-gray-400">{new Date(tx.createdAt).toLocaleDateString('id-ID')}</td>
@@ -421,9 +379,9 @@ export default function BillingPage() {
                               href={tx.snapUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="px-2.5 py-1 bg-cyan-500 hover:bg-cyan-400 text-black rounded-lg text-[11px] font-bold transition-all"
+                              className="px-2.5 py-1 bg-blue-500 hover:bg-blue-400 text-black rounded-lg text-[11px] font-bold transition-all"
                             >
-                              Bayar Midtrans
+                              Bayar Sekarang
                             </a>
                           )}
                           <button
@@ -436,7 +394,7 @@ export default function BillingPage() {
                                   body: JSON.stringify({ orderId: tx.orderId })
                                 });
                                 if (res.ok) {
-                                  alert('✅ Simulasi pembayaran sukses! Kredit telah ditambahkan.');
+                                  alert('Simulasi pembayaran sukses. Kredit telah ditambahkan.');
                                   fetchData();
                                 }
                               // eslint-disable-next-line @typescript-eslint/no-unused-vars

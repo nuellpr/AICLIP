@@ -79,14 +79,14 @@ export default function NewProjectPage() {
       <div className="flex gap-4 border-b border-white/5 pb-px relative">
         <button 
           onClick={() => setActiveTab('url')}
-          className={`flex items-center gap-2 px-6 py-4 font-bold transition-all border-b-2 relative ${activeTab === 'url' ? 'border-cyan-500 text-cyan-400 shadow-[0_4px_20px_-10px_rgba(6,182,212,0.8)]' : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5 rounded-t-xl'}`}
+          className={`flex items-center gap-2 px-6 py-4 font-bold transition-all border-b-2 relative ${activeTab === 'url' ? 'border-blue-500 text-blue-400 shadow-[0_4px_20px_-10px_rgba(37,99,235,0.8)]' : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5 rounded-t-xl'}`}
         >
           <LinkIcon className="h-5 w-5" />
           Gunakan URL Video
         </button>
         <button 
           onClick={() => setActiveTab('upload')}
-          className={`flex items-center gap-2 px-6 py-4 font-bold transition-all border-b-2 relative ${activeTab === 'upload' ? 'border-cyan-500 text-cyan-400 shadow-[0_4px_20px_-10px_rgba(6,182,212,0.8)]' : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5 rounded-t-xl'}`}
+          className={`flex items-center gap-2 px-6 py-4 font-bold transition-all border-b-2 relative ${activeTab === 'upload' ? 'border-blue-500 text-blue-400 shadow-[0_4px_20px_-10px_rgba(37,99,235,0.8)]' : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5 rounded-t-xl'}`}
         >
           <Upload className="h-5 w-5" />
           Unggah File
@@ -94,13 +94,13 @@ export default function NewProjectPage() {
       </div>
 
       <div className="rounded-2xl glass-panel p-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px] pointer-events-none -mr-32 -mt-32"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none -mr-32 -mt-32"></div>
         {activeTab === 'url' ? (
           <div className="space-y-6 relative z-10">
             <div>
               <label className="block text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider">URL Video (YouTube, TikTok, dll)</label>
               <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl blur-[2px] opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl blur-[2px] opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"></div>
                 <input 
                   type="text" 
                   value={url}
@@ -112,17 +112,17 @@ export default function NewProjectPage() {
             </div>
             
             <div className="flex items-center gap-3">
-              <input type="checkbox" id="rights" className="w-5 h-5 rounded border-white/10 bg-black/50 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-gray-900 cursor-pointer" />
+              <input type="checkbox" id="rights" className="w-5 h-5 rounded border-white/10 bg-black/50 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900 cursor-pointer" />
               <label htmlFor="rights" className="text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">Saya menyatakan memiliki hak atau izin untuk memproses video ini.</label>
             </div>
           </div>
         ) : (
           <div className="space-y-6 relative z-10">
-            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/10 bg-black/30 p-16 text-center hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all cursor-pointer group">
-              <div className="p-4 rounded-full bg-white/5 group-hover:bg-cyan-500/20 group-hover:scale-110 transition-all duration-300 mb-6">
-                <Upload className="h-10 w-10 text-gray-400 group-hover:text-cyan-400 transition-colors" />
+            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/10 bg-black/30 p-16 text-center hover:border-blue-500/50 hover:bg-blue-500/5 transition-all cursor-pointer group">
+              <div className="p-4 rounded-full bg-white/5 group-hover:bg-blue-500/20 group-hover:scale-110 transition-all duration-300 mb-6">
+                <Upload className="h-10 w-10 text-gray-400 group-hover:text-blue-400 transition-colors" />
               </div>
-              <h3 className="text-xl font-bold text-white group-hover:text-cyan-100 transition-colors">Seret & lepas video ke sini</h3>
+              <h3 className="text-xl font-bold text-white group-hover:text-blue-100 transition-colors">Seret & lepas video ke sini</h3>
               <p className="mt-2 text-sm text-gray-400">atau klik untuk memilih file dari komputer Anda</p>
               <div className="mt-6 px-4 py-2 rounded-full bg-white/5 text-xs font-medium text-gray-400 border border-white/10">
                 Mendukung MP4, MOV, MKV, WebM. Maks. 500MB.
@@ -163,9 +163,9 @@ export default function NewProjectPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setLayoutMode('fit_blur')}
-            className={`flex items-start gap-4 p-5 rounded-2xl text-left transition-all glass-card cursor-pointer ${layoutMode === 'fit_blur' ? 'border-cyan-500 bg-cyan-500/10 shadow-[0_0_20px_rgba(6,182,212,0.2)]' : 'hover:border-cyan-500/50'}`}
+            className={`flex items-start gap-4 p-5 rounded-2xl text-left transition-all glass-card cursor-pointer ${layoutMode === 'fit_blur' ? 'border-blue-500 bg-blue-500/10 shadow-[0_0_20px_rgba(37,99,235,0.2)]' : 'hover:border-blue-500/50'}`}
           >
-            <div className={`p-4 rounded-xl ${layoutMode === 'fit_blur' ? 'bg-cyan-500/20 text-cyan-400 shadow-inner' : 'bg-black/50 text-gray-400 border border-white/5'}`}>
+            <div className={`p-4 rounded-xl ${layoutMode === 'fit_blur' ? 'bg-blue-500/20 text-blue-400 shadow-inner' : 'bg-black/50 text-gray-400 border border-white/5'}`}>
               <PlaySquare className="h-7 w-7" />
             </div>
             <div>
@@ -237,9 +237,9 @@ export default function NewProjectPage() {
         <div className="grid gap-8 md:grid-cols-2">
           <div className="glass-card p-5 rounded-xl border border-white/5">
             <label className="block text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider">Bahasa Utama</label>
-            <select className="w-full rounded-xl border border-white/10 bg-black/80 px-4 py-3.5 text-white font-medium focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer">
-              <option value="id">🇮🇩 Indonesia</option>
-              <option value="en">🇺🇸 English</option>
+            <select className="w-full rounded-xl border border-white/10 bg-black/80 px-4 py-3.5 text-white font-medium focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer">
+              <option value="id">Indonesia</option>
+              <option value="en">English</option>
             </select>
           </div>
           
@@ -248,10 +248,10 @@ export default function NewProjectPage() {
             <select 
               value={targetDuration}
               onChange={(e) => setTargetDuration(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-black/80 px-4 py-3.5 text-white font-medium focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+              className="w-full rounded-xl border border-white/10 bg-black/80 px-4 py-3.5 text-white font-medium focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
             >
-              <option value="30-60">🔥 30 - 60 Detik</option>
-              <option value="61-180">🎬 61 - 180 Detik</option>
+              <option value="30-60">30 - 60 Detik</option>
+              <option value="61-180">61 - 180 Detik</option>
             </select>
           </div>
           
@@ -262,20 +262,20 @@ export default function NewProjectPage() {
             <select 
               value={selectedAiModel}
               onChange={(e) => setSelectedAiModel(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-black/80 px-4 py-3.5 text-white font-medium focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+              className="w-full rounded-xl border border-white/10 bg-black/80 px-4 py-3.5 text-white font-medium focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
             >
-              <option value="">⚙️ Gunakan Default Server (Sesuai Konfigurasi Admin)</option>
-              <option value="google-gemini:gemini-1.5-flash">⚡ Gemini 1.5 Flash (Google - Sangat Cepat)</option>
-              <option value="google-gemini:gemini-1.5-pro">🧠 Gemini 1.5 Pro (Google - Paling Pintar)</option>
-              <option value="openai:gpt-4o">🌟 GPT-4o (OpenAI - Premium)</option>
-              <option value="openai:gpt-4o-mini">🚀 GPT-4o Mini (OpenAI - Cepat & Efisien)</option>
+              <option value="">Gunakan Default Server (Sesuai Konfigurasi Admin)</option>
+              <option value="google-gemini:gemini-1.5-flash">Gemini 1.5 Flash (Google - Sangat Cepat)</option>
+              <option value="google-gemini:gemini-1.5-pro">Gemini 1.5 Pro (Google - Paling Pintar)</option>
+              <option value="openai:gpt-4o">GPT-4o (OpenAI - Premium)</option>
+              <option value="openai:gpt-4o-mini">GPT-4o Mini (OpenAI - Cepat & Efisien)</option>
             </select>
           </div>
           
           <div className="md:col-span-2 glass-card p-6 rounded-xl border border-white/5">
             <label className="block text-sm font-bold text-gray-300 mb-6 flex items-center justify-between uppercase tracking-wider">
               <span>Jumlah Klip Maksimal</span>
-              <span className="text-cyan-400 font-black text-lg bg-cyan-400/10 px-3 py-1 rounded-lg border border-cyan-400/20">{clipCount} KLIP</span>
+              <span className="text-blue-400 font-black text-lg bg-blue-400/10 px-3 py-1 rounded-lg border border-blue-400/20">{clipCount} KLIP</span>
             </label>
             <input 
               type="range" 
@@ -283,7 +283,7 @@ export default function NewProjectPage() {
               max="10" 
               value={clipCount} 
               onChange={(e) => setClipCount(parseInt(e.target.value))}
-              className="w-full accent-cyan-500 cursor-pointer h-2 bg-white/10 rounded-lg appearance-none"
+              className="w-full accent-blue-500 cursor-pointer h-2 bg-white/10 rounded-lg appearance-none"
             />
             <div className="flex justify-between text-sm font-medium text-gray-500 mt-3 px-1">
               <span>1</span>
@@ -294,7 +294,7 @@ export default function NewProjectPage() {
 
           <div className="md:col-span-2 glass-card p-6 rounded-xl border border-white/5">
             <label className="block text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-cyan-400" /> Pencarian Momen Alami (Opsional)
+              <Sparkles className="h-4 w-4 text-blue-400" /> Pencarian Momen Alami (Opsional)
             </label>
             <p className="text-sm text-gray-400 mb-4">Cari momen spesifik menggunakan bahasa alami (contoh: "Cari momen lucu saat bermain game", "Cari saat pembicara membahas AI"). Biarkan kosong untuk AI mencari momen terbaik secara umum.</p>
             <input 
@@ -302,7 +302,7 @@ export default function NewProjectPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Contoh: Cari penjelasan tentang..." 
-              className="w-full relative rounded-xl border border-white/10 bg-black/80 px-5 py-4 text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 shadow-inner"
+              className="w-full relative rounded-xl border border-white/10 bg-black/80 px-5 py-4 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-inner"
             />
           </div>
         </div>
@@ -319,9 +319,9 @@ export default function NewProjectPage() {
             className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-black bg-black text-white hover:bg-transparent transition-all disabled:opacity-50"
           >
             {loading ? (
-              <><Loader2 className="h-6 w-6 animate-spin text-cyan-400" /> <span className="text-cyan-400">Memproses AI...</span></>
+              <><Loader2 className="h-6 w-6 animate-spin text-blue-400" /> <span className="text-blue-400">Memproses AI...</span></>
             ) : (
-              <><span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 group-hover:text-white transition-colors">Buat Proyek & Analisis</span> <ArrowRight className="h-6 w-6 text-purple-400 group-hover:text-white transition-colors" /></>
+              <><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 group-hover:text-white transition-colors">Buat Proyek & Analisis</span> <ArrowRight className="h-6 w-6 text-purple-400 group-hover:text-white transition-colors" /></>
             )}
           </button>
         </div>

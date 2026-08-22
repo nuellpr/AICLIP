@@ -106,7 +106,7 @@ async function processProject(projectId: string) {
       const aiOverride = { provider: (projectData as any).aiProvider, model: (projectData as any).aiModel };
       
       // Pass undefined for videoFilePath so it only uses VTT text
-      const result = await generateGoldenMoments(vttContent, clipCount, targetDuration, searchQuery, undefined, aiOverride);
+      const result = await generateGoldenMoments(vttContent, clipCount, targetDuration, searchQuery, undefined, aiOverride, projectData.userId);
       aiClips = result.clips;
       aiError = result.error;
     }

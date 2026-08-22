@@ -111,7 +111,7 @@ export default function LibraryPage() {
   if (!mounted || isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     );
   }
@@ -141,7 +141,7 @@ export default function LibraryPage() {
               onClick={toggleSelectAll}
               className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl text-sm font-semibold border border-white/10 transition-colors"
             >
-              {isAllSelected ? <CheckSquare className="w-4 h-4 text-cyan-400" /> : <Square className="w-4 h-4 text-gray-400" />}
+              {isAllSelected ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4 text-gray-400" />}
               <span>{isAllSelected ? 'Batal Pilih Semua' : 'Pilih Semua'}</span>
             </button>
 
@@ -164,7 +164,7 @@ export default function LibraryPage() {
           <Video className="mx-auto h-12 w-12 text-gray-500 mb-4" />
           <h3 className="text-xl font-medium text-white mb-2">Belum ada klip</h3>
           <p className="text-gray-400 mb-6">Anda belum merender klip apa pun. Buat proyek baru untuk memulai.</p>
-          <Link href="/dashboard/new" className="inline-block bg-cyan-500 hover:bg-cyan-400 text-black px-6 py-2 rounded-lg font-medium transition-colors">
+          <Link href="/dashboard/new" className="inline-block bg-blue-500 hover:bg-blue-400 text-black px-6 py-2 rounded-lg font-medium transition-colors">
             Buat Proyek
           </Link>
         </div>
@@ -181,7 +181,7 @@ export default function LibraryPage() {
               <div 
                 key={clip.id} 
                 className={`group relative rounded-2xl border transition-all overflow-hidden flex flex-col ${
-                  isSelected ? 'border-cyan-400 bg-cyan-500/10 shadow-[0_0_20px_rgba(6,182,212,0.3)]' : 'border-white/10 bg-white/5 hover:border-white/20'
+                  isSelected ? 'border-blue-400 bg-blue-500/10 shadow-[0_0_20px_rgba(37,99,235,0.3)]' : 'border-white/10 bg-white/5 hover:border-white/20'
                 }`}
               >
                 <div className="relative aspect-[9/16] bg-black">
@@ -198,11 +198,11 @@ export default function LibraryPage() {
                     className="absolute top-3 right-3 z-20 flex items-center justify-center h-8 w-8 rounded-lg bg-black/70 backdrop-blur-md border border-white/20 text-white transition-transform hover:scale-110"
                     title={isSelected ? "Batal Pilih" : "Pilih Klip"}
                   >
-                    {isSelected ? <CheckSquare className="w-5 h-5 text-cyan-400" /> : <Square className="w-5 h-5 text-gray-400" />}
+                    {isSelected ? <CheckSquare className="w-5 h-5 text-blue-400" /> : <Square className="w-5 h-5 text-gray-400" />}
                   </button>
 
                   {/* Project Title Badge */}
-                  <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md text-xs font-semibold border border-white/10 text-cyan-400">
+                  <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md text-xs font-semibold border border-white/10 text-blue-400">
                     {clip.project?.title || "Video"}
                   </div>
                 </div>
