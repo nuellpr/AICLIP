@@ -5,7 +5,7 @@ import { Upload, Link as LinkIcon, Settings2, ArrowRight, Loader2, Sparkles, Pla
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MotionDiv } from "@/components/Motion";
-import { getApiUrl } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -29,8 +29,7 @@ export default function NewProjectPage() {
     setError("");
 
     try {
-      const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('clipforge_user') || '{}') : null;
-      const res = await fetch(getApiUrl("/api/projects"), {
+      const res = await apiFetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -43,7 +42,6 @@ export default function NewProjectPage() {
           searchQuery: searchQuery,
           aiProvider: selectedAiModel ? selectedAiModel.split(':')[0] : null,
           aiModel: selectedAiModel ? selectedAiModel.split(':')[1] : null,
-          userId: currentUser?.id,
         })
       });
 

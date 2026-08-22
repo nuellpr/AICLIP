@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Download, Video, Loader2, Calendar, Trash2, CheckSquare, Square, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { getApiUrl } from "@/lib/api";
+import { getApiUrl, apiFetch } from "@/lib/api";
 
 import { getStoredUser } from "@/lib/auth";
 
@@ -28,7 +28,7 @@ export default function LibraryPage() {
         setClips([]);
         return;
       }
-      const res = await fetch(getApiUrl(`/api/clips/library?userId=${currentUser.id}`));
+      const res = await apiFetch('/api/clips/library');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -68,7 +68,7 @@ export default function LibraryPage() {
     if (!confirm('Pindahkan video klip ini ke Recycle Bin laptop Anda?')) return;
     
     try {
-      const res = await fetch(getApiUrl(`/api/clips/${id}`), {
+      const res = await apiFetch(`/api/clips/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -88,7 +88,7 @@ export default function LibraryPage() {
 
     setIsDeleting(true);
     try {
-      const res = await fetch(getApiUrl('/api/clips/batch-delete'), {
+      const res = await apiFetch('/api/clips/batch-delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clipIds: selectedIds })

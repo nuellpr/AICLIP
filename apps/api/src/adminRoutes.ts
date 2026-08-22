@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '@clipforge/database';
 import { Queue } from 'bullmq';
 import Redis from 'ioredis';
+import { authenticate, requireAdmin } from './guards';
 
 const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
@@ -11,7 +12,7 @@ const renderQueue = new Queue('renderQueue', { connection });
 
 export default async function adminRoutes(server: FastifyInstance) {
   // 1. Overall Stats & Daily Chart Data
-  server.get('/stats', async (request, reply) => {
+  server.get('/stats', { preHandler: [authenticate, requireAdmin] }, async (request, reply) => {
     try {
       const totalUsers = await prisma.user.count();
       const totalProjects = await prisma.project.count();
@@ -69,7 +70,7 @@ export default async function adminRoutes(server: FastifyInstance) {
   });
 
   // 2. BullMQ & Redis Monitoring
-  server.get('/queues', async (request, reply) => {
+  server.get('/queues', { preHandler: [authenticate, requireAdmin] }, async (request, reply) => {
     try {
       const [projectCounts, renderCounts] = await Promise.all([
         projectQueue.getJobCounts('active', 'waiting', 'completed', 'failed', 'delayed'),
@@ -109,7 +110,7 @@ export default async function adminRoutes(server: FastifyInstance) {
   });
 
   // 3. User Management List
-  server.get('/users', async (request, reply) => {
+  server.get('/users', { preHandler: [authenticate, requireAdmin] }, async (request, reply) => {
     try {
       const users = await prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
@@ -146,7 +147,7 @@ export default async function adminRoutes(server: FastifyInstance) {
   });
 
   // 4. Manual Credit Top-Up / Edit by Admin
-  server.post('/users/:userId/credits', async (request, reply) => {
+  server.post('/users/:userId/credits', { preHandler: [authenticate, requireAdmin] }, async (request, reply) => {
     try {
       const { userId } = request.params as { userId: string };
       const body = request.body as { creditsToAdd?: number; mode?: 'ADD' | 'SET' };
@@ -189,7 +190,7 @@ export default async function adminRoutes(server: FastifyInstance) {
   });
 
   // 5. Update User Role (ADMIN / USER)
-  server.patch('/users/:userId/role', async (request, reply) => {
+  server.patch('/users/:userId/role', { preHandler: [authenticate, requireAdmin] }, async (request, reply) => {
     try {
       const { userId } = request.params as { userId: string };
       const body = request.body as { role?: string };

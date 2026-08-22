@@ -2,25 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { getFfmpegPath, getPythonPath, getFontPath } from './paths';
 
 const execAsync = promisify(exec);
-
-const getFfmpegPath = (): string => {
-  if (fs.existsSync('/usr/bin/ffmpeg')) return '/usr/bin/ffmpeg';
-  if (fs.existsSync('/usr/local/bin/ffmpeg')) return '/usr/local/bin/ffmpeg';
-  return 'ffmpeg';
-};
-
-const getPythonPath = (): string => {
-  const candidates = ['python', 'python3', 'py'];
-  for (const cmd of candidates) {
-    try {
-      const result = require('child_process').execSync(`${cmd} --version`, { encoding: 'utf-8', stdio: 'pipe' });
-      if (result) return cmd;
-    } catch (_) {}
-  }
-  return 'python';
-};
 
 export interface HookOptions {
   hookText: string;
@@ -143,7 +127,7 @@ export async function generateHookIntro(options: HookOptions): Promise<string | 
     }
     if (currentLine.trim()) lines.push(currentLine.trim());
     
-    const escapedLines = lines.map(l => l.replace(/'/g, "'").replace(/:/g, '\\:').replace(/\\/g, '/'));
+    const escapedLines = lines.map(l => l.replace(/'/g, '\u2019').replace(/:/g, '\\:').replace(/\\/g, '/'));
     
     // Build drawtext filters for each line with fade-in animation
     const lineHeight = fontSize + 15;
@@ -153,7 +137,8 @@ export async function generateHookIntro(options: HookOptions): Promise<string | 
     let drawtextFilters = escapedLines.map((line, idx) => {
       const y = Math.round(startY + idx * lineHeight);
       const fadeDelay = 0.3 * idx; // Stagger each line
-      return `drawtext=text='${line}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=${fontSize}:fontcolor=${textColor}:x=(w-text_w)/2:y=${y}:alpha='if(lt(t,${fadeDelay}),0,if(lt(t,${fadeDelay + 0.4}),(t-${fadeDelay})/0.4,1))'`;
+      const escapedFont = getFontPath().replace(/:/g, '\\:');
+      return `drawtext=text='${line}':fontfile=${escapedFont}:fontsize=${fontSize}:fontcolor=${textColor}:x=(w-text_w)/2:y=${y}:alpha='if(lt(t,${fadeDelay}),0,if(lt(t,${fadeDelay + 0.4}),(t-${fadeDelay})/0.4,1))'`;
     }).join(',');
     
     // Create gradient background + text overlay

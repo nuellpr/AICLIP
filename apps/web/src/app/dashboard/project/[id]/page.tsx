@@ -8,7 +8,7 @@ import { PreviewVideo } from "@/components/PreviewVideo";
 import { TimelineSlider } from "@/components/TimelineSlider";
 import { InteractiveWordEditor } from "@/components/InteractiveWordEditor";
 import { CAPTION_PRESETS, CaptionPreset, getDefaultPreset, Word } from "@clipforge/shared";
-import { getApiUrl } from "@/lib/api";
+import { getApiUrl, apiFetch } from "@/lib/api";
 
 export default function ProjectPage() {
   const params = useParams();
@@ -35,7 +35,7 @@ export default function ProjectPage() {
     // Fetch initial project data
     const fetchProgress = async () => {
       try {
-        const res = await fetch(getApiUrl(`/api/projects/${id}/progress`));
+        const res = await apiFetch(`/api/projects/${id}/progress`);
         if (res.ok) {
           const data = await res.json();
           setProject(data);
@@ -63,7 +63,8 @@ export default function ProjectPage() {
 
     let eventSource: EventSource | null = null;
     try {
-      const url = getApiUrl(`/api/projects/${id}/stream`);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('clipforge_token') : null;
+      const url = getApiUrl(`/api/projects/${id}/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`);
       eventSource = new EventSource(url);
       eventSource.onmessage = (event) => {
         try {
@@ -101,7 +102,7 @@ export default function ProjectPage() {
       }
       setCaptionSettings(settings);
       
-      const res = await fetch(getApiUrl(`/api/clips/${clip.id}/words`));
+      const res = await apiFetch(`/api/clips/${clip.id}/words`);
       if (res.ok) {
         const words = await res.json();
         setPreviewWords(words);
@@ -115,7 +116,7 @@ export default function ProjectPage() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const res = await fetch(getApiUrl(`/api/clips/${editingClip.id}`), {
+      const res = await apiFetch(`/api/clips/${editingClip.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -138,8 +139,7 @@ export default function ProjectPage() {
     } finally {
       // Re-fetch project to update clip status instantly
       try {
-        const url = getApiUrl(`/api/projects/${id}/progress`);
-        const pRes = await fetch(url);
+        const pRes = await apiFetch(`/api/projects/${id}/progress`);
         if (pRes.ok) {
           const data = await pRes.json();
           setProject(data);
@@ -155,7 +155,7 @@ export default function ProjectPage() {
   const handleRender = async (clipId: string) => {
     setRenderLoadingId(clipId);
     try {
-      const res = await fetch(getApiUrl(`/api/clips/${clipId}/render`), {
+      const res = await apiFetch(`/api/clips/${clipId}/render`, {
         method: 'POST'
       });
       if (!res.ok) throw new Error("Failed to trigger render");
@@ -165,8 +165,7 @@ export default function ProjectPage() {
     } finally {
       // Re-fetch project to update clip status instantly
       try {
-        const url = getApiUrl(`/api/projects/${id}/progress`);
-        const pRes = await fetch(url);
+        const pRes = await apiFetch(`/api/projects/${id}/progress`);
         if (pRes.ok) {
           const data = await pRes.json();
           setProject(data);
@@ -297,7 +296,7 @@ export default function ProjectPage() {
                       
                       {isReady ? (
                         <a 
-                          href={clip.renderedFileKey?.startsWith('http') ? clip.renderedFileKey : clip.renderedFileKey} 
+                          href={clip.renderedFileKey?.startsWith('http') ? clip.renderedFileKey : getApiUrl(`/renders/${encodeURIComponent((clip.title || 'clip').replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id)}.mp4`)} 
                           download={`${(clip.title || 'clip').replace(/[^a-zA-Z0-9_-]/g, '_')}.mp4`}
                           target="_blank"
                           rel="noreferrer"
@@ -549,7 +548,7 @@ export default function ProjectPage() {
                         onClick={async () => {
                           setIsTranscribing(true);
                           try {
-                            const res = await fetch(getApiUrl(`/api/clips/${editingClip.id}/retranscribe`), { method: 'POST' });
+                            const res = await apiFetch(`/api/clips/${editingClip.id}/retranscribe`, { method: 'POST' });
                             if (!res.ok) {
                               const err = await res.json();
                               alert('Gagal transkripsi: ' + (err.error || 'Unknown error'));

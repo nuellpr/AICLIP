@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
-    "build": "tsc",
+    "build": "tsc && node -e \"const fs=require('fs'); if(fs.existsSync('src/whisper_transcribe.py')) fs.copyFileSync('src/whisper_transcribe.py','dist/whisper_transcribe.py')\"",
     "start": "node dist/index.js",
     "test": "vitest run"
   },

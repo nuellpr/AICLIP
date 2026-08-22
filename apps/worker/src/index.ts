@@ -2,7 +2,6 @@ import http from 'http';
 import { prisma } from '@clipforge/database';
 import youtubedl from 'youtube-dl-exec';
 import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static';
 import path from 'path';
 import fs from 'fs';
 import { exec } from 'child_process';
@@ -12,42 +11,28 @@ import OpenAI from 'openai';
 import { generateGoldenMoments } from './ai';
 import { generateAssFromVtt } from './subtitle';
 import { parseYouTubeVttWords } from '@clipforge/shared';
-import { Worker } from 'bullmq';
+import { Worker, Queue } from 'bullmq';
 import { startCleanupCron } from './cleanup';
 import { generateHookIntro, concatHookAndClip } from './hookGenerator';
 import { detectGpuEncoder, getEncoderOptions } from './gpuDetector';
 import { getWatermarkFilters, parseWatermarkConfig } from './watermark';
 import { detectSfxTriggers, mixSfxIntoVideo } from './sfxEngine';
 import { uploadRenderedVideo } from './storage';
+import { getFfmpegPath, getPythonPath } from './paths';
 import Redis from 'ioredis';
 
 const execAsync = promisify(exec);
 
-const getFfmpegPath = () => {
-  if (fs.existsSync('/usr/bin/ffmpeg')) {
-    return '/usr/bin/ffmpeg';
-  }
-  if (fs.existsSync('/usr/local/bin/ffmpeg')) {
-    return '/usr/local/bin/ffmpeg';
-  }
-  if (ffmpegStatic && fs.existsSync(ffmpegStatic as string)) {
-    return ffmpegStatic as string;
-  }
-  return 'ffmpeg';
-};
-
-const getPythonPath = (): string => {
-  const candidates = ['python', 'python3', 'py'];
-  for (const cmd of candidates) {
-    try {
-      const result = require('child_process').execSync(`${cmd} --version`, { encoding: 'utf-8', stdio: 'pipe' });
-      if (result) return cmd;
-    } catch (_) {}
-  }
-  return 'python';
-};
-
 ffmpeg.setFfmpegPath(getFfmpegPath());
+
+const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
+
+const projectQueue = new Queue('projectQueue', { connection });
+const renderQueue = new Queue('renderQueue', { connection });
+
+const apiRenderDir = process.env.RENDERS_DIR || path.resolve(__dirname, '../../api/public/renders');
+const webRenderDir = process.env.WEB_RENDERS_DIR || path.resolve(__dirname, '../../web/public/renders');
 
 async function processProject(projectId: string) {
   console.log(`Started processing project ${projectId}`);
@@ -97,10 +82,9 @@ async function processProject(projectId: string) {
       console.warn("Youtubedl subtitle fetch warning:", err?.message || err);
     }
     
-    // Find the downloaded vtt file
+    // Find the downloaded vtt file (scoped to this project only)
     const files = fs.readdirSync(path.join(__dirname, '..'));
-    let subFile = files.find(f => f.startsWith(`transcript_${projectId}_`) && f.endsWith('.vtt'));
-    if (!subFile) subFile = files.find(f => f.endsWith('.vtt'));
+    const subFile = files.find(f => f.startsWith(`transcript_${projectId}_`) && f.endsWith('.vtt'));
     
     let vttContent = '';
     if (subFile) {
@@ -207,9 +191,6 @@ async function processProject(projectId: string) {
 }
 
 async function startConsumers() {
-  const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
-  const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
-
   const projectWorker = new Worker('projectQueue', async job => {
     if (job.name === 'processProject') {
       const { projectId } = job.data;
@@ -241,8 +222,6 @@ async function startConsumers() {
         const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id;
         const filename = `${safeTitle}.mp4`;
         
-        const webRenderDir = path.resolve(__dirname, '../../web/public/renders');
-        const apiRenderDir = path.resolve(__dirname, '../../api/public/renders');
         if (!fs.existsSync(webRenderDir)) fs.mkdirSync(webRenderDir, { recursive: true });
         if (!fs.existsSync(apiRenderDir)) fs.mkdirSync(apiRenderDir, { recursive: true });
 
@@ -319,7 +298,7 @@ async function startConsumers() {
           } catch (e) {}
 
           // Use VTT for fallback
-          const wordsPath = path.join(__dirname, `../../api/public/renders/whisper_${clip.id}.json`);
+          const wordsPath = path.join(apiRenderDir, `whisper_${clip.id}.json`);
 
           // Always run Whisper for micro-syncing precision on the final clip
           if (!fs.existsSync(wordsPath)) {
@@ -716,11 +695,12 @@ async function recoverStuckJobs() {
     });
 
     for (const p of stuckProjects) {
-      console.log(`Recovering stuck project ${p.id}... resetting to QUEUED`);
+      console.log(`Recovering stuck project ${p.id}... re-enqueueing to QUEUED`);
       await prisma.project.update({
         where: { id: p.id },
         data: { status: 'QUEUED', currentStage: null, lockedAt: null }
       });
+      await projectQueue.add('processProject', { projectId: p.id });
     }
 
     // Recover stuck Clips
@@ -732,11 +712,12 @@ async function recoverStuckJobs() {
     });
 
     for (const c of stuckClips) {
-      console.log(`Recovering stuck clip ${c.id}... resetting to QUEUED`);
+      console.log(`Recovering stuck clip ${c.id}... re-enqueueing to QUEUED`);
       await prisma.clip.update({
         where: { id: c.id },
         data: { renderStatus: 'QUEUED', lockedAt: null }
       });
+      await renderQueue.add('renderClip', { clipId: c.id });
     }
   } catch (err) {
     console.error('Recover stuck jobs error:', err);
@@ -745,7 +726,7 @@ async function recoverStuckJobs() {
   }
 }
 
-// Reset any stuck rendering clips from a previous crash back to QUEUED
+// Reset any stuck rendering clips from a previous crash back to QUEUED and re-enqueue
 Promise.all([
   prisma.clip.updateMany({
     where: { renderStatus: 'RENDERING' },
@@ -755,8 +736,30 @@ Promise.all([
     where: { status: { in: ['DOWNLOADING', 'EXTRACTING_AUDIO', 'TRANSCRIBING', 'ANALYZING', 'GENERATING_CLIPS'] } },
     data: { status: 'QUEUED', lockedAt: null }
   })
-]).then(() => {
+]).then(async (results) => {
   console.log('Worker started, polling for QUEUED projects & clips...');
+  const [, projectUpdate] = results;
+
+  // Re-enqueue projects reset to QUEUED
+  const queuedProjects = await prisma.project.findMany({
+    where: { status: 'QUEUED' },
+    select: { id: true },
+    take: 100
+  });
+  for (const p of queuedProjects) {
+    await projectQueue.add('processProject', { projectId: p.id });
+  }
+
+  // Re-enqueue clips reset to QUEUED
+  const queuedClips = await prisma.clip.findMany({
+    where: { renderStatus: 'QUEUED' },
+    select: { id: true },
+    take: 200
+  });
+  for (const c of queuedClips) {
+    await renderQueue.add('renderClip', { clipId: c.id });
+  }
+
   startConsumers();
   startCleanupCron();
   recoverStuckJobs();

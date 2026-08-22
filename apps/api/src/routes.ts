@@ -3,6 +3,8 @@ import { prisma } from '@clipforge/database';
 import { Queue } from 'bullmq';
 import youtubedl from 'youtube-dl-exec';
 import Redis from 'ioredis';
+import path from 'path';
+import { authenticate, sseAuthenticate, getUserId, loadOwnedClip } from './guards';
 
 const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
@@ -10,14 +12,22 @@ const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
 const projectQueue = new Queue('projectQueue', { connection });
 const renderQueue = new Queue('renderQueue', { connection });
 
-export default async function routes(server: FastifyInstance) {
-  server.get('/projects', async (request, reply) => {
-    const query = request.query as { userId?: string };
-    const userId = query?.userId;
+const rendersDir = process.env.RENDERS_DIR || path.join(__dirname, '../public/renders');
+const workerDir = process.env.WORKER_DIR || path.join(__dirname, '../../worker');
 
-    if (!userId) {
-      return [];
-    }
+function maskApiKey(key?: string): { apiKey: string; apiKeySet: boolean } {
+  if (!key) return { apiKey: '', apiKeySet: false };
+  if (key.length <= 8) return { apiKey: '••••••••', apiKeySet: true };
+  return { apiKey: `${key.slice(0, 4)}••••••••${key.slice(-4)}`, apiKeySet: true };
+}
+
+function isMaskedKey(key?: string): boolean {
+  return !!key && key.includes('••');
+}
+
+export default async function routes(server: FastifyInstance) {
+  server.get('/projects', { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = getUserId(request);
 
     const projects = await prisma.project.findMany({
       where: { userId },
@@ -31,23 +41,10 @@ export default async function routes(server: FastifyInstance) {
     return projects;
   });
 
-  server.post('/projects', async (request, reply) => {
+  server.post('/projects', { preHandler: [authenticate] }, async (request, reply) => {
     const { title, sourceUrl, sourceType, layoutMode, clipCount, targetDuration, searchQuery, aiProvider, aiModel } = request.body as any;
 
-    const body = request.body as any;
-    let targetUserId = body.userId;
-
-    if (!targetUserId) {
-      const user = await prisma.user.upsert({
-        where: { email: 'demo@clipforge.ai' },
-        update: {},
-        create: {
-          email: 'demo@clipforge.ai',
-          name: 'Demo User',
-        }
-      });
-      targetUserId = user.id;
-    }
+    const targetUserId = getUserId(request);
 
     // Check user subscription and credit minutes
     const subscription = await prisma.subscription.findFirst({
@@ -82,22 +79,39 @@ export default async function routes(server: FastifyInstance) {
     return { projectId: project.id };
   });
 
-  server.get('/projects/:id/progress', async (request, reply) => {
+  server.get('/projects/:id/progress', { preHandler: [authenticate] }, async (request, reply) => {
     const { id } = request.params as any;
+    const userId = getUserId(request);
     const project = await prisma.project.findUnique({
       where: { id },
-      select: { status: true, progress: true, currentStage: true, errorMessage: true, clips: true }
+      select: { userId: true, status: true, progress: true, currentStage: true, errorMessage: true, clips: true }
     });
 
     if (!project) {
       return reply.code(404).send({ error: 'Project not found' });
     }
+    if (project.userId !== userId) {
+      return reply.code(403).send({ error: 'Akses ditolak' });
+    }
 
-    return project;
+    const { userId: _ownerId, ...safeProject } = project;
+    return safeProject;
   });
 
-  server.get('/projects/:id/stream', async (request, reply) => {
+  server.get('/projects/:id/stream', { preHandler: [sseAuthenticate] }, async (request, reply) => {
     const { id } = request.params as any;
+    const userId = getUserId(request);
+
+    const owner = await prisma.project.findUnique({
+      where: { id },
+      select: { userId: true }
+    });
+    if (!owner) {
+      return reply.code(404).send({ error: 'Project not found' });
+    }
+    if (owner.userId !== userId) {
+      return reply.code(403).send({ error: 'Akses ditolak' });
+    }
     
     reply.raw.setHeader('Content-Type', 'text/event-stream');
     reply.raw.setHeader('Cache-Control', 'no-cache');
@@ -122,9 +136,13 @@ export default async function routes(server: FastifyInstance) {
     });
   });
 
-  server.put('/clips/:id', async (request, reply) => {
+  server.put('/clips/:id', { preHandler: [authenticate] }, async (request, reply) => {
     const { id } = request.params as any;
+    const userId = getUserId(request);
     const { title, hook, startTime, endTime, caption, subtitleStyle, subtitleOffset, captionPresetId, captionSettings, layoutMode } = request.body as any;
+
+    const owned = await loadOwnedClip(id, userId);
+    if (!owned) return reply.code(404).send({ error: 'Clip not found' });
 
     const clip = await prisma.clip.update({
       where: { id },
@@ -145,9 +163,10 @@ export default async function routes(server: FastifyInstance) {
     return clip;
   });
 
-  server.get('/clips/:id/words', async (request, reply) => {
+  server.get('/clips/:id/words', { preHandler: [authenticate] }, async (request, reply) => {
     const { id } = request.params as any;
-    const clip = await prisma.clip.findUnique({ where: { id }, include: { project: true } });
+    const userId = getUserId(request);
+    const clip = await loadOwnedClip(id, userId);
     if (!clip) return reply.code(404).send({ error: 'Clip not found' });
 
     const fs = require('fs');
@@ -155,7 +174,7 @@ export default async function routes(server: FastifyInstance) {
     const { parseYouTubeVttWords } = require('@clipforge/shared');
 
     // 1. Check if custom edited/whisper JSON file exists first
-    const whisperFile = path.join(__dirname, `../public/renders/whisper_${id}.json`);
+    const whisperFile = path.join(rendersDir, `whisper_${id}.json`);
     if (fs.existsSync(whisperFile)) {
       try {
         const whisperWords = JSON.parse(fs.readFileSync(whisperFile, 'utf-8'));
@@ -166,7 +185,6 @@ export default async function routes(server: FastifyInstance) {
     }
 
     // 2. Fallback to VTT file
-    const workerDir = path.join(__dirname, '../../worker');
     if (!fs.existsSync(workerDir)) return [];
 
     const files = fs.readdirSync(workerDir);
@@ -182,17 +200,20 @@ export default async function routes(server: FastifyInstance) {
     return clipWords;
   });
 
-  server.put('/clips/:id/words', async (request, reply) => {
+  server.put('/clips/:id/words', { preHandler: [authenticate] }, async (request, reply) => {
     const { id } = request.params as any;
+    const userId = getUserId(request);
     const { words } = request.body as { words: any[] };
 
     if (!Array.isArray(words)) {
       return reply.code(400).send({ error: 'Words must be an array' });
     }
 
+    const owned = await loadOwnedClip(id, userId);
+    if (!owned) return reply.code(404).send({ error: 'Clip not found' });
+
     const fs = require('fs');
     const path = require('path');
-    const rendersDir = path.join(__dirname, '../public/renders');
     if (!fs.existsSync(rendersDir)) {
       fs.mkdirSync(rendersDir, { recursive: true });
     }
@@ -210,8 +231,12 @@ export default async function routes(server: FastifyInstance) {
     return { success: true, count: words.length };
   });
 
-  server.post('/clips/:id/render', async (request, reply) => {
+  server.post('/clips/:id/render', { preHandler: [authenticate] }, async (request, reply) => {
     const { id } = request.params as any;
+    const userId = getUserId(request);
+    const owned = await loadOwnedClip(id, userId);
+    if (!owned) return reply.code(404).send({ error: 'Clip not found' });
+
     const clip = await prisma.clip.update({
       where: { id },
       data: { renderStatus: 'QUEUED' }
@@ -222,12 +247,8 @@ export default async function routes(server: FastifyInstance) {
     return clip;
   });
 
-  server.get('/clips/library', async (request, reply) => {
-    const query = request.query as { userId?: string };
-    const userId = query?.userId;
-    if (!userId) {
-      return [];
-    }
+  server.get('/clips/library', { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = getUserId(request);
 
     const clips = await prisma.clip.findMany({
       where: { 
@@ -240,29 +261,26 @@ export default async function routes(server: FastifyInstance) {
     return clips;
   });
 
-  server.delete('/clips/:id', async (request, reply) => {
+  server.delete('/clips/:id', { preHandler: [authenticate] }, async (request, reply) => {
     const { id } = request.params as any;
+    const userId = getUserId(request);
     try {
-      const clip = await prisma.clip.findUnique({ where: { id } });
-      if (clip) {
-        const fs = require('fs');
-        const path = require('path');
-        const { exec } = require('child_process');
-        const { promisify } = require('util');
-        const execAsync = promisify(exec);
+      const owned = await loadOwnedClip(id, userId);
+      if (!owned) return reply.code(404).send({ error: 'Clip not found' });
+      const clip = owned;
 
-        const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id;
-        const filename = `${safeTitle}.mp4`;
-        const filePath = path.join(__dirname, '../public/renders', filename);
-        
-        if (fs.existsSync(filePath)) {
-          try {
-            const escapedPath = filePath.replace(/'/g, "''");
-            const psCommand = `Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('${escapedPath}', 'OnlyErrorDialogs', 'SendToRecycleBin')`;
-            await execAsync(`powershell -Command "${psCommand}"`);
-          } catch (e) {
-            try { fs.unlinkSync(filePath); } catch (err) {}
-          }
+      const fs = require('fs');
+      const path = require('path');
+
+      const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id;
+      const filename = `${safeTitle}.mp4`;
+      const filePath = path.join(rendersDir, filename);
+      
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.rmSync(filePath, { force: true });
+        } catch (e) {
+          try { fs.unlinkSync(filePath); } catch (err) {}
         }
       }
       await prisma.clip.delete({ where: { id } });
@@ -272,38 +290,39 @@ export default async function routes(server: FastifyInstance) {
     }
   });
 
-  server.post('/clips/batch-delete', async (request, reply) => {
+  server.post('/clips/batch-delete', { preHandler: [authenticate] }, async (request, reply) => {
     const { clipIds } = request.body as any;
+    const userId = getUserId(request);
     if (!Array.isArray(clipIds) || clipIds.length === 0) {
       return reply.code(400).send({ error: 'No clip IDs provided' });
     }
 
     try {
+      // Verify all clips belong to user
+      const ownedClips = await prisma.clip.findMany({
+        where: { id: { in: clipIds } },
+        include: { project: { select: { userId: true } } },
+      });
+      if (ownedClips.length !== clipIds.length || ownedClips.some(c => c.project.userId !== userId)) {
+        return reply.code(403).send({ error: 'Akses ditolak' });
+      }
+
       const fs = require('fs');
       const path = require('path');
-      const { exec } = require('child_process');
-      const { promisify } = require('util');
-      const execAsync = promisify(exec);
 
-      for (const id of clipIds) {
-        const clip = await prisma.clip.findUnique({ where: { id } });
-        if (clip) {
-          const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id;
-          const filename = `${safeTitle}.mp4`;
-          const filePath = path.join(__dirname, '../public/renders', filename);
+      for (const clip of ownedClips) {
+        const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id;
+        const filename = `${safeTitle}.mp4`;
+        const filePath = path.join(rendersDir, filename);
 
-          if (fs.existsSync(filePath)) {
-            try {
-              const escapedPath = filePath.replace(/'/g, "''");
-              const psCommand = `Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('${escapedPath}', 'OnlyErrorDialogs', 'SendToRecycleBin')`;
-              await execAsync(`powershell -Command "${psCommand}"`);
-            } catch (e) {
-              try { fs.unlinkSync(filePath); } catch (err) {}
-            }
+        if (fs.existsSync(filePath)) {
+          try {
+            fs.rmSync(filePath, { force: true });
+          } catch (e) {
+            try { fs.unlinkSync(filePath); } catch (err) {}
           }
         }
       }
-
       await prisma.clip.deleteMany({
         where: { id: { in: clipIds } }
       });
@@ -314,81 +333,76 @@ export default async function routes(server: FastifyInstance) {
     }
   });
 
-  server.get('/settings/ai', async (request, reply) => {
-    const query = request.query as { userId?: string };
-    const userId = query?.userId;
+  server.get('/settings/ai', { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = getUserId(request);
     const fs = require('fs');
     const path = require('path');
 
-    if (userId) {
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (user && (user as any).role === 'ADMIN') {
-        const configPath = path.resolve(__dirname, '../../../ai-config.json');
-        if (fs.existsSync(configPath)) {
-          try { return JSON.parse(fs.readFileSync(configPath, 'utf-8')); } catch (e) {}
-        }
-      } else {
-        const userConfigPath = path.resolve(__dirname, `../../../ai-config_${userId}.json`);
-        if (fs.existsSync(userConfigPath)) {
-          try { return JSON.parse(fs.readFileSync(userConfigPath, 'utf-8')); } catch (e) {}
-        }
-        return {
-          provider: 'google-gemini',
-          baseUrl: '',
-          apiKey: '',
-          model: '',
-          systemMessage: ''
-        };
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    let config: any = null;
+    if (user && (user as any).role === 'ADMIN') {
+      const configPath = path.resolve(__dirname, '../../../ai-config.json');
+      if (fs.existsSync(configPath)) {
+        try { config = JSON.parse(fs.readFileSync(configPath, 'utf-8')); } catch (e) {}
+      }
+    } else {
+      const userConfigPath = path.resolve(__dirname, `../../../ai-config_${userId}.json`);
+      if (fs.existsSync(userConfigPath)) {
+        try { config = JSON.parse(fs.readFileSync(userConfigPath, 'utf-8')); } catch (e) {}
       }
     }
 
-    const configPath = path.resolve(__dirname, '../../../ai-config.json');
-    if (fs.existsSync(configPath)) {
-      try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-        return config;
-      } catch (e) {}
+    if (!config) {
+      return {
+        provider: 'google-gemini',
+        baseUrl: '',
+        apiKey: '',
+        apiKeySet: false,
+        model: '',
+        systemMessage: ''
+      };
     }
-    return {
-      provider: 'google-gemini',
-      baseUrl: '',
-      apiKey: '',
-      model: '',
-      systemMessage: ''
-    };
+
+    const masked = maskApiKey(config.apiKey);
+    return { ...config, apiKey: masked.apiKey, apiKeySet: masked.apiKeySet };
   });
 
-  server.post('/settings/ai', async (request, reply) => {
-    const { provider, baseUrl, apiKey, model, systemMessage, userId } = request.body as any;
-    
+  server.post('/settings/ai', { preHandler: [authenticate] }, async (request, reply) => {
+    const { provider, baseUrl, apiKey, model, systemMessage } = request.body as any;
+    const userId = getUserId(request);
+
     const fs = require('fs');
     const path = require('path');
-    
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const isAdmin = !!(user && (user as any).role === 'ADMIN');
+    const configPath = path.resolve(__dirname, isAdmin ? '../../../ai-config.json' : `../../../ai-config_${userId}.json`);
+
+    let existing: any = {};
+    if (fs.existsSync(configPath)) {
+      try { existing = JSON.parse(fs.readFileSync(configPath, 'utf-8')); } catch (e) {}
+    }
+
     const config = {
-      provider: provider || 'google-gemini',
-      baseUrl: baseUrl || '',
-      apiKey: apiKey || '',
-      model: model || '',
-      systemMessage: systemMessage || ''
+      provider: provider || existing.provider || 'google-gemini',
+      baseUrl: baseUrl !== undefined ? baseUrl : (existing.baseUrl || ''),
+      apiKey: apiKey && !isMaskedKey(apiKey) ? apiKey : (existing.apiKey || ''),
+      model: model || existing.model || '',
+      systemMessage: systemMessage !== undefined ? systemMessage : (existing.systemMessage || '')
     };
 
-    if (userId) {
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (user && (user as any).role === 'ADMIN') {
-        const globalPath = path.resolve(__dirname, '../../../ai-config.json');
-        fs.writeFileSync(globalPath, JSON.stringify(config, null, 2));
-      }
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+    // Admin also gets a per-user copy for backwards compatibility
+    if (isAdmin) {
       const userConfigPath = path.resolve(__dirname, `../../../ai-config_${userId}.json`);
       fs.writeFileSync(userConfigPath, JSON.stringify(config, null, 2));
-    } else {
-      const globalPath = path.resolve(__dirname, '../../../ai-config.json');
-      fs.writeFileSync(globalPath, JSON.stringify(config, null, 2));
     }
 
     return { success: true };
   });
 
-  server.post('/settings/ai/models', async (request, reply) => {
+  server.post('/settings/ai/models', { preHandler: [authenticate] }, async (request, reply) => {
     const { provider, baseUrl, apiKey } = request.body as any;
 
     if (!apiKey && provider !== 'google-gemini') return { models: [] };
@@ -403,16 +417,17 @@ export default async function routes(server: FastifyInstance) {
         return reply.code(500).send({ error: e.message });
       }
     } else if (provider === 'google-gemini') {
-      return { models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-3.1-flash', 'gemini-3.1-pro', 'gemini-3.5-flash', 'gemini-3.6-flash'] };
+      return { models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.5-pro'] };
     }
     
     return { models: [] };
   });
 
   // Re-transcribe a clip using local Whisper for accurate subtitles
-  server.post('/clips/:id/retranscribe', async (request, reply) => {
+  server.post('/clips/:id/retranscribe', { preHandler: [authenticate] }, async (request, reply) => {
     const { id } = request.params as any;
-    const clip = await prisma.clip.findUnique({ where: { id }, include: { project: true } });
+    const userId = getUserId(request);
+    const clip = await loadOwnedClip(id, userId);
     if (!clip) return reply.code(404).send({ error: 'Clip not found' });
 
     try {
@@ -433,7 +448,7 @@ export default async function routes(server: FastifyInstance) {
 
       // Find the rendered file to extract audio from
       const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id;
-      const renderedPath = path.join(__dirname, '../public/renders', `${safeTitle}.mp4`);
+      const renderedPath = path.join(rendersDir, `${safeTitle}.mp4`);
       const audioPath = path.join(__dirname, `../temp_whisper_${id}.wav`);
       const whisperOutDir = path.join(__dirname, '../temp_whisper_out');
 
@@ -446,7 +461,6 @@ export default async function routes(server: FastifyInstance) {
       let tempDlPath = path.join(__dirname, `../temp_dl_whisper_${id}.mp4`);
 
       if (!fs.existsSync(renderedPath) || fs.statSync(renderedPath).size < 1000) {
-        const workerDir = path.join(__dirname, '../../worker');
         const tempFiles = fs.readdirSync(workerDir).filter((f: string) => f.startsWith(`temp_${id}`));
         if (tempFiles.length > 0) {
           sourceFile = path.join(workerDir, tempFiles[0]);
@@ -539,7 +553,7 @@ export default async function routes(server: FastifyInstance) {
 
       // Save whisper words to a file so worker can use them
       if (parsed.words && parsed.words.length > 0) {
-        const wordsPath = path.join(__dirname, `../public/renders/whisper_${id}.json`);
+        const wordsPath = path.join(rendersDir, `whisper_${id}.json`);
         if (!fs.existsSync(path.dirname(wordsPath))) {
           fs.mkdirSync(path.dirname(wordsPath), { recursive: true });
         }

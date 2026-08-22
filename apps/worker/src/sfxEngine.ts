@@ -2,14 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { getFfmpegPath } from './paths';
 
 const execAsync = promisify(exec);
-
-const getFfmpegPath = (): string => {
-  if (fs.existsSync('/usr/bin/ffmpeg')) return '/usr/bin/ffmpeg';
-  if (fs.existsSync('/usr/local/bin/ffmpeg')) return '/usr/local/bin/ffmpeg';
-  return 'ffmpeg';
-};
 
 export interface SfxEvent {
   type: 'whoosh' | 'pop' | 'ding' | 'glitch';

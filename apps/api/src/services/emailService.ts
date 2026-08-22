@@ -16,7 +16,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean>
   const smtpPort = parseInt(process.env.SMTP_PORT || '587');
   const smtpUser = process.env.SMTP_USER || '';
   const smtpPass = process.env.SMTP_PASS || '';
-  const smtpFrom = process.env.SMTP_FROM || 'KlipAja.id <noreply@forgeai.web.id>';
+  const smtpFrom = process.env.SMTP_FROM || 'ClipForge AI <noreply@forgeai.web.id>';
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://forgeai.web.id';
 
   const htmlContent = `
@@ -40,12 +40,12 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean>
     <body>
       <div class="container">
         <div class="header">
-          <h1>KlipAja.id</h1>
+          <h1>ClipForge AI</h1>
         </div>
         <div class="body">
           <div class="welcome-badge">🎉 Pendaftaran Berhasil</div>
-          <h2 style="color: #ffffff; margin-top: 0;">Halo, ${toName || 'Pengguna KlipAja'}! 👋</h2>
-          <p>Selamat datang di <strong>KlipAja.id</strong> — Platform AI Video Clipper No.1 di Indonesia.</p>
+          <h2 style="color: #ffffff; margin-top: 0;">Halo, ${toName || 'Pengguna ClipForge'}! 👋</h2>
+          <p>Selamat datang di <strong>ClipForge AI</strong> — Platform AI Video Clipper No.1 di Indonesia.</p>
 
           <div class="highlight-box">
             <p>🎁 Saldo Menit AI Anda: ${credits} Menit Gratis Telah Aktif!</p>
@@ -64,7 +64,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean>
           </div>
         </div>
         <div class="footer">
-          <p>© 2026 KlipAja.id — Auto Viral AI Clipping System. Semua hak dilindungi.</p>
+          <p>© 2026 ClipForge AI — Auto Viral AI Clipping System. Semua hak dilindungi.</p>
         </div>
       </div>
     </body>
@@ -90,7 +90,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean>
     await transporter.sendMail({
       from: smtpFrom,
       to: toEmail,
-      subject: `🎉 Selamat Datang di KlipAja.id! Saldo ${credits} Menit AI Anda Sudah Aktif`,
+      subject: `🎉 Selamat Datang di ClipForge AI! Saldo ${credits} Menit AI Anda Sudah Aktif`,
       html: htmlContent,
     });
 

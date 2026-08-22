@@ -21,7 +21,7 @@ export function buildServer(opts: { rateLimitMax?: number } = {}): FastifyInstan
   });
 
   server.register(fastifyStatic, {
-    root: path.join(__dirname, '../public'),
+    root: process.env.PUBLIC_DIR || path.join(__dirname, '../public'),
     prefix: '/', // So /renders/file.mp4 works
   });
 
@@ -33,11 +33,14 @@ export function buildServer(opts: { rateLimitMax?: number } = {}): FastifyInstan
     await server.rateLimit().call(server, request, reply);
   });
 
-  const jwtSecret = process.env.AUTH_SECRET || 'dev-insecure-secret-change-in-production';
-  if (!process.env.AUTH_SECRET) {
+  const jwtSecret = process.env.AUTH_SECRET;
+  if (!jwtSecret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('AUTH_SECRET wajib diset di environment saat NODE_ENV=production!');
+    }
     server.log.warn('AUTH_SECRET not set — using insecure development secret!');
   }
-  server.register(jwt, { secret: jwtSecret, sign: { expiresIn: '7d' } });
+  server.register(jwt, { secret: jwtSecret || 'dev-insecure-secret-change-in-production', sign: { expiresIn: '7d' } });
 
   server.register(routes, { prefix: '/api' });
   server.register(authRoutes, { prefix: '/api' });

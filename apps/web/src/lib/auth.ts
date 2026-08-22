@@ -33,3 +33,13 @@ export const clearAuthSession = () => {
   localStorage.removeItem('clipforge_token');
   localStorage.removeItem('clipforge_user');
 };
+
+export const getAuthHeader = (): Record<string, string> => {
+  const token = getStoredToken();
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+};
+
+export const isAuthenticated = (): boolean => {
+  return !!getStoredToken() && !!getStoredUser();
+};

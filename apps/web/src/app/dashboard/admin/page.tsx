@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Users, Video, DollarSign, Activity, Server, Plus, RefreshCw, AlertCircle, CheckCircle2, X, Cpu, Sparkles, Lock } from 'lucide-react';
 import { getStoredUser, AuthUser } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
 
 interface Stats {
   totalUsers: number;
@@ -67,9 +68,9 @@ export default function AdminDashboardPage() {
     setError(null);
     try {
       const [statsRes, queuesRes, usersRes] = await Promise.all([
-        fetch('/api/admin/stats'),
-        fetch('/api/admin/queues'),
-        fetch('/api/admin/users'),
+        apiFetch('/api/admin/stats'),
+        apiFetch('/api/admin/queues'),
+        apiFetch('/api/admin/users'),
       ]);
 
       if (statsRes.ok) {
@@ -100,7 +101,7 @@ export default function AdminDashboardPage() {
     setActionSuccess(null);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/users/${selectedUser.id}/credits`, {
+      const res = await apiFetch(`/api/admin/users/${selectedUser.id}/credits`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ creditsToAdd: creditAmount, mode: creditMode }),
@@ -125,7 +126,7 @@ export default function AdminDashboardPage() {
   const handleToggleRole = async (userId: string, currentRole: string) => {
     const newRole = currentRole === 'ADMIN' ? 'USER' : 'ADMIN';
     try {
-      const res = await fetch(`/api/admin/users/${userId}/role`, {
+      const res = await apiFetch(`/api/admin/users/${userId}/role`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole }),

@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import fs from 'fs';
+import { getFfmpegPath } from './paths';
 
 const execAsync = promisify(exec);
 
@@ -9,12 +9,6 @@ export interface GpuEncoder {
   name: string;
   type: 'nvidia' | 'amd' | 'intel' | 'apple' | 'cpu';
 }
-
-const getFfmpegPath = (): string => {
-  if (fs.existsSync('/usr/bin/ffmpeg')) return '/usr/bin/ffmpeg';
-  if (fs.existsSync('/usr/local/bin/ffmpeg')) return '/usr/local/bin/ffmpeg';
-  return 'ffmpeg';
-};
 
 let cachedEncoder: GpuEncoder | null = null;
 

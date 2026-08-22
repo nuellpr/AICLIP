@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Word } from "@clipforge/shared";
 import { Edit3, Check, Trash2, Plus, RefreshCw, Save } from "lucide-react";
-import { getApiUrl } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 interface InteractiveWordEditorProps {
   clipId: string;
@@ -67,7 +67,7 @@ export function InteractiveWordEditor({
     setIsSaving(true);
     setSuccessMessage("");
     try {
-      const res = await fetch(getApiUrl(`/api/clips/${clipId}/words`), {
+      const res = await apiFetch(`/api/clips/${clipId}/words`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ words }),

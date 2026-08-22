@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '@clipforge/database';
 import { createSnapTransaction, verifyMidtransSignature } from './services/midtrans';
+import { authenticate, getUserId } from './guards';
 
 export interface PlanConfig {
   id: string;
@@ -43,9 +44,9 @@ export const PLANS: Record<string, PlanConfig> = {
 
 export default async function paymentRoutes(server: FastifyInstance) {
   // 1. Create Checkout Session
-  server.post('/checkout', async (request, reply) => {
+  server.post('/checkout', { preHandler: [authenticate] }, async (request, reply) => {
     try {
-      const body = request.body as { planId?: string; userId?: string; email?: string; name?: string };
+      const body = request.body as { planId?: string; email?: string; name?: string };
       const planId = body?.planId || 'CREATOR';
       const selectedPlan = PLANS[planId];
 
@@ -53,15 +54,7 @@ export default async function paymentRoutes(server: FastifyInstance) {
         return reply.status(400).send({ error: 'Paket tidak valid' });
       }
 
-      // Default demo user fallback if no auth header
-      let userId = body?.userId;
-      if (!userId) {
-        const demoUser = await prisma.user.findFirst();
-        if (!demoUser) {
-          return reply.status(400).send({ error: 'User tidak ditemukan' });
-        }
-        userId = demoUser.id;
-      }
+      const userId = getUserId(request);
 
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (!user) {
@@ -209,18 +202,9 @@ export default async function paymentRoutes(server: FastifyInstance) {
   });
 
   // 3. Transaction History
-  server.get('/history', async (request, reply) => {
+  server.get('/history', { preHandler: [authenticate] }, async (request, reply) => {
     try {
-      const query = request.query as { userId?: string };
-      let userId = query?.userId;
-      if (!userId) {
-        const demoUser = await prisma.user.findFirst();
-        userId = demoUser?.id;
-      }
-
-      if (!userId) {
-        return reply.send({ transactions: [] });
-      }
+      const userId = getUserId(request);
 
       const transactions = await (prisma as any).transaction.findMany({
         where: { userId },
@@ -234,18 +218,9 @@ export default async function paymentRoutes(server: FastifyInstance) {
   });
 
   // 4. Current Subscription Info
-  server.get('/subscription', async (request, reply) => {
+  server.get('/subscription', { preHandler: [authenticate] }, async (request, reply) => {
     try {
-      const query = request.query as { userId?: string };
-      let userId = query?.userId;
-      if (!userId) {
-        const demoUser = await prisma.user.findFirst();
-        userId = demoUser?.id;
-      }
-
-      if (!userId) {
-        return reply.send({ subscription: null });
-      }
+      const userId = getUserId(request);
 
       const subscription = await prisma.subscription.findFirst({
         where: { userId },
@@ -258,8 +233,9 @@ export default async function paymentRoutes(server: FastifyInstance) {
   });
 
   // 5. Simulate Payment Success (Sandbox/Testing Helper)
-  server.post('/simulate-success', async (request, reply) => {
+  server.post('/simulate-success', { preHandler: [authenticate] }, async (request, reply) => {
     try {
+      const userId = getUserId(request);
       const { orderId } = request.body as { orderId: string };
       if (!orderId) return reply.status(400).send({ error: 'orderId wajib diisi' });
 
@@ -268,6 +244,7 @@ export default async function paymentRoutes(server: FastifyInstance) {
       });
 
       if (!transaction) return reply.status(404).send({ error: 'Transaksi tidak ditemukan' });
+      if (transaction.userId !== userId) return reply.status(403).send({ error: 'Akses ditolak' });
 
       await (prisma as any).transaction.update({
         where: { orderId },

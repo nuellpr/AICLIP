@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Plus, Clock, Search, Filter, Video, Sparkles, Film, PlayCircle, CheckCircle2, AlertCircle, ExternalLink, Loader2 } from 'lucide-react';
 import { MotionDiv } from '@/components/Motion';
 import { getStoredUser } from '@/lib/auth';
-import { getApiUrl } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
 
 export default function DashboardPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -22,7 +22,7 @@ export default function DashboardPage() {
       return;
     }
 
-    fetch(getApiUrl(`/api/projects?userId=${user.id}`))
+    apiFetch('/api/projects')
       .then(res => res.ok ? res.json() : [])
       .then(data => {
         if (Array.isArray(data)) setProjects(data);

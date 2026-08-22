@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LayoutDashboard, PlusCircle, Settings, LogOut, FolderKanban, Sparkles, CreditCard, Shield } from 'lucide-react';
-import { getStoredUser, setAuthSession, clearAuthSession, AuthUser } from '@/lib/auth';
+import { getStoredUser, getStoredToken, setAuthSession, clearAuthSession, AuthUser } from '@/lib/auth';
+import { getApiUrl, apiFetch } from '@/lib/api';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -13,30 +14,40 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     const currentUser = getStoredUser();
+    const token = getStoredToken();
+
+    // Guard: redirect to login if not authenticated
+    if (!currentUser || !token) {
+      router.push('/login');
+      return;
+    }
+
     if (currentUser) {
       setUser(currentUser);
-      fetchUserCredits(currentUser.id);
+      fetchUserCredits();
 
-      // Refresh user session from backend to get latest role
-      fetch('/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: currentUser.email }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.user) {
-            setUser(data.user);
-            setAuthSession(data.token, data.user);
-          }
+      // Refresh user session from backend via /api/auth/me with JWT
+      if (token) {
+        fetch(getApiUrl('/api/auth/me'), {
+          headers: { Authorization: `Bearer ${token}` },
         })
-        .catch(() => {});
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data?.user) {
+              setUser(data.user);
+              // Keep existing token, update user cache
+              setAuthSession(token, data.user);
+            }
+          })
+          .catch(() => {});
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchUserCredits = async (userId: string) => {
+  const fetchUserCredits = async () => {
     try {
-      const res = await fetch(`/api/payment/subscription?userId=${userId}`);
+      const res = await apiFetch('/api/payment/subscription');
       if (res.ok) {
         const data = await res.json();
         if (data.subscription) {

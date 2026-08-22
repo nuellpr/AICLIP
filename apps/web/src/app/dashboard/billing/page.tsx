@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Check, Zap, Sparkles, Clock, ArrowRight, ShieldCheck, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 interface Transaction {
   id: string;
@@ -55,8 +56,8 @@ export default function BillingPage() {
     setError(null);
     try {
       const [subRes, txRes] = await Promise.all([
-        fetch('/api/payment/subscription'),
-        fetch('/api/payment/history'),
+        apiFetch('/api/payment/subscription'),
+        apiFetch('/api/payment/history'),
       ]);
 
       if (subRes.ok) {
@@ -81,7 +82,7 @@ export default function BillingPage() {
     setCheckoutLoading(planId);
     setError(null);
     try {
-      const res = await fetch('/api/payment/checkout', {
+      const res = await apiFetch('/api/payment/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ planId }),
@@ -429,7 +430,7 @@ export default function BillingPage() {
                             type="button"
                             onClick={async () => {
                               try {
-                                const res = await fetch('/api/payment/simulate-success', {
+                                const res = await apiFetch('/api/payment/simulate-success', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({ orderId: tx.orderId })

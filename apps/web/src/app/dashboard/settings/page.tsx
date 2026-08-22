@@ -3,7 +3,7 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Save, User, Key, Settings as SettingsIcon, CheckCircle2, Loader2, Download } from "lucide-react";
 import { useState, useEffect } from "react";
-import { getApiUrl } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import { getStoredUser, AuthUser } from "@/lib/auth";
 
 export default function SettingsPage() {
@@ -13,6 +13,7 @@ export default function SettingsPage() {
   const [provider, setProvider] = useState("google-gemini");
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [apiKeySet, setApiKeySet] = useState(false);
   const [model, setModel] = useState("gemini-2.0-flash");
   const [systemMessage, setSystemMessage] = useState("");
   
@@ -25,13 +26,13 @@ export default function SettingsPage() {
   useEffect(() => {
     const currentUser = getStoredUser();
     setUser(currentUser);
-    const userIdQuery = currentUser?.id ? `?userId=${currentUser.id}` : '';
-    fetch(getApiUrl(`/api/settings/ai${userIdQuery}`))
+    apiFetch('/api/settings/ai')
       .then(res => res.json())
       .then(data => {
         if (data.provider !== undefined) setProvider(data.provider);
         if (data.baseUrl !== undefined) setBaseUrl(data.baseUrl);
         if (data.apiKey !== undefined) setApiKey(data.apiKey);
+        setApiKeySet(!!data.apiKeySet);
         setModel(data.model || '');
         if (data.systemMessage !== undefined) setSystemMessage(data.systemMessage);
       })
@@ -51,7 +52,7 @@ export default function SettingsPage() {
   const handleLoadModels = async () => {
     setIsLoadingModels(true);
     try {
-      const res = await fetch(getApiUrl('/api/settings/ai/models'), {
+      const res = await apiFetch('/api/settings/ai/models', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider, baseUrl, apiKey })
@@ -73,10 +74,10 @@ export default function SettingsPage() {
   const handleSaveAi = async () => {
     setIsSaving(true);
     try {
-      await fetch(getApiUrl('/api/settings/ai'), {
+      await apiFetch('/api/settings/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider, baseUrl, apiKey, model, systemMessage, userId: user?.id })
+        body: JSON.stringify({ provider, baseUrl, apiKey, model, systemMessage })
       });
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
@@ -181,11 +182,14 @@ export default function SettingsPage() {
                       <label className="block text-sm font-medium text-gray-300 mb-2">API Key</label>
                       <input 
                         type="password" 
-                        placeholder="sk-..." 
+                        placeholder={apiKeySet ? "•••••••• (key tersimpan)" : "sk-..."} 
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
                         className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                       />
+                      {apiKeySet && (
+                        <p className="text-xs text-gray-500 mt-1">Key aktif tersimpan. Kosongkan atau ketik key baru untuk menggantinya.</p>
+                      )}
                     </div>
                     
                     <div>
