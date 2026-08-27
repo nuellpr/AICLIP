@@ -249,7 +249,7 @@ async function startConsumers() {
       
       await processProject(projectId);
     }
-  }, { connection, concurrency: 1 });
+  }, { connection, concurrency: 1, lockDuration: 300000 });
 
   const renderWorker = new Worker('renderQueue', async job => {
     if (job.name === 'renderClip') {
@@ -294,7 +294,11 @@ async function startConsumers() {
           };
 
           try {
-            await youtubedl(clip.project.sourceUrl, options);
+            // ponytail: 120s timeout avoids BullMQ stalled-job duplicate (default lock 30s -> 5min now, but still guard)
+            await Promise.race([
+              youtubedl(clip.project.sourceUrl, options),
+              new Promise((_, rej) => setTimeout(() => rej(new Error('yt-dlp timeout 120s')), 120000))
+            ]);
           } catch (dlErr: any) {
             console.warn('yt-dlp section download failed, checking local file fallback:', dlErr.message);
             const sourceVideoPath = path.join(__dirname, `../temp_${clip.projectId}.mp4`);
@@ -711,7 +715,7 @@ async function startConsumers() {
         }
       }
     }
-  }, { connection, concurrency: 2 });
+  }, { connection, concurrency: 1, lockDuration: 300000 });
 
   console.log('BullMQ Workers started for projectQueue and renderQueue');
 }
