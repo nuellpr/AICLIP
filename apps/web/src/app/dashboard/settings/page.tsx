@@ -78,6 +78,7 @@ export default function SettingsPage() {
     setProvider(val);
     if (val === 'openai') setBaseUrl("https://api.openai.com/v1");
     else if (val === 'groq') setBaseUrl("https://api.groq.com/openai/v1");
+    else if (val === 'b-ai') setBaseUrl("https://b.ai/v1");
     else if (val === 'google-gemini') setBaseUrl("");
     else if (val === 'custom') setBaseUrl("http://localhost:11434/v1");
   };
@@ -366,6 +367,7 @@ export default function SettingsPage() {
                       <option value="google-gemini">Google Gemini</option>
                       <option value="openai">OpenAI</option>
                       <option value="groq">Groq</option>
+                      <option value="b-ai">B.ai (single key)</option>
                       <option value="custom">Custom / Local</option>
                     </select>
                   </div>

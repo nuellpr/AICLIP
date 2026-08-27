@@ -379,10 +379,12 @@ async function startConsumers() {
                 console.warn('Local Whisper failed, trying OpenAI Whisper API:', e.message);
               }
               
-              if (!transcribed && process.env.OPENAI_API_KEY) {
+              const whisperKey = process.env.B_AI_API_KEY || process.env.BAI_API_KEY || process.env.OPENAI_API_KEY;
+              const whisperBase = process.env.B_AI_BASE_URL || process.env.BAI_BASE_URL || process.env.AI_BASE_URL || undefined;
+              if (!transcribed && whisperKey) {
                 try {
-                  console.log('Running OpenAI Whisper API transcription...');
-                  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+                  console.log(`Running Whisper API transcription via ${whisperBase || 'openai'}...`);
+                  const openai = new OpenAI({ apiKey: whisperKey, baseURL: whisperBase });
                   const audioStream = fs.createReadStream(audioTmpPath);
                   
                   const transcript = await openai.audio.transcriptions.create({

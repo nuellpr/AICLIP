@@ -53,7 +53,19 @@ export async function generateGoldenMoments(vttContent: string, clipCount: numbe
 
   console.log(`AI provider: ${config.provider || 'google-gemini'}, model: ${config.model || '(default)'}, baseUrl: ${config.baseUrl || '(default)'} (config: ${configFileName})`);
 
-  // Setiap akun WAJIB memakai API key miliknya sendiri — tidak ada fallback ke key admin/server
+  // Fallback single-key b.ai / env — pakai satu API key untuk semua user jika per-akun belum set
+  if (!config.apiKey) {
+    const envKey = process.env.B_AI_API_KEY || process.env.BAI_API_KEY || process.env.AI_API_KEY || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY;
+    const envBase = process.env.B_AI_BASE_URL || process.env.BAI_BASE_URL || process.env.AI_BASE_URL || '';
+    const envModel = process.env.B_AI_MODEL || process.env.BAI_MODEL || process.env.AI_MODEL || '';
+    if (envKey) {
+      config.apiKey = envKey;
+      if (envBase) config.baseUrl = envBase;
+      if (envModel) config.model = envModel;
+      if (!config.provider || config.provider === 'google-gemini') config.provider = envBase ? 'custom' : 'openai';
+      console.log(`Using env single-key AI (b.ai): provider=${config.provider} model=${config.model} baseUrl=${config.baseUrl} `);
+    }
+  }
   if (!config.apiKey) {
     return { clips: [], error: 'AI Models belum dikonfigurasi. Buka Dashboard → Pengaturan → AI Models untuk memasang model & API key milik Anda sendiri.' };
   }
@@ -81,7 +93,7 @@ Anda WAJIB memprioritaskan momen-momen di dalam VTT/Video yang paling relevan de
 
   const prompt = `VTT Content:\n${limitVttContent(vttContent)}`;
 
-  if (config.provider === 'openai' || config.provider === 'groq' || config.provider === 'custom') {
+  if (config.provider === 'openai' || config.provider === 'groq' || config.provider === 'custom' || config.provider === 'b-ai') {
     const result = await generateWithOpenAI(config, systemMsg, vttContent, clipCount, targetDuration, searchQuery);
     return { clips: result.clips, error: result.error };
   } else {
