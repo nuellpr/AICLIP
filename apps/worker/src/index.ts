@@ -20,8 +20,54 @@ import { detectSfxTriggers, mixSfxIntoVideo } from './sfxEngine';
 import { uploadRenderedVideo } from './storage';
 import { getFfmpegPath, getPythonPath } from './paths';
 import Redis from 'ioredis';
+import { spawn, ChildProcess } from 'child_process';
 
 const execAsync = promisify(exec);
+
+// ponytail: persistent whisper daemon — load base once per worker, reuse per clip (saves 15-20s/clip, best accuracy)
+let whisperProc: ChildProcess | null = null;
+let whisperReady = false;
+let whisperQueue: { resolve: (v: any) => void; reject: (e: any) => void }[] = [];
+
+function ensureWhisperDaemon(): ChildProcess {
+  if (whisperProc && !whisperProc.killed && whisperReady) return whisperProc;
+  if (whisperProc && !whisperProc.killed) { try { whisperProc.kill(); } catch {} }
+  const py = getPythonPath();
+  const script = path.join(__dirname, 'whisper_service.py');
+  const env: any = { ...process.env };
+  const ffmpegBin = getFfmpegPath();
+  if (ffmpegBin !== 'ffmpeg') env.PATH = `${path.dirname(ffmpegBin)}${path.delimiter}${env.PATH}`;
+  whisperProc = spawn(py, [script], { env, stdio: ['pipe', 'pipe', 'pipe'] });
+  whisperReady = false;
+  let buf = '';
+  whisperProc.stdout?.on('data', (d: Buffer) => {
+    buf += d.toString();
+    let idx;
+    while ((idx = buf.indexOf('\n')) !== -1) {
+      const line = buf.slice(0, idx).trim();
+      buf = buf.slice(idx + 1);
+      if (!line) continue;
+      if (line === 'READY') { whisperReady = true; continue; }
+      const waiter = whisperQueue.shift();
+      if (waiter) { try { waiter.resolve(JSON.parse(line)); } catch { waiter.resolve({ error: 'bad json: ' + line }); } }
+    }
+  });
+  whisperProc.stderr?.on('data', (d: Buffer) => { console.log('[whisper]', d.toString().trim()); });
+  whisperProc.on('exit', () => { whisperReady = false; whisperProc = null; });
+  return whisperProc!;
+}
+
+async function transcribeWithDaemon(audioPath: string, timeoutMs = 300000): Promise<any> {
+  const proc = ensureWhisperDaemon();
+  // wait for READY max 90s on first load
+  for (let i = 0; i < 90 && !whisperReady; i++) await new Promise(r => setTimeout(r, 1000));
+  if (!whisperReady) throw new Error('Whisper daemon not ready');
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Whisper daemon timeout')), timeoutMs);
+    whisperQueue.push({ resolve: (v) => { clearTimeout(timer); resolve(v); }, reject: (e) => { clearTimeout(timer); reject(e); } });
+    proc.stdin!.write(audioPath.replace(/\\/g, '/') + '\n');
+  });
+}
 
 ffmpeg.setFfmpegPath(getFfmpegPath());
 
@@ -322,22 +368,9 @@ async function startConsumers() {
               
               const indonesianPrompt = "Transkripsi bahasa Indonesia resmi dan akurat dengan ejaan baku. Kata-kata: uangnya, uang, sudah, tidak, bagaimana, seperti, kalau, memakai, hanya, dapat.";
 
-              // Local Whisper with Python
+              // Local Whisper via persistent daemon (best accuracy, fastest)
               try {
-                const pythonBin = getPythonPath();
-                const env: any = { ...process.env };
-                const ffmpegBin = getFfmpegPath();
-                if (ffmpegBin !== 'ffmpeg') {
-                  env.PATH = `${path.dirname(ffmpegBin)}${path.delimiter}${env.PATH}`;
-                }
-                const { stdout } = await execAsync(
-                  `"${pythonBin}" -c "import whisper; model=whisper.load_model('base'); r=model.transcribe('${audioTmpPath.replace(/\\/g, '/')}', word_timestamps=True, fp16=False, verbose=False, initial_prompt='${indonesianPrompt}'); import json; print(json.dumps({'text': r['text'], 'words': [{'text': w['word'], 'start': round(w['start'],3), 'end': round(w['end'],3)} for s in r['segments'] for w in s.get('words',[])]}))"`,
-                  { timeout: 300000, encoding: 'utf-8', maxBuffer: 1024 * 1024 * 10, env }
-                );
-                
-                const jsonStart = stdout.indexOf('{');
-                if (jsonStart === -1) throw new Error('No JSON output found from Whisper');
-                const parsed = JSON.parse(stdout.substring(jsonStart).trim());
+                const parsed = await transcribeWithDaemon(audioTmpPath);
                 if (parsed.words && parsed.words.length > 0) {
                   // Normalize common phonetic misspellings & ASR hallucinations
                   const wordReplacements: Record<string, string> = {

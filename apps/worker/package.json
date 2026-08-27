@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "nodemon --watch src --watch .env --ext ts,env --exec ts-node src/index.ts",
-    "build": "tsc && node -e \"const fs=require('fs'); ['face_tracker.py','mediapipe_tracker.py'].forEach(f => { if(fs.existsSync('src/'+f)) fs.copyFileSync('src/'+f,'dist/'+f) })\"",
+    "build": "tsc && node -e \"const fs=require('fs'); ['face_tracker.py','mediapipe_tracker.py','whisper_service.py'].forEach(f => { if(fs.existsSync('src/'+f)) fs.copyFileSync('src/'+f,'dist/'+f) })\"",
     "start": "node dist/index.js",
     "test": "vitest run"
   },
