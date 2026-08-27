@@ -11,11 +11,9 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'ai' | 'billing'>('profile');
   const [user, setUser] = useState<AuthUser | null>(null);
 
-  const [provider, setProvider] = useState("google-gemini");
-  const [baseUrl, setBaseUrl] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [apiKeySet, setApiKeySet] = useState(false);
-  const [model, setModel] = useState("gemini-2.0-flash");
+  const [provider, setProvider] = useState("b-ai");
+  const [baseUrl, setBaseUrl] = useState("https://api.b.ai/v1");
+  const [model, setModel] = useState("mimo-v2.5");
   const [systemMessage, setSystemMessage] = useState("");
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
@@ -65,9 +63,7 @@ export default function SettingsPage() {
       .then(data => {
         if (data.provider !== undefined) setProvider(data.provider);
         if (data.baseUrl !== undefined) setBaseUrl(data.baseUrl);
-        if (data.apiKey !== undefined) setApiKey(data.apiKey);
-        setApiKeySet(!!data.apiKeySet);
-        setModel(data.model || '');
+        setModel(data.model || 'mimo-v2.5');
         if (data.systemMessage !== undefined) setSystemMessage(data.systemMessage);
       })
       .catch(console.error);
@@ -89,7 +85,7 @@ export default function SettingsPage() {
       const res = await apiFetch('/api/settings/ai/models', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider, baseUrl, apiKey })
+        body: JSON.stringify({ provider, baseUrl })
       });
       const data = await res.json();
       if (data.models) {
@@ -111,7 +107,7 @@ export default function SettingsPage() {
       await apiFetch('/api/settings/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider, baseUrl, apiKey, model, systemMessage })
+        body: JSON.stringify({ provider, baseUrl, model, systemMessage })
       });
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
@@ -390,16 +386,10 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">API Key</label>
-                      <input 
-                        type="password" 
-                        placeholder={apiKeySet ? "•••••••• (key tersimpan)" : "sk-..."} 
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                      />
-                      {apiKeySet && (
-                        <p className="text-xs text-gray-500 mt-1">Key aktif tersimpan. Kosongkan atau ketik key baru untuk menggantinya.</p>
-                      )}
+                      <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-gray-400">
+                        <Lock className="h-4 w-4 text-emerald-400 shrink-0" />
+                        <span className="text-sm">API key dikelola server (B.ai) — otomatis untuk semua user. Tidak perlu diisi.</span>
+                      </div>
                     </div>
                     
                     <div>

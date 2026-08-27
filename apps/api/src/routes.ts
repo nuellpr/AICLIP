@@ -15,16 +15,6 @@ const renderQueue = new Queue('renderQueue', { connection });
 const rendersDir = process.env.RENDERS_DIR || path.join(__dirname, '../public/renders');
 const workerDir = process.env.WORKER_DIR || path.join(__dirname, '../../worker');
 
-function maskApiKey(key?: string): { apiKey: string; apiKeySet: boolean } {
-  if (!key) return { apiKey: '', apiKeySet: false };
-  if (key.length <= 8) return { apiKey: '••••••••', apiKeySet: true };
-  return { apiKey: `${key.slice(0, 4)}••••••••${key.slice(-4)}`, apiKeySet: true };
-}
-
-function isMaskedKey(key?: string): boolean {
-  return !!key && key.includes('••');
-}
-
 export default async function routes(server: FastifyInstance) {
   server.get('/projects', { preHandler: [authenticate] }, async (request, reply) => {
     const userId = getUserId(request);
@@ -365,23 +355,21 @@ export default async function routes(server: FastifyInstance) {
       }
     }
 
-    if (!config) {
-      return {
-        provider: 'google-gemini',
-        baseUrl: '',
-        apiKey: '',
-        apiKeySet: false,
-        model: '',
-        systemMessage: ''
-      };
-    }
+    // Key server selalu dari env — tidak pernah dikembalikan/ditampilkan ke website
+    const serverKey = !!(process.env.B_AI_API_KEY || process.env.BAI_API_KEY || process.env.AI_API_KEY || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY);
 
-    const masked = maskApiKey(config.apiKey);
-    return { ...config, apiKey: masked.apiKey, apiKeySet: masked.apiKeySet };
+    return {
+      provider: config?.provider || 'b-ai',
+      baseUrl: process.env.B_AI_BASE_URL || config?.baseUrl || '',
+      apiKey: '',
+      apiKeySet: serverKey,
+      model: process.env.B_AI_MODEL || config?.model || '',
+      systemMessage: config?.systemMessage || ''
+    };
   });
 
   server.post('/settings/ai', { preHandler: [authenticate] }, async (request, reply) => {
-    const { provider, baseUrl, apiKey, model, systemMessage } = request.body as any;
+    const { provider, baseUrl, model, systemMessage } = request.body as any;
     const userId = getUserId(request);
 
     const fs = require('fs');
@@ -396,10 +384,10 @@ export default async function routes(server: FastifyInstance) {
       try { existing = JSON.parse(fs.readFileSync(configPath, 'utf-8')); } catch (e) {}
     }
 
+    // apiKey TIDAK diterima dari client — key selalu dari env server (B_AI_*)
     const config = {
-      provider: provider || existing.provider || 'google-gemini',
+      provider: provider || existing.provider || 'b-ai',
       baseUrl: baseUrl !== undefined ? baseUrl : (existing.baseUrl || ''),
-      apiKey: apiKey && !isMaskedKey(apiKey) ? apiKey : (existing.apiKey || ''),
       model: model || existing.model || '',
       systemMessage: systemMessage !== undefined ? systemMessage : (existing.systemMessage || '')
     };
@@ -416,7 +404,16 @@ export default async function routes(server: FastifyInstance) {
   });
 
   server.post('/settings/ai/models', { preHandler: [authenticate] }, async (request, reply) => {
-    const { provider, baseUrl, apiKey } = request.body as any;
+    const { provider, baseUrl } = request.body as any;
+
+    // b-ai pakai daftar model gratis server — tanpa key dari client
+    if (provider === 'b-ai') {
+      return { models: ['mimo-v2.5', 'deepseek-v4-flash', 'hy3', 'vision-exp'] };
+    }
+
+    // Untuk provider lain, pakai server key dari env
+    const envKey = process.env.B_AI_API_KEY || process.env.BAI_API_KEY || process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
+    const apiKey = envKey;
 
     if (!apiKey && provider !== 'google-gemini') return { models: [] };
 
