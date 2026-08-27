@@ -123,7 +123,11 @@ async function processProject(projectId: string) {
     if (!projectData || !projectData.sourceUrl) throw new Error('No source URL');
 
     try {
-      await youtubedl(projectData.sourceUrl, options);
+      // ponytail: timeout subtitle fetch — yt-dlp can hang on YouTube bot detection; fall back to existing VTT if any
+      await Promise.race([
+        youtubedl(projectData.sourceUrl, options),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('yt-dlp subtitle fetch timeout 120s')), 120000))
+      ]);
     } catch (err: any) {
       console.warn("Youtubedl subtitle fetch warning:", err?.message || err);
     }
