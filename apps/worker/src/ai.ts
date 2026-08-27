@@ -130,7 +130,7 @@ Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTi
       });
 
       // Send less VTT content to reduce token usage — critical for reasoning models
-      // ponytail: 2500 chars + 4000 max_tokens avoids finish_reason=length (was 16000, caused empty replies)
+      // ponytail: 2500 chars VTT + 8000 max_tokens — 4000 was too tight for b.ai mimo-v2.5 (reasoning eats budget → empty/truncated JSON)
       const vttChars = attempt > 1 && attemptErrors.some(e => e.includes('finish_reason=length')) ? 1500 : 2500;
       const vttWindow = limitVttContent(vttContent, vttChars);
       const prompt = `VTT:\n${vttWindow}`;
@@ -142,7 +142,7 @@ Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTi
           { role: "user", content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 4000,
+        max_tokens: 8000,
       });
 
       let text = completion.choices[0].message.content || '';
