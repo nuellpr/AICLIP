@@ -76,6 +76,21 @@ p {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  /* Paksa animasi status proyek tetap jalan meski reduced-motion aktif */
+  .force-motion, .force-motion *, .force-motion::before, .force-motion::after {
+    animation-duration: 0.8s !important;
+    animation-iteration-count: infinite !important;
+    transition-duration: 0.3s !important;
+  }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(220%); }
+}
+@keyframes ping-slow {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  70%, 100% { transform: scale(1.6); opacity: 0; }
 }
 
 /* Custom Scrollbar */
