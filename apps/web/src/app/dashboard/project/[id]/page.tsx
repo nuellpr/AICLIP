@@ -205,13 +205,15 @@ export default function ProjectPage() {
         <p className="text-gray-400 mt-1">ID: {id}</p>
       </div>
 
-      <div className="bg-[#111] border border-white/10 rounded-xl p-6">
-        <div className="flex items-center justify-between mb-8 relative">
-          <div className="absolute top-1/2 left-0 right-0 h-1 bg-white/10 -translate-y-1/2 z-0" />
-          <div 
-            className="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 z-0 transition-all duration-500"
-            style={{ width: `${(Math.max(0, currentStageIndex) / (stages.length - 1)) * 100}%` }}
-          />
+        <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-8 relative">
+            <div className="absolute top-1/2 left-0 right-0 h-1 bg-white/10 -translate-y-1/2 z-0" />
+            <div 
+              className="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 z-0 transition-all duration-700 shadow-[0_0_12px_rgba(37,99,235,0.8)] overflow-hidden"
+              style={{ width: `${(Math.max(0, currentStageIndex) / (stages.length - 1)) * 100}%` }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse opacity-60" />
+            </div>
 
           {stages.map((stage, idx) => {
             const isPast = currentStageIndex > idx;
@@ -219,20 +221,23 @@ export default function ProjectPage() {
             
             let circleClass = "bg-[#222] border-white/20 text-gray-500";
             if (isPast || isCompleted) circleClass = "bg-primary border-primary text-black";
-            else if (isCurrent && !isFailed) circleClass = "bg-[#111] border-primary text-primary shadow-[0_0_15px_rgba(37,99,235,0.5)]";
+            else if (isCurrent && !isFailed) circleClass = "bg-[#111] border-primary text-primary shadow-[0_0_20px_rgba(37,99,235,0.7)]";
             else if (isCurrent && isFailed) circleClass = "bg-[#111] border-red-500 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]";
 
             return (
               <div key={stage.key} className="relative z-10 flex flex-col items-center gap-3">
                 <div className="relative">
                   {isCurrent && !isFailed && !isCompleted && (
-                    <div className="absolute -inset-1 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    <>
+                      <div className="absolute -inset-2 rounded-full bg-primary/30 animate-ping" style={{ animationDuration: '1.5s' }} />
+                      <div className="absolute -inset-1.5 rounded-full border-[3px] border-primary border-t-transparent animate-spin" style={{ animationDuration: '0.8s' }} />
+                    </>
                   )}
-                  <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-colors ${circleClass}`}>
-                    {isPast || isCompleted ? <CheckCircle2 className="w-6 h-6" /> : (isCurrent && !isFailed ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCurrent && isFailed ? <AlertCircle className="w-5 h-5" /> : <div className="w-3 h-3 rounded-full bg-current" />))}
+                  <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-colors ${circleClass} ${isCurrent && !isFailed && !isCompleted ? 'animate-pulse' : ''}`}>
+                    {isPast || isCompleted ? <CheckCircle2 className="w-6 h-6" /> : (isCurrent && !isFailed ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCurrent && isFailed ? <AlertCircle className="w-5 h-5" /> : <div className={`w-3 h-3 rounded-full bg-current ${idx === currentStageIndex + 1 ? 'animate-pulse' : ''}`} />))}
                   </div>
                 </div>
-                <span className={`absolute top-12 whitespace-nowrap text-xs font-medium ${isCurrent ? (isFailed ? 'text-red-500' : 'text-primary') : (isPast || isCompleted ? 'text-white' : 'text-gray-500')}`}>
+                <span className={`absolute top-12 whitespace-nowrap text-xs font-medium transition-colors ${isCurrent ? (isFailed ? 'text-red-500 animate-pulse' : 'text-primary animate-pulse font-bold') : (isPast || isCompleted ? 'text-white' : 'text-gray-500')}`}>
                   {stage.label}
                 </span>
               </div>
