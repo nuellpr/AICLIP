@@ -1,7 +1,7 @@
 "use client";
 
 import { Save, User, Key, Settings as SettingsIcon, CheckCircle2, Loader2, LogOut, Camera, Lock } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { getStoredUser, AuthUser, clearAuthSession, setAuthSession, getStoredToken } from "@/lib/auth";
@@ -73,7 +73,7 @@ export default function SettingsPage() {
       .catch(console.error);
   }, []);
 
-  const handleProviderChange = (e: any) => {
+  const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
     setProvider(val);
     if (val === 'openai') setBaseUrl("https://api.openai.com/v1");
@@ -140,7 +140,7 @@ export default function SettingsPage() {
     setIsSavingProfile(true);
     setProfileMsg(null);
     try {
-      const body: any = {
+      const body: Record<string, unknown> = {
         name: editName.trim(),
         phone: editPhone.trim() || null,
         bio: editBio.trim() || null,
@@ -159,8 +159,8 @@ export default function SettingsPage() {
       setUser(data.user);
       setProfileMsg({ type: 'success', text: 'Profil berhasil disimpan' });
       setTimeout(()=> setProfileMsg(null), 3000);
-    } catch (e: any) {
-      setProfileMsg({ type: 'error', text: e.message || 'Gagal menyimpan' });
+    } catch (e: unknown) {
+      setProfileMsg({ type: 'error', text: e instanceof Error ? e.message : 'Gagal menyimpan' });
     } finally {
       setIsSavingProfile(false);
     }
@@ -189,8 +189,8 @@ export default function SettingsPage() {
       setOldPassword(""); setNewPassword(""); setConfirmPassword("");
       setHasPassword(true);
       setTimeout(()=> setPasswordMsg(null), 3000);
-    } catch (e: any) {
-      setPasswordMsg({ type: 'error', text: e.message });
+    } catch (e: unknown) {
+      setPasswordMsg({ type: 'error', text: e instanceof Error ? e.message : String(e) });
     } finally {
       setIsSavingPassword(false);
     }

@@ -28,6 +28,7 @@ export function buildServer(opts: { rateLimitMax?: number } = {}): FastifyInstan
   const rateLimitMax = opts.rateLimitMax ?? parseInt(process.env.RATE_LIMIT_MAX || '100');
   server.register(rateLimit, { max: rateLimitMax, timeWindow: '1 minute' });
   server.addHook('onRequest', async (request, reply) => {
+    if (request.url === '/health' || request.url === '/ready' || request.url.startsWith('/health?') || request.url.startsWith('/ready?')) return;
     // Explicit global hook: the plugin's onRoute mutation only covers
     // routes inside encapsulated plugins on Fastify 4, not root routes.
     await server.rateLimit().call(server, request, reply);

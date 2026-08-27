@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '@clipforge/database';
 import { createMayarInvoice, parseMayarWebhook } from './services/mayar';
+import { createIpaymuRedirectInvoice, parseIpaymuCallback, verifyIpaymuCallbackSignature } from './services/ipaymu';
 import { authenticate, getUserId } from './guards';
 
 export interface PlanConfig {
@@ -43,11 +44,45 @@ export const PLANS: Record<string, PlanConfig> = {
   },
 };
 
+async function settleAndCredit(orderId: string, paymentType: string, server: FastifyInstance) {
+  const transaction = await (prisma as any).transaction.findUnique({ where: { orderId } });
+  if (!transaction) return { ok: false, code: 404 as const, error: 'Transaksi tidak ditemukan' };
+  if (transaction.status === 'SETTLEMENT') return { ok: true, transaction, already: true as const };
+  await (prisma as any).transaction.update({ where: { orderId }, data: { status: 'SETTLEMENT', paymentType } });
+  let subscription = await prisma.subscription.findFirst({ where: { userId: transaction.userId } });
+  if (!subscription) {
+    subscription = await prisma.subscription.create({
+      data: { userId: transaction.userId, plan: transaction.plan.startsWith('TOPUP') ? 'FREE' : transaction.plan, status: 'ACTIVE', credits: transaction.creditsAdded },
+    });
+  } else {
+    await prisma.subscription.update({
+      where: { id: subscription.id },
+      data: {
+        credits: subscription.credits + transaction.creditsAdded,
+        plan: transaction.plan.startsWith('TOPUP') ? subscription.plan : transaction.plan,
+        status: 'ACTIVE',
+      },
+    });
+  }
+  server.log.info(`Added ${transaction.creditsAdded} credits to user ${transaction.userId} via ${paymentType}`);
+  return { ok: true, transaction, already: false as const };
+}
+
 export default async function paymentRoutes(server: FastifyInstance) {
-  // 1. Create Checkout Session (Mayar invoice)
+  // iPaymu callback sends x-www-form-urlencoded by default — need parser
+  server.addContentTypeParser('application/x-www-form-urlencoded', { parseAs: 'string' }, (req, body, done) => {
+    try {
+      const params = new URLSearchParams(body as string);
+      const obj: Record<string, string> = {};
+      for (const [k, v] of params.entries()) obj[k] = v;
+      done(null, obj);
+    } catch (e) { done(e as Error, undefined); }
+  });
+
+  // 1. Create Checkout Session (iPaymu or Mayar)
   server.post('/checkout', { preHandler: [authenticate] }, async (request, reply) => {
     try {
-      const body = request.body as { planId?: string };
+      const body = request.body as { planId?: string; provider?: string };
       const planId = body?.planId || 'STANDAR';
       const selectedPlan = PLANS[planId];
 
@@ -63,22 +98,41 @@ export default async function paymentRoutes(server: FastifyInstance) {
       }
 
       const orderId = `TRX-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const wantIpaymu = (body?.provider || process.env.PAYMENT_PROVIDER || '').toLowerCase();
+      const ipaymuConfigured = !!(process.env.IPAYMU_VA && process.env.IPAYMU_API_KEY);
+      const useIpaymu = wantIpaymu === 'ipaymu' || (wantIpaymu !== 'mayar' && ipaymuConfigured);
 
-      const mayarResult = await createMayarInvoice({
-        invoiceId: orderId,
-        customer: {
-          name: user.name || 'Pelanggan ClipForge',
-          email: user.email,
-          mobile: user.phone || '081234567890',
-        },
-        items: [
-          {
-            quantity: 1,
-            rate: selectedPlan.price,
-            description: selectedPlan.name,
+      let payLink: string;
+      let payId: string;
+      let paymentProvider: string;
+
+      if (useIpaymu) {
+        const ipaymuResult = await createIpaymuRedirectInvoice({
+          referenceId: orderId,
+          productName: selectedPlan.name,
+          price: selectedPlan.price,
+          qty: 1,
+          buyerName: user.name || 'Pelanggan ClipForge',
+          buyerEmail: user.email,
+          buyerPhone: user.phone || '081234567890',
+        });
+        payLink = ipaymuResult.link;
+        payId = ipaymuResult.id;
+        paymentProvider = 'ipaymu';
+      } else {
+        const mayarResult = await createMayarInvoice({
+          invoiceId: orderId,
+          customer: {
+            name: user.name || 'Pelanggan ClipForge',
+            email: user.email,
+            mobile: user.phone || '081234567890',
           },
-        ],
-      });
+          items: [{ quantity: 1, rate: selectedPlan.price, description: selectedPlan.name }],
+        });
+        payLink = mayarResult.link;
+        payId = mayarResult.id;
+        paymentProvider = 'mayar';
+      }
 
       const transaction = await (prisma as any).transaction.create({
         data: {
@@ -88,15 +142,17 @@ export default async function paymentRoutes(server: FastifyInstance) {
           amount: selectedPlan.price,
           creditsAdded: selectedPlan.credits,
           status: 'PENDING',
-          snapToken: mayarResult.id,
-          snapUrl: mayarResult.link,
+          snapToken: payId,
+          snapUrl: payLink,
+          paymentType: paymentProvider,
         },
       });
 
       return reply.send({
         status: 'success',
         orderId: transaction.orderId,
-        paymentUrl: mayarResult.link,
+        paymentUrl: payLink,
+        provider: paymentProvider,
       });
     } catch (err: any) {
       server.log.error('Checkout error:', err);
@@ -109,68 +165,65 @@ export default async function paymentRoutes(server: FastifyInstance) {
     try {
       const payload = request.body as any;
       const { orderId, paid, amount } = parseMayarWebhook(payload);
-
       server.log.info(`Received Mayar webhook. event=${payload?.event?.received || payload?.eventType}, orderId=${orderId}, paid=${paid}`);
-
-      if (!paid || !orderId) {
-        return reply.send({ status: 'ignored' });
-      }
-
-      const transaction = await (prisma as any).transaction.findUnique({
-        where: { orderId },
-      });
-
-      if (!transaction) {
-        server.log.warn(`Transaction order ${orderId} not found in database`);
-        return reply.status(404).send({ error: 'Transaksi tidak ditemukan' });
-      }
-
+      if (!paid || !orderId) return reply.send({ status: 'ignored' });
+      const transaction = await (prisma as any).transaction.findUnique({ where: { orderId } });
+      if (!transaction) return reply.status(404).send({ error: 'Transaksi tidak ditemukan' });
       if (amount !== null && amount !== transaction.amount) {
         server.log.warn(`Amount mismatch for order ${orderId}: expected ${transaction.amount}, got ${amount}`);
         return reply.status(400).send({ error: 'Amount tidak cocok' });
       }
-
-      // If already settled, idempotent — no double credit.
-      if (transaction.status === 'SETTLEMENT') {
-        return reply.send({ status: 'ok', orderId, newStatus: 'SETTLEMENT' });
-      }
-
-      await (prisma as any).transaction.update({
-        where: { orderId },
-        data: { status: 'SETTLEMENT', paymentType: 'mayar' },
-      });
-
-      let subscription = await prisma.subscription.findFirst({
-        where: { userId: transaction.userId },
-      });
-
-      if (!subscription) {
-        subscription = await prisma.subscription.create({
-          data: {
-            userId: transaction.userId,
-            plan: transaction.plan.startsWith('TOPUP') ? 'FREE' : transaction.plan,
-            status: 'ACTIVE',
-            credits: transaction.creditsAdded,
-          },
-        });
-      } else {
-        await prisma.subscription.update({
-          where: { id: subscription.id },
-          data: {
-            credits: subscription.credits + transaction.creditsAdded,
-            plan: transaction.plan.startsWith('TOPUP') ? subscription.plan : transaction.plan,
-            status: 'ACTIVE',
-          },
-        });
-      }
-      server.log.info(`Successfully added ${transaction.creditsAdded} credits to user ${transaction.userId}`);
-
+      const res = await settleAndCredit(orderId, 'mayar', server);
+      if (!res.ok) return reply.status((res as any).code).send({ error: (res as any).error });
       return reply.send({ status: 'ok', orderId, newStatus: 'SETTLEMENT' });
     } catch (err: any) {
       server.log.error('Webhook error:', err);
       return reply.status(500).send({ error: err.message || 'Gagal memproses webhook' });
     }
   });
+
+  // 2b. iPaymu Callback (notifyUrl) — supports json & x-www-form-urlencoded, X-Signature validation
+  async function handleIpaymuCallback(request: any, reply: any) {
+    try {
+      const payload = request.body as any;
+      if (!payload || typeof payload !== 'object') return reply.status(400).send({ error: 'Payload kosong' });
+      const sig = (request.headers['x-signature'] || request.headers['signature'] || request.headers['x_signature']) as string | undefined;
+      const sigOk = verifyIpaymuCallbackSignature(payload, sig);
+      if (!sigOk) {
+        server.log.warn(`iPaymu callback invalid signature for ref=${payload.reference_id || payload.referenceId}, sig=${sig}`);
+        // tetap balas 200 agar tidak retry terus, tapi jangan proses jika VA diset
+        if (process.env.IPAYMU_VA) return reply.status(400).send({ error: 'Invalid signature' });
+      }
+      const { orderId, paid, amount } = parseIpaymuCallback(payload);
+      server.log.info(`Received iPaymu callback reference_id=${orderId}, paid=${paid}, status=${payload.status}, status_code=${payload.status_code}`);
+      if (!orderId) return reply.send({ status: 'ignored', reason: 'no reference_id' });
+      if (!paid) {
+        // pending / expired — update status if expired
+        if (String(payload.status).toLowerCase() === 'expired' || String(payload.status_code) === '-2') {
+          await (prisma as any).transaction.updateMany({ where: { orderId, status: 'PENDING' }, data: { status: 'EXPIRED' } });
+        }
+        return reply.send({ status: 'ignored', reason: 'not paid' });
+      }
+      const transaction = await (prisma as any).transaction.findUnique({ where: { orderId } });
+      if (!transaction) {
+        server.log.warn(`iPaymu: transaction ${orderId} not found`);
+        return reply.status(404).send({ error: 'Transaksi tidak ditemukan' });
+      }
+      if (amount !== null && amount !== transaction.amount) {
+        server.log.warn(`iPaymu amount mismatch for ${orderId}: expected ${transaction.amount}, got ${amount}`);
+        return reply.status(400).send({ error: 'Amount tidak cocok' });
+      }
+      const res = await settleAndCredit(orderId, 'ipaymu', server);
+      if (!res.ok) return reply.status((res as any).code).send({ error: (res as any).error });
+      return reply.send({ status: 'ok', orderId, newStatus: 'SETTLEMENT' });
+    } catch (err: any) {
+      server.log.error('iPaymu callback error:', err);
+      return reply.status(500).send({ error: err.message || 'Gagal memproses callback' });
+    }
+  }
+  server.post('/ipaymu-callback', handleIpaymuCallback);
+  server.post('/ipaymu/notify', handleIpaymuCallback); // alias for legacy notifyUrl
+  server.post('/callback/ipaymu', handleIpaymuCallback);
 
   // 3. Transaction History
   server.get('/history', { preHandler: [authenticate] }, async (request, reply) => {
@@ -205,6 +258,7 @@ export default async function paymentRoutes(server: FastifyInstance) {
 
   // 5. Simulate Payment Success (Sandbox/Testing Helper)
   server.post('/simulate-success', { preHandler: [authenticate] }, async (request, reply) => {
+    if (process.env.NODE_ENV === 'production') return reply.code(404).send({error:'Not found'});
     try {
       const userId = getUserId(request);
       const { orderId } = request.body as { orderId: string };

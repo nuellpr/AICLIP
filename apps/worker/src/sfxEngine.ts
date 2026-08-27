@@ -154,7 +154,7 @@ export async function mixSfxIntoVideo(
       const sfxLabel = `sfx_${idx}`;
 
       // Delay and set volume for each SFX asset
-      filterParts.push(`[${inputIdx}:a]adelay=${delayMs}|${delayMs},volume=${vol}[${sfxLabel}]`);
+      filterParts.push(`[${inputIdx}:a]adelay=${delayMs}:all=1,volume=${vol}[${sfxLabel}]`);
       mixLabels.push(`[${sfxLabel}]`);
     });
 

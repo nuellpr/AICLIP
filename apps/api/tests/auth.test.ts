@@ -210,7 +210,7 @@ describe('Rate limiting', () => {
     const server = buildServer({ rateLimitMax: 5 });
     let lastStatus = 0;
     for (let i = 0; i < 6; i++) {
-      const res = await server.inject({ method: 'GET', url: '/health' });
+      const res = await server.inject({ method: 'GET', url: '/api/auth/me' });
       lastStatus = res.statusCode;
     }
     expect(lastStatus).toBe(429);

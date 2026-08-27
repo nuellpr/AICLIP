@@ -14,6 +14,7 @@ dist/
 !.env.example
 *.pem
 ai-config.json
+ai-config_*.json
 *cookies*.txt
 *.key
 *.cert

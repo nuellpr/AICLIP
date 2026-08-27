@@ -2,7 +2,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import fs from 'fs';
 
 export async function uploadRenderedVideo(localFilePath: string, filename: string): Promise<string> {
-  const provider = (process.env.STORAGE_PROVIDER || 'local').toLowerCase();
+  const provider = (process.env.STORAGE_PROVIDER || process.env.STORAGE_DRIVER || 'local').toLowerCase();
 
   // If local fallback or missing bucket configuration
   if (provider === 'local' || !process.env.S3_BUCKET_NAME) {

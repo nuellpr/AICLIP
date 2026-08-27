@@ -76,7 +76,7 @@ export default function BillingPage() {
         throw new Error(data.error || 'Gagal membuat sesi pembayaran');
       }
 
-      // Open Mayar payment page (QRIS, VA, e-wallet, Alfamart, dll)
+      // Open iPaymu/Mayar payment page (QRIS, VA, e-wallet, Alfamart, dll)
       if (data.paymentUrl) {
         window.open(data.paymentUrl, '_blank');
         setTimeout(fetchData, 5000);
@@ -182,7 +182,7 @@ export default function BillingPage() {
             <ShieldCheck className="w-8 h-8 text-blue-400 flex-shrink-0" />
             <div className="text-xs">
               <p className="font-bold text-white">Pembayaran Aman 100%</p>
-              <p className="text-gray-400">Didukung oleh Mayar Payment Gateway</p>
+              <p className="text-gray-400">Didukung oleh iPaymu • QRIS, VA, e-Wallet</p>
             </div>
           </div>
         </div>

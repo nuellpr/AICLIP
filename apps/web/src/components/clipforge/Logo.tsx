@@ -14,7 +14,6 @@ export function ClipForgeLogo({
       <div className={`relative ${box} shrink-0`}>
         <div className={`absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 blur-[6px] opacity-50`} />
         <div className={`relative grid ${box} place-items-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-400 shadow-[0_0_18px_rgba(59,130,246,0.35)]`}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <svg viewBox="0 0 32 32" className={`${icon} text-white`} fill="none" aria-hidden>
             {/* scissors */}
             <circle cx="11" cy="11" r="2" stroke="currentColor" strokeWidth="1.6" />

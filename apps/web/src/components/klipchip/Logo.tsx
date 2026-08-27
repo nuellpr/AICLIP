@@ -5,7 +5,6 @@ export function KlipChipLogo({ compact = false }: { compact?: boolean }) {
       <div className="relative h-9 w-9 shrink-0 overflow-visible">
         <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-cyan-400 via-teal-400 to-lime-400 blur-[6px] opacity-60" />
         <div className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-lime-400 shadow-[0_0_20px_rgba(34,211,238,0.45)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <svg viewBox="0 0 32 32" className="h-6 w-6 text-black" fill="none" aria-hidden>
             <path d="M11 9L9 11l5 5-5 5 2 2 7-7-7-7Z" fill="currentColor" opacity={0.95} />
             <path d="M18 9l-2 2 3 3h6V11h-7Z" fill="white" opacity={0.92} />

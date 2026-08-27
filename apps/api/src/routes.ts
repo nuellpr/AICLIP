@@ -117,18 +117,23 @@ export default async function routes(server: FastifyInstance) {
     reply.raw.setHeader('Cache-Control', 'no-cache');
     reply.raw.setHeader('Connection', 'keep-alive');
 
+    let elapsed=0;
     const interval = setInterval(async () => {
-      const project = await prisma.project.findUnique({
-        where: { id },
-        select: { status: true, progress: true, currentStage: true, errorMessage: true, clips: true }
-      });
-      if (project) {
-        reply.raw.write(`data: ${JSON.stringify(project)}\n\n`);
-        if (project.status === 'READY' || project.status === 'FAILED') {
-          clearInterval(interval);
-          reply.raw.end();
+      elapsed+=1000;
+      if (elapsed>300000) { clearInterval(interval); try{ reply.raw.end(); }catch(e){} return; }
+      try {
+        const project = await prisma.project.findUnique({
+          where: { id },
+          select: { status: true, progress: true, currentStage: true, errorMessage: true, clips: true }
+        });
+        if (project) {
+          reply.raw.write(`data: ${JSON.stringify(project)}\n\n`);
+          if (project.status === 'READY' || project.status === 'FAILED') {
+            clearInterval(interval);
+            reply.raw.end();
+          }
         }
-      }
+      } catch (e) { /* ignore SSE poll errors */ }
     }, 1000);
 
     request.raw.on('close', () => {
@@ -144,13 +149,19 @@ export default async function routes(server: FastifyInstance) {
     const owned = await loadOwnedClip(id, userId);
     if (!owned) return reply.code(404).send({ error: 'Clip not found' });
 
+    const s = parseFloat(startTime), e = parseFloat(endTime);
+    if (startTime !== undefined && (isNaN(s) || s < 0)) return reply.code(400).send({error:'startTime tidak valid'});
+    if (endTime !== undefined && (isNaN(e) || e < 0)) return reply.code(400).send({error:'endTime tidak valid'});
+    if (!isNaN(s) && !isNaN(e) && e <= s) return reply.code(400).send({error:'endTime harus > startTime'});
+    if (!isNaN(s) && !isNaN(e) && e - s > 600) return reply.code(400).send({error:'Durasi clip maksimal 10 menit'});
+
     const clip = await prisma.clip.update({
       where: { id },
       data: {
         title,
         hook,
-        startTime: parseFloat(startTime),
-        endTime: parseFloat(endTime),
+        startTime: startTime !== undefined ? s : undefined,
+        endTime: endTime !== undefined ? e : undefined,
         caption,
         subtitleStyle,
         subtitleOffset: subtitleOffset !== undefined ? parseFloat(subtitleOffset) : undefined,
@@ -208,6 +219,8 @@ export default async function routes(server: FastifyInstance) {
     if (!Array.isArray(words)) {
       return reply.code(400).send({ error: 'Words must be an array' });
     }
+    if (words.length > 5000) return reply.code(400).send({error:'Words terlalu banyak (max 5000)'});
+    for (const w of words) { if (!w || typeof w.text !== 'string' || typeof w.start !== 'number' || typeof w.end !== 'number' || isNaN(w.start) || isNaN(w.end) || w.start < 0 || w.end <= w.start) return reply.code(400).send({error:'Word tidak valid'}); }
 
     const owned = await loadOwnedClip(id, userId);
     if (!owned) return reply.code(404).send({ error: 'Clip not found' });
