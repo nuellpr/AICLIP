@@ -71,6 +71,15 @@ Thumbs.db
 storage_data/
 backend/clips/
 
+# VPS / deploy artifacts - never commit to GitHub
+watchdog.js
+NUL
+deploy*.js
+deploy*.ps1
+deploy*.tar.gz
+apps/worker/assets/
+DEPLOY_NOTE*
+
 # Legacy (non-monorepo) folders
 /backend/
 /frontend/
