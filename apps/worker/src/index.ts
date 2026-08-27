@@ -111,7 +111,9 @@ async function processProject(projectId: string) {
       subFormat: 'vtt',
       output: path.join(__dirname, `../transcript_${projectId}_%(id)s.%(ext)s`),
       noCheckCertificates: true,
-      jsRuntimes: 'node',
+      // ponytail: force IPv4 — VPS DNS resolves IPv6 first, IPv6 blackholes on YouTube (hang). -4 proven working.
+      forceIpv4: true,
+      jsRuntimes: 'bun,node',
       extractorArgs: 'youtube:player_client=android,web',
       noWarnings: true
     };
@@ -291,8 +293,9 @@ async function startConsumers() {
             output: tempPath,
             format: 'bestvideo[height>=1080]+bestaudio/bestvideo[height>=720]+bestaudio/bestvideo+bestaudio/best',
             ffmpegLocation: getFfmpegPath(),
-            jsRuntimes: 'node',
+            jsRuntimes: 'bun,node',
             noCheckCertificates: true,
+            forceIpv4: true,
             extractorArgs: 'youtube:player_client=android,web',
             noWarnings: true
           };
