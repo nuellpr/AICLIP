@@ -120,7 +120,9 @@ Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTi
       });
 
       // Send less VTT content to reduce token usage — critical for reasoning models
-      const vttWindow = limitVttContent(vttContent, 2500);
+      // ponytail: 2500 chars + 4000 max_tokens avoids finish_reason=length (was 16000, caused empty replies)
+      const vttChars = attempt > 1 && attemptErrors.some(e => e.includes('finish_reason=length')) ? 1500 : 2500;
+      const vttWindow = limitVttContent(vttContent, vttChars);
       const prompt = `VTT:\n${vttWindow}`;
 
       const completion = await openai.chat.completions.create({
@@ -130,7 +132,7 @@ Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTi
           { role: "user", content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 16000,
+        max_tokens: 4000,
       });
 
       let text = completion.choices[0].message.content || '';
