@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [{ url: "/logo-cf.jpg", width: 1024, height: 1024, alt: "ClipForge AI" }],
   },
-  icons: { icon: "/logo-cf.jpg" },
+  icons: { icon: "/logo-cf-icon.png", apple: "/logo-cf-icon.png" },
 };
 
 export default function RootLayout({
