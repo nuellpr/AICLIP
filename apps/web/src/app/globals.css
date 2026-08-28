@@ -22,11 +22,6 @@
   --db-butter: #FDF3D8;
   --db-peach: #FDE3E1;
   --db-gray: #6E6D7A;
-  /* KlipChip brand — hijau-cyan neon */
-  --klipchip-cyan: #22D3EE;
-  --klipchip-lime: #A3E635;
-  --klipchip-cyan-glow: rgba(34, 211, 238, 0.45);
-  --klipchip-lime-glow: rgba(163, 230, 53, 0.35);
   /* ClipForge AI — ungu-pink + biru-cyan neon (dua aksen, ungu-pink primary) */
   --cf-cyan: #22D3EE;
   --cf-purple: #A855F7;
@@ -234,24 +229,6 @@ p {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
-}
-
-/* KlipChip — utilities (dipakai hanya di /klipchip, tidak ganggu dashboard) */
-.klipchip-mesh {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(700px 400px at 20% 10%, rgba(34,211,238,0.18), transparent 60%),
-    radial-gradient(900px 600px at 85% 30%, rgba(163,230,53,0.14), transparent 60%),
-    radial-gradient(600px 500px at 50% 95%, rgba(34,211,238,0.08), transparent 60%);
-  pointer-events: none;
-}
-.klipchip-grid {
-  background-image:
-    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
-  background-size: 32px 32px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 10%, black 30%, transparent 70%);
 }
 
 /* ClipForge — mesh pastel Dribbble */

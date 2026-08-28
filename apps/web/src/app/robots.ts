@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/home", "/klipchip"],
+        allow: ["/", "/home"],
         disallow: ["/dashboard", "/login", "/api"],
       },
     ],
