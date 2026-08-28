@@ -9,6 +9,7 @@ const execAsync = promisify(exec);
 export interface HookOptions {
   hookText: string;
   outputPath: string;
+  backgroundClipPath?: string; // klip utama — frame-nya dipakai sebagai background hook
   duration?: number; // seconds, default 4
   voice?: string; // edge-tts voice, default 'id-ID-ArdiNeural'
   fontSize?: number;
@@ -74,12 +75,30 @@ async function generateTTS(text: string, outputAudioPath: string, voice: string 
 }
 
 /**
+ * Extract a single frame from a video to use as hook background image
+ */
+async function extractFrame(videoPath: string, outPath: string): Promise<boolean> {
+  const seeks = ['0.5', '0'];
+  for (const ss of seeks) {
+    try {
+      await execAsync(
+        `"${getFfmpegPath()}" -y -ss ${ss} -i "${videoPath.replace(/\\/g, '/')}" -frames:v 1 -q:v 3 "${outPath.replace(/\\/g, '/')}"`,
+        { timeout: 15000, encoding: 'utf-8' }
+      );
+      if (fs.existsSync(outPath) && fs.statSync(outPath).size > 1000) return true;
+    } catch (e) {}
+  }
+  return false;
+}
+
+/**
  * Generate a hook intro video with animated text and optional TTS
  */
 export async function generateHookIntro(options: HookOptions): Promise<string | null> {
   const {
     hookText,
     outputPath,
+    backgroundClipPath,
     duration = 4,
     voice = 'id-ID-ArdiNeural',
     fontSize = 56,
@@ -144,14 +163,27 @@ export async function generateHookIntro(options: HookOptions): Promise<string | 
     // Create gradient background + text overlay
     const bgFilter = `color=c=${bgColor1}:s=1080x1920:d=${videoDuration},format=yuv420p`;
     const gradientOverlay = `gradients=s=1080x1920:c0=${bgColor1}:c1=${bgColor2}:type=linear:duration=${videoDuration}`;
-    
+
+    // Background: frame dari klip utama (digelapkan) kalau ada, fallback warna gelap solid
+    const framePath = path.join(hookDir, `hook_frame_${Date.now()}.jpg`);
+    const useBgImage = backgroundClipPath && fs.existsSync(backgroundClipPath)
+      ? await extractFrame(backgroundClipPath, framePath)
+      : false;
+
+    const bgPre = useBgImage
+      ? 'scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,eq=brightness=-0.12:saturation=1.05,fps=30,'
+      : '';
+    const bgInput = useBgImage
+      ? `-loop 1 -t ${videoDuration} -i "${framePath.replace(/\\/g, '/')}"`
+      : `-f lavfi -i "color=c=0x1a1a2e:s=1080x1920:d=${videoDuration}"`;
+
     // Simpler approach: solid color background with drawtext
     let ffmpegCmd: string;
     if (hasTTS) {
-      ffmpegCmd = `"${getFfmpegPath()}" -y -f lavfi -i "color=c=0x1a1a2e:s=1080x1920:d=${videoDuration}" -i "${ttsAudioPath}" -filter_complex "[0:v]${drawtextFilters}[v]" -map "[v]" -map 1:a -c:v libx264 -preset ultrafast -crf 23 -c:a aac -b:a 128k -shortest "${hookVideoPath}"`;
+      ffmpegCmd = `"${getFfmpegPath()}" -y ${bgInput} -i "${ttsAudioPath}" -filter_complex "[0:v]${bgPre}${drawtextFilters}[v]" -map "[v]" -map 1:a -c:v libx264 -preset ultrafast -crf 23 -c:a aac -b:a 128k -shortest "${hookVideoPath}"`;
     } else {
       // No TTS, silent video with text
-      ffmpegCmd = `"${getFfmpegPath()}" -y -f lavfi -i "color=c=0x1a1a2e:s=1080x1920:d=${videoDuration}" -f lavfi -i "anullsrc=r=44100:cl=stereo" -filter_complex "[0:v]${drawtextFilters}[v]" -map "[v]" -map 1:a -c:v libx264 -preset ultrafast -crf 23 -c:a aac -b:a 128k -t ${videoDuration} "${hookVideoPath}"`;
+      ffmpegCmd = `"${getFfmpegPath()}" -y ${bgInput} -f lavfi -i "anullsrc=r=44100:cl=stereo" -filter_complex "[0:v]${bgPre}${drawtextFilters}[v]" -map "[v]" -map 1:a -c:v libx264 -preset ultrafast -crf 23 -c:a aac -b:a 128k -t ${videoDuration} "${hookVideoPath}"`;
     }
     
     console.log('Generating hook intro video...');
@@ -169,10 +201,16 @@ export async function generateHookIntro(options: HookOptions): Promise<string | 
     console.error('Hook generation failed:', err.message);
     return null;
   } finally {
-    // Cleanup TTS audio
+    // Cleanup TTS audio + background frame
     if (fs.existsSync(ttsAudioPath)) {
       try { fs.unlinkSync(ttsAudioPath); } catch(e) {}
     }
+    try {
+      const staleFrames = fs.readdirSync(hookDir).filter(f => f.startsWith('hook_frame_'));
+      for (const f of staleFrames) {
+        try { fs.unlinkSync(path.join(hookDir, f)); } catch(e) {}
+      }
+    } catch(e) {}
   }
 }
 

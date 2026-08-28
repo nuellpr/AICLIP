@@ -724,6 +724,7 @@ async function startConsumers() {
               const hookVideoPath = await generateHookIntro({
                 hookText: clip.hook,
                 outputPath: path.join(path.dirname(outputPath), `hook_${clip.id}.mp4`),
+                backgroundClipPath: fs.existsSync(outputPath) ? outputPath : undefined,
               });
               
               if (hookVideoPath) {
