@@ -74,6 +74,9 @@ export async function generateAssFromVtt(
   }
   
   const customCaption = styleOptions.caption ? styleOptions.caption.trim() : '';
+  const customCaptionLines = customCaption
+    ? customCaption.split('\n').map((l: string) => l.trim()).filter((l: string) => l.length > 0)
+    : null;
 
   if (clipWords.length === 0) {
     // Fallback if no VTT words matched in this timeframe
@@ -178,6 +181,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
   const animatedTypes = ['karaoke', 'pop', 'grow', 'bounce', 'shake', 'zoom-in', 'spin', 'swing', 'pulse', 'underline', 'glow', 'wordFocus', 'boxHighlight'];
 
+  let chunkIndex = 0;
+
   for (const chunk of chunks) {
     let relStart = chunk.start - startTime + offset;
     let relEnd = chunk.end - startTime + offset;
@@ -189,6 +194,20 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     const clipDuration = endTime - startTime;
     if (relStart >= clipDuration) continue;
     if (relEnd > clipDuration + 0.5) relEnd = clipDuration + 0.5;
+    
+    if (customCaptionLines) {
+      const customLine = customCaptionLines[chunkIndex] ?? null;
+      chunkIndex++;
+      if (customLine !== null) {
+        let textLine = customLine;
+        if (textTransform === 'uppercase') textLine = textLine.toUpperCase();
+        if (textTransform === 'lowercase') textLine = textLine.toLowerCase();
+        const startStr = formatTime(relStart);
+        const endStr = formatTime(Math.max(relStart + 0.1, relEnd - 0.01));
+        assContent += `Dialogue: 0,${startStr},${endStr},Default,,0,0,0,,${textLine}\n`;
+        continue;
+      }
+    }
     
     if (animation === 'typewriter') {
        // Typewriter: cumulative word reveal

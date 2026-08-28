@@ -57,11 +57,22 @@ export async function generateGoldenMoments(vttContent: string, clipCount: numbe
   const envBase = process.env.B_AI_BASE_URL || process.env.BAI_BASE_URL || process.env.AI_BASE_URL || '';
   const envModel = process.env.B_AI_MODEL || process.env.BAI_MODEL || process.env.AI_MODEL || '';
   if (envKey) {
-    config.apiKey = envKey;
-    if (envBase) config.baseUrl = envBase;
-    if (envModel) config.model = envModel;
-    config.provider = 'b-ai';
-    console.log(`Using single server AI key (b.ai): provider=${config.provider} model=${config.model} baseUrl=${config.baseUrl} (config: ${configFileName})`);
+    // Hormati pilihan provider/model user bila env key untuk provider tsb tersedia
+    const userProvider = config.provider || 'b-ai';
+    const providerKey =
+      userProvider === 'google-gemini' ? (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY)
+      : (userProvider === 'openai' || userProvider === 'groq' || userProvider === 'custom') ? (process.env.OPENAI_API_KEY || process.env.AI_API_KEY)
+      : undefined;
+    if (providerKey) {
+      config.apiKey = providerKey;
+      console.log(`Using user-chosen AI provider: ${userProvider} model=${config.model || '(default)'} (config: ${configFileName})`);
+    } else {
+      config.apiKey = envKey;
+      if (envBase) config.baseUrl = envBase;
+      if (envModel) config.model = envModel;
+      config.provider = 'b-ai';
+      console.log(`Using single server AI key (b.ai): provider=${config.provider} model=${config.model} baseUrl=${config.baseUrl} (config: ${configFileName})`);
+    }
   } else if (!config.apiKey) {
     return { clips: [], error: 'AI key server belum dikonfigurasi (B_AI_API_KEY). Hubungi admin.' };
   }

@@ -15,9 +15,8 @@ import { Worker, Queue } from 'bullmq';
 import { startCleanupCron } from './cleanup';
 import { generateHookIntro, concatHookAndClip } from './hookGenerator';
 import { detectGpuEncoder, getEncoderOptions } from './gpuDetector';
-import { getWatermarkFilters, parseWatermarkConfig } from './watermark';
-import { detectSfxTriggers, mixSfxIntoVideo } from './sfxEngine';
 import { uploadRenderedVideo } from './storage';
+import { detectSfxTriggers, mixSfxIntoVideo } from './sfxEngine';
 import { getFfmpegPath, getPythonPath } from './paths';
 import Redis from 'ioredis';
 import { spawn, ChildProcess } from 'child_process';
@@ -520,6 +519,7 @@ async function startConsumers() {
           }
 
           const assPath = path.join(__dirname, `../temp_${clip.id}.ass`);
+          if (clip.caption) styleObj.caption = clip.caption;
           await generateAssFromVtt(vttContent, clipStartSec, clipEndSec, assPath, styleObj);
           
           const relativeAssPath = path.relative(process.cwd(), assPath).replace(/\\/g, '/');
