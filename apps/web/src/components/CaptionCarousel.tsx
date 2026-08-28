@@ -99,21 +99,21 @@ export function CaptionCarousel({ selectedId, onSelect }: CaptionCarouselProps) 
   return (
     <div className="relative group w-full mb-6">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-[#6E6D7A] uppercase tracking-wider">Caption Style Presets</h3>
+        <h3 className="text-sm font-semibold text-[var(--db-gray)] uppercase tracking-wider">Caption Style Presets</h3>
         <div className="flex gap-2">
           <button 
             type="button"
             onClick={() => scroll('left')}
-            className="p-1 rounded-full bg-[#F8F7F4] hover:bg-[#EFEDE8] transition"
+            className="p-1 rounded-full bg-[var(--db-cream)] hover:bg-[var(--db-hover)] transition"
           >
-            <ChevronLeft className="w-5 h-5 text-[#0D0C22]" />
+            <ChevronLeft className="w-5 h-5 text-[var(--ink)]" />
           </button>
           <button 
             type="button"
             onClick={() => scroll('right')}
-            className="p-1 rounded-full bg-[#F8F7F4] hover:bg-[#EFEDE8] transition"
+            className="p-1 rounded-full bg-[var(--db-cream)] hover:bg-[var(--db-hover)] transition"
           >
-            <ChevronRight className="w-5 h-5 text-[#0D0C22]" />
+            <ChevronRight className="w-5 h-5 text-[var(--ink)]" />
           </button>
         </div>
       </div>
@@ -157,7 +157,7 @@ export function CaptionCarousel({ selectedId, onSelect }: CaptionCarouselProps) 
                 )}
               </div>
               <div className="p-3 text-center border-t border-black/[0.08]">
-                <p className={`text-sm font-semibold ${isSelected ? 'text-[#EA4C89]' : 'text-[#0D0C22]'}`}>
+                <p className={`text-sm font-semibold ${isSelected ? 'text-[#EA4C89]' : 'text-[var(--ink)]'}`}>
                   {preset.name}
                 </p>
               </div>

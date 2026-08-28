@@ -70,13 +70,13 @@ export default function DashboardPage() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-black/5 pb-8"
+        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-[var(--db-line)] pb-8"
       >
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-[#0D0C22] flex items-center gap-3" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>
+          <h1 className="text-4xl font-black tracking-tight text-[var(--ink)] flex items-center gap-3" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>
             Halo, {firstName} 👋
           </h1>
-          <p className="text-[#6E6D7A] mt-2 text-base">
+          <p className="text-[var(--db-gray)] mt-2 text-base">
             Kelola semua proyek klip kamu di satu tempat.
           </p>
         </div>
@@ -91,35 +91,35 @@ export default function DashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-        <div className="rounded-2xl bg-white border border-black/5 shadow-sm p-5">
+        <div className="rounded-2xl bg-[var(--db-panel)] border border-[var(--db-line)] shadow-sm p-5">
           <div className="h-11 w-11 rounded-xl bg-[#E7E4F9] text-[#5B3FBF] flex items-center justify-center mb-4">
             <Folder className="h-5 w-5" />
           </div>
-          <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider">Total Proyek</p>
-          <h3 className="text-3xl font-black text-[#0D0C22] mt-1" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>{projects.length}</h3>
+          <p className="text-xs font-bold text-[var(--db-gray)] uppercase tracking-wider">Total Proyek</p>
+          <h3 className="text-3xl font-black text-[var(--ink)] mt-1" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>{projects.length}</h3>
         </div>
 
-        <div className="rounded-2xl bg-white border border-black/5 shadow-sm p-5">
+        <div className="rounded-2xl bg-[var(--db-panel)] border border-[var(--db-line)] shadow-sm p-5">
           <div className="h-11 w-11 rounded-xl bg-[#DBF3E8] text-[#166534] flex items-center justify-center mb-4">
             <Clapperboard className="h-5 w-5" />
           </div>
-          <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider">Klip Siap</p>
-          <h3 className="text-3xl font-black text-[#0D0C22] mt-1" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>{readyClips}</h3>
+          <p className="text-xs font-bold text-[var(--db-gray)] uppercase tracking-wider">Klip Siap</p>
+          <h3 className="text-3xl font-black text-[var(--ink)] mt-1" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>{readyClips}</h3>
         </div>
 
-        <div className="rounded-2xl bg-white border border-black/5 shadow-sm p-5">
+        <div className="rounded-2xl bg-[var(--db-panel)] border border-[var(--db-line)] shadow-sm p-5">
           <div className="h-11 w-11 rounded-xl bg-[#FDF3D8] text-[#92400E] flex items-center justify-center mb-4">
             <Loader2 className={`h-5 w-5 ${processingProjects > 0 ? 'animate-spin' : ''}`} />
           </div>
-          <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider">Sedang Diproses</p>
-          <h3 className="text-3xl font-black text-[#0D0C22] mt-1" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>{processingProjects}</h3>
+          <p className="text-xs font-bold text-[var(--db-gray)] uppercase tracking-wider">Sedang Diproses</p>
+          <h3 className="text-3xl font-black text-[var(--ink)] mt-1" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>{processingProjects}</h3>
         </div>
 
-        <div className="rounded-2xl bg-white border border-black/5 shadow-sm p-5">
+        <div className="rounded-2xl bg-[var(--db-panel)] border border-[var(--db-line)] shadow-sm p-5">
           <div className="h-11 w-11 rounded-xl bg-[#FDE3E1] text-[#EA4C89] flex items-center justify-center mb-4">
             <Coins className="h-5 w-5" />
           </div>
-          <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider">Kredit Tersisa</p>
+          <p className="text-xs font-bold text-[var(--db-gray)] uppercase tracking-wider">Kredit Tersisa</p>
           <h3 className="text-3xl font-black text-[#EA4C89] mt-1" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>
             {credits === null ? '—' : credits}
           </h3>
@@ -134,13 +134,13 @@ export default function DashboardPage() {
         className="flex flex-col sm:flex-row gap-4"
       >
         <div className="relative flex-1 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6E6D7A] group-focus-within:text-[#EA4C89] transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--db-gray)] group-focus-within:text-[#EA4C89] transition-colors" />
           <input 
             type="text" 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Cari nama proyek atau video..." 
-            className="w-full rounded-2xl border border-transparent bg-[#F8F7F4] pl-12 pr-4 py-3.5 text-[#0D0C22] placeholder-[#6E6D7A] focus:border-[#EA4C89] focus:outline-none focus:ring-1 focus:ring-[#EA4C89] transition-all text-sm"
+            className="w-full rounded-2xl border border-transparent bg-[var(--db-cream)] pl-12 pr-4 py-3.5 text-[var(--ink)] placeholder-[#6E6D7A] focus:border-[#EA4C89] focus:outline-none focus:ring-1 focus:ring-[#EA4C89] transition-all text-sm"
           />
         </div>
       </MotionDiv>
@@ -157,8 +157,8 @@ export default function DashboardPage() {
           <div className="h-20 w-20 mx-auto rounded-3xl bg-[#FDE3E1] flex items-center justify-center text-[#EA4C89] mb-6 shadow-[0_8px_24px_-8px_rgba(234,76,137,0.35)]">
             <Video className="h-10 w-10" />
           </div>
-          <h3 className="text-3xl font-black text-[#0D0C22] mb-3 relative z-10">Belum Ada Proyek</h3>
-          <p className="text-[#6E6D7A] mb-8 max-w-md mx-auto relative z-10 text-sm leading-relaxed">
+          <h3 className="text-3xl font-black text-[var(--ink)] mb-3 relative z-10">Belum Ada Proyek</h3>
+          <p className="text-[var(--db-gray)] mb-8 max-w-md mx-auto relative z-10 text-sm leading-relaxed">
             Mulailah dengan memasukkan link video YouTube untuk membiarkan AI mengekstrak klip viral pertama Anda!
           </p>
           <Link href="/dashboard/new" className="inline-flex items-center gap-2.5 rounded-2xl bg-[#EA4C89] hover:bg-[#C32361] px-8 py-4 font-black text-white transition-all shadow-[0_8px_24px_-8px_rgba(234,76,137,0.5)] hover:-translate-y-1 relative z-10 text-sm">
@@ -178,8 +178,8 @@ export default function DashboardPage() {
             >
               <div className="flex items-center justify-between rounded-2xl glass-card p-6 group relative overflow-hidden hover:border-[#EA4C89]/40">
                 <div className="flex items-center gap-6 relative z-10">
-                  <Link href={`/dashboard/project/${project.id}`} className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F8F7F4] border border-black/5 group-hover:border-[#EA4C89]/40 group-hover:shadow-[0_8px_20px_-8px_rgba(234,76,137,0.35)] transition-all duration-300 shrink-0">
-                    <Video className="h-8 w-8 text-[#6E6D7A] group-hover:text-[#EA4C89] transition-colors duration-300" />
+                  <Link href={`/dashboard/project/${project.id}`} className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--db-cream)] border border-[var(--db-line)] group-hover:border-[#EA4C89]/40 group-hover:shadow-[0_8px_20px_-8px_rgba(234,76,137,0.35)] transition-all duration-300 shrink-0">
+                    <Video className="h-8 w-8 text-[var(--db-gray)] group-hover:text-[#EA4C89] transition-colors duration-300" />
                   </Link>
                   <div>
                     {project.sourceUrl ? (
@@ -199,20 +199,20 @@ export default function DashboardPage() {
                         </a>
                       </div>
                     ) : (
-                      <Link href={`/dashboard/project/${project.id}`} className="text-xl font-bold text-[#0D0C22] group-hover:text-[#EA4C89] transition-colors duration-300 block">
+                      <Link href={`/dashboard/project/${project.id}`} className="text-xl font-bold text-[var(--ink)] group-hover:text-[#EA4C89] transition-colors duration-300 block">
                         {project.title}
                       </Link>
                     )}
-                    <div className="flex items-center gap-3 mt-2 text-xs text-[#6E6D7A] font-medium">
-                      <span suppressHydrationWarning className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-[#6E6D7A]" /> {new Date(project.createdAt).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
-                      <span className="text-[#6E6D7A]/60">•</span>
+                    <div className="flex items-center gap-3 mt-2 text-xs text-[var(--db-gray)] font-medium">
+                      <span suppressHydrationWarning className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-[var(--db-gray)]" /> {new Date(project.createdAt).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="text-[var(--db-gray)]/60">•</span>
                       <span className="bg-[#E7E4F9] text-[#5B3FBF] px-3 py-1 rounded-full font-bold">{project._count?.clips || 0} Klip High Quality</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="relative z-10 flex items-center gap-3">
-                  <Link href={`/dashboard/project/${project.id}`} className="px-4 py-2 rounded-xl bg-white border border-black/10 hover:border-[#EA4C89]/50 hover:text-[#EA4C89] text-[#0D0C22] font-bold text-xs transition-colors">
+                  <Link href={`/dashboard/project/${project.id}`} className="px-4 py-2 rounded-xl bg-[var(--db-panel)] border border-[var(--db-line)] hover:border-[#EA4C89]/50 hover:text-[#EA4C89] text-[var(--ink)] font-bold text-xs transition-colors">
                     Buka Proyek
                   </Link>
                   <span className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-black uppercase tracking-wider

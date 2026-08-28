@@ -54,10 +54,10 @@ export default function Pricing() {
           <div className="mb-4 text-xs font-semibold tracking-[0.2em] text-[#EA4C89] uppercase">
             Harga
           </div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-[#0D0C22] sm:text-5xl">
+          <h2 className="text-3xl font-extrabold tracking-tight text-[var(--ink)] sm:text-5xl">
             Mulai dari <span className="text-[#EA4C89]">Rp 30 Ribu</span>/bulan
           </h2>
-          <p className="mt-4 text-[#6E6D7A]">
+          <p className="mt-4 text-[var(--db-gray)]">
             Lebih murah dari satu gelas kopi per hari, untuk ribuan views tambahan.
           </p>
         </motion.div>
@@ -71,14 +71,14 @@ export default function Pricing() {
               viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.55, delay: i * 0.1, ease: [0.21, 0.47, 0.32, 0.98] }}
               whileHover={{ y: -8 }}
-              className={`relative flex h-full flex-col rounded-3xl bg-white p-8 transition-shadow duration-300 hover:shadow-[0_25px_60px_-15px_rgba(13,12,34,0.15)] ${
+              className={`relative flex h-full flex-col rounded-3xl bg-[var(--db-panel)] p-8 transition-shadow duration-300 hover:shadow-[0_25px_60px_-15px_rgba(13,12,34,0.15)] ${
                 p.highlight
                   ? "border-2 border-[#EA4C89] shadow-[0_20px_50px_-15px_rgba(234,76,137,0.25)]"
-                  : "border border-black/5 shadow-[0_10px_30px_-12px_rgba(13,12,34,0.08)]"
+                  : "border border-[var(--db-line)] shadow-[0_10px_30px_-12px_rgba(13,12,34,0.08)]"
               }`}
             >
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-[#0D0C22]">
+                <h3 className="text-lg font-bold text-[var(--ink)]">
                   {p.name}
                   {p.highlight && <Crown size={15} className="ml-2 inline text-[#EA4C89]" />}
                 </h3>
@@ -86,7 +86,7 @@ export default function Pricing() {
                   className={`rounded-full px-3 py-1 text-[10px] font-bold tracking-wider ${
                     p.highlight
                       ? "bg-[#EA4C89] text-white"
-                      : "bg-[#F8F7F4] text-[#0D0C22]"
+                      : "bg-[var(--db-cream)] text-[var(--ink)]"
                   }`}
                 >
                   {p.badge}
@@ -94,16 +94,16 @@ export default function Pricing() {
               </div>
 
               <div className="mt-5 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-[#0D0C22]">
+                <span className="text-4xl font-extrabold text-[var(--ink)]">
                   {p.price}
                 </span>
-                <span className="text-sm text-[#6E6D7A]">{p.period}</span>
+                <span className="text-sm text-[var(--db-gray)]">{p.period}</span>
               </div>
-              <p className="mt-2 text-sm text-[#6E6D7A]">{p.desc}</p>
+              <p className="mt-2 text-sm text-[var(--db-gray)]">{p.desc}</p>
 
               <ul className="mt-6 flex-1 space-y-3">
                 {p.benefits.map((b) => (
-                  <li key={b} className="flex items-start gap-2.5 text-sm text-[#0D0C22]">
+                  <li key={b} className="flex items-start gap-2.5 text-sm text-[var(--ink)]">
                     <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-[#EA4C89] text-white">
                       <Check size={11} />
                     </span>

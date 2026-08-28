@@ -80,7 +80,7 @@ export function TimelineSlider({ min, max, startTime, endTime, onChange }: Timel
     <div className="w-full select-none py-6">
       <div 
         ref={containerRef}
-        className="relative h-12 bg-[#F8F7F4] rounded-lg border border-black/[0.08] cursor-pointer overflow-hidden"
+        className="relative h-12 bg-[var(--db-cream)] rounded-lg border border-black/[0.08] cursor-pointer overflow-hidden"
       >
         {/* Background markers (optional visual enhancement) */}
         <div></div>
@@ -96,14 +96,14 @@ export function TimelineSlider({ min, max, startTime, endTime, onChange }: Timel
           onPointerDown={(e) => handlePointerDown(e, 'range')}
         >
           {/* Active styling when dragging */}
-          <div className="w-full h-full flex items-center justify-center pointer-events-none text-[#0D0C22] text-xs font-bold font-mono">
+          <div className="w-full h-full flex items-center justify-center pointer-events-none text-[var(--ink)] text-xs font-bold font-mono">
             {(endTime - startTime).toFixed(1)}s
           </div>
         </div>
 
         {/* Left Thumb (Start) */}
         <div 
-          className="absolute top-0 bottom-0 w-4 -ml-2 bg-white rounded-sm shadow-md flex items-center justify-center cursor-ew-resize hover:bg-primary/80 z-10 transition-colors"
+          className="absolute top-0 bottom-0 w-4 -ml-2 bg-[var(--db-panel)] rounded-sm shadow-md flex items-center justify-center cursor-ew-resize hover:bg-primary/80 z-10 transition-colors"
           style={{ left: `${startPercent}%` }}
           onPointerDown={(e) => handlePointerDown(e, 'start')}
         >
@@ -112,7 +112,7 @@ export function TimelineSlider({ min, max, startTime, endTime, onChange }: Timel
 
         {/* Right Thumb (End) */}
         <div 
-          className="absolute top-0 bottom-0 w-4 -ml-2 bg-white rounded-sm shadow-md flex items-center justify-center cursor-ew-resize hover:bg-primary/80 z-10 transition-colors"
+          className="absolute top-0 bottom-0 w-4 -ml-2 bg-[var(--db-panel)] rounded-sm shadow-md flex items-center justify-center cursor-ew-resize hover:bg-primary/80 z-10 transition-colors"
           style={{ left: `${endPercent}%` }}
           onPointerDown={(e) => handlePointerDown(e, 'end')}
         >
@@ -120,7 +120,7 @@ export function TimelineSlider({ min, max, startTime, endTime, onChange }: Timel
         </div>
       </div>
       
-      <div className="flex justify-between mt-2 text-xs font-mono text-[#6E6D7A]">
+      <div className="flex justify-between mt-2 text-xs font-mono text-[var(--db-gray)]">
         <span>{startTime.toFixed(2)}s</span>
         <span>{endTime.toFixed(2)}s</span>
       </div>

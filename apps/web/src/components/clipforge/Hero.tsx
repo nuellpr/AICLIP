@@ -140,7 +140,7 @@ export default function Hero() {
     <section
       ref={sectionRef}
       onMouseMove={onSectionMove}
-      className="relative overflow-hidden bg-white pt-32 pb-16 lg:pt-40 lg:pb-20"
+      className="relative overflow-hidden bg-[var(--db-panel)] pt-32 pb-16 lg:pt-40 lg:pb-20"
     >
       <motion.div
         aria-hidden="true"
@@ -164,7 +164,7 @@ export default function Hero() {
           <motion.div variants={stagger} initial="hidden" animate="show">
             <motion.div
               variants={fadeUp}
-              className="mb-6 inline-flex items-center gap-2 rounded-full bg-[#FDE3E1] px-4 py-1.5 text-xs font-semibold text-[#0D0C22]"
+              className="mb-6 inline-flex items-center gap-2 rounded-full bg-[#FDE3E1] px-4 py-1.5 text-xs font-semibold text-[var(--ink)]"
             >
               <Sparkles size={14} className="text-[#EA4C89]" />
               Teknologi Auto-Clipping AI Gen-Z v2.0
@@ -172,7 +172,7 @@ export default function Hero() {
 
             <motion.h1
               variants={fadeUp}
-              className="text-[2.6rem] leading-[1.08] font-extrabold tracking-tight text-[#0D0C22] sm:text-6xl lg:text-[4.2rem]"
+              className="text-[2.6rem] leading-[1.08] font-extrabold tracking-tight text-[var(--ink)] sm:text-6xl lg:text-[4.2rem]"
             >
               Ubah Video Panjang
               <br />
@@ -191,10 +191,10 @@ export default function Hero() {
 
             <motion.p
               variants={fadeUp}
-              className="mt-6 max-w-xl text-lg leading-relaxed text-[#6E6D7A]"
+              className="mt-6 max-w-xl text-lg leading-relaxed text-[var(--db-gray)]"
             >
               ClipForge AI memotong video YouTube, podcast & webinar jadi klip pendek{" "}
-              <span className="font-semibold text-[#0D0C22]">format 9:16</span> siap
+              <span className="font-semibold text-[var(--ink)]">format 9:16</span> siap
               upload ke TikTok, Reels & Shorts, otomatis tanpa editing manual.
             </motion.p>
 
@@ -208,7 +208,7 @@ export default function Hero() {
               </Link>
               <a
                 href="#demo"
-                className="inline-flex items-center gap-2 rounded-full border-2 border-[#0D0C22] px-6 py-3.5 text-base font-medium text-[#0D0C22] transition-all duration-300 hover:bg-[#0D0C22] hover:text-white"
+                className="inline-flex items-center gap-2 rounded-full border-2 border-[#0D0C22] px-6 py-3.5 text-base font-medium text-[var(--ink)] transition-all duration-300 hover:bg-[#0D0C22] hover:text-white"
               >
                 <Play size={16} />
                 Lihat Demo
@@ -219,27 +219,27 @@ export default function Hero() {
               {stats.map((s) => (
                 <div
                   key={s.label}
-                  className="group rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+                  className="group rounded-2xl border border-[var(--db-line)] bg-[var(--db-panel)] p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${s.chip}`}>
-                      <s.icon size={16} className="text-[#0D0C22]" />
+                      <s.icon size={16} className="text-[var(--ink)]" />
                     </div>
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap text-[#0D0C22] ${s.deltaBg}`}
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap text-[var(--ink)] ${s.deltaBg}`}
                     >
                       {s.delta}
                     </span>
                   </div>
-                  <div className="mt-3 text-2xl font-extrabold text-[#0D0C22] sm:text-[1.7rem]">
+                  <div className="mt-3 text-2xl font-extrabold text-[var(--ink)] sm:text-[1.7rem]">
                     {s.raw ? (
                       <span className="cf-num">{s.raw}</span>
                     ) : (
                       <Counter value={s.value ?? 0} decimals={s.decimals} suffix={s.suffix} />
                     )}
                   </div>
-                  <div className="mt-1 text-xs font-semibold text-[#0D0C22]">{s.label}</div>
-                  <div className="text-[11px] text-[#6E6D7A]">{s.note}</div>
+                  <div className="mt-1 text-xs font-semibold text-[var(--ink)]">{s.label}</div>
+                  <div className="text-[11px] text-[var(--db-gray)]">{s.note}</div>
                 </div>
               ))}
             </motion.div>
@@ -257,10 +257,10 @@ export default function Hero() {
           >
             <motion.div
               style={{ rotateX: rx, rotateY: ry, transformStyle: "preserve-3d" }}
-              className="relative rounded-3xl border border-black/5 bg-white p-4 shadow-[0_30px_80px_-20px_rgba(13,12,34,0.18)]"
+              className="relative rounded-3xl border border-[var(--db-line)] bg-[var(--db-panel)] p-4 shadow-[0_30px_80px_-20px_rgba(13,12,34,0.18)]"
             >
-              <div className="flex items-center justify-between rounded-xl bg-[#F8F7F4] px-4 py-2.5">
-                <div className="flex items-center gap-2 text-xs text-[#6E6D7A]">
+              <div className="flex items-center justify-between rounded-xl bg-[var(--db-cream)] px-4 py-2.5">
+                <div className="flex items-center gap-2 text-xs text-[var(--db-gray)]">
                   <Link2 size={14} className="text-[#EA4C89]" />
                   https://youtube.com/watch?v=…
                 </div>
@@ -283,7 +283,7 @@ export default function Hero() {
                     </div>
                     <div className="text-[9px] text-white/70">SUBTITLE HORMOZI • WORD-BY-WORD</div>
                   </div>
-                  <div className="absolute top-2 left-2 rounded-full bg-white px-2 py-0.5 text-[9px] font-bold text-[#0D0C22] shadow-sm">
+                  <div className="absolute top-2 left-2 rounded-full bg-[var(--db-panel)] px-2 py-0.5 text-[9px] font-bold text-[var(--ink)] shadow-sm">
                     FORMAT 9:16
                   </div>
                 </div>
@@ -298,12 +298,12 @@ export default function Hero() {
                       className={`rounded-xl ${m.bg} p-3 transition-transform duration-300 hover:-translate-y-0.5`}
                     >
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-semibold text-[#0D0C22]">{m.label}</span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 font-bold text-[#EA4C89] shadow-sm">
+                        <span className="font-semibold text-[var(--ink)]">{m.label}</span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--db-panel)] px-2 py-0.5 font-bold text-[#EA4C89] shadow-sm">
                           <Flame size={10} /> {m.score}
                         </span>
                       </div>
-                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/70">
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--db-nav)]">
                         <div
                           className="h-full rounded-full bg-[#EA4C89]"
                           style={{ width: `${m.score}%` }}
@@ -311,8 +311,8 @@ export default function Hero() {
                       </div>
                     </div>
                   ))}
-                  <div className="flex items-center justify-between rounded-xl bg-[#F8F7F4] px-3 py-2.5 text-[11px]">
-                    <span className="text-[#6E6D7A]">Render 3 klip • 9:16</span>
+                  <div className="flex items-center justify-between rounded-xl bg-[var(--db-cream)] px-3 py-2.5 text-[11px]">
+                    <span className="text-[var(--db-gray)]">Render 3 klip • 9:16</span>
                     <span className="font-bold text-[#EA4C89]">1080p ✓</span>
                   </div>
                 </div>
@@ -322,9 +322,9 @@ export default function Hero() {
             <motion.div
               animate={{ y: [0, -8, 0] }}
               transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -top-5 -right-4 rounded-2xl border border-black/5 bg-white px-4 py-3 shadow-[0_18px_45px_-12px_rgba(13,12,34,0.22)]"
+              className="absolute -top-5 -right-4 rounded-2xl border border-[var(--db-line)] bg-[var(--db-panel)] px-4 py-3 shadow-[0_18px_45px_-12px_rgba(13,12,34,0.22)]"
             >
-              <div className="text-[10px] text-[#6E6D7A]">Skor Momen Viral</div>
+              <div className="text-[10px] text-[var(--db-gray)]">Skor Momen Viral</div>
               <div className="text-xl font-extrabold text-[#EA4C89]">92/100</div>
             </motion.div>
           </motion.div>
@@ -334,7 +334,7 @@ export default function Hero() {
           {trust.map((t) => (
             <span
               key={t}
-              className="rounded-full bg-[#F8F7F4] px-4 py-2 text-xs font-medium text-[#0D0C22]"
+              className="rounded-full bg-[var(--db-cream)] px-4 py-2 text-xs font-medium text-[var(--ink)]"
             >
               {t}
             </span>

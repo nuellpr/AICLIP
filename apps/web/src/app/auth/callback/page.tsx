@@ -71,12 +71,12 @@ function AuthCallbackContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white text-[#0D0C22] flex flex-col items-center justify-center p-6 space-y-4">
+      <div className="min-h-screen bg-[var(--db-panel)] text-[var(--ink)] flex flex-col items-center justify-center p-6 space-y-4">
         <div className="p-3 rounded-full bg-[#FDE3E1] border border-[#FDE3E1]">
           <AlertCircle className="w-8 h-8 text-[#B42318]" />
         </div>
         <p className="text-sm font-bold text-[#B42318] text-center max-w-md">{error}</p>
-        <p className="text-xs text-[#6E6D7A]">Mengalihkan ke halaman login...</p>
+        <p className="text-xs text-[var(--db-gray)]">Mengalihkan ke halaman login...</p>
         <Link href="/login" className="text-xs text-[#EA4C89] underline">
           Kembali ke Login
         </Link>
@@ -85,10 +85,10 @@ function AuthCallbackContent() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-[#0D0C22] flex flex-col items-center justify-center p-6 space-y-4">
+    <div className="min-h-screen bg-[var(--db-panel)] text-[var(--ink)] flex flex-col items-center justify-center p-6 space-y-4">
       <Loader2 className="w-10 h-10 animate-spin text-[#EA4C89]" />
-      <p className="text-sm font-semibold text-[#6E6D7A]">Menghubungkan Akun Google Anda...</p>
-      <p className="text-xs text-[#6E6D7A]">Mohon tunggu, sedang menyiapkan dashboard</p>
+      <p className="text-sm font-semibold text-[var(--db-gray)]">Menghubungkan Akun Google Anda...</p>
+      <p className="text-xs text-[var(--db-gray)]">Mohon tunggu, sedang menyiapkan dashboard</p>
     </div>
   );
 }
@@ -97,9 +97,9 @@ export default function AuthCallbackPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-white text-[#0D0C22] flex flex-col items-center justify-center p-6 space-y-4">
+        <div className="min-h-screen bg-[var(--db-panel)] text-[var(--ink)] flex flex-col items-center justify-center p-6 space-y-4">
           <Loader2 className="w-10 h-10 animate-spin text-[#EA4C89]" />
-          <p className="text-sm font-semibold text-[#6E6D7A]">Memuat...</p>
+          <p className="text-sm font-semibold text-[var(--db-gray)]">Memuat...</p>
         </div>
       }
     >

@@ -37,7 +37,7 @@ export default function Faq() {
           <div className="mb-4 text-xs font-semibold tracking-[0.2em] text-[#EA4C89] uppercase">
             FAQ
           </div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-[#0D0C22] sm:text-4xl">
+          <h2 className="text-3xl font-extrabold tracking-tight text-[var(--ink)] sm:text-4xl">
             Pertanyaan yang Sering Ditanya
           </h2>
         </motion.div>
@@ -50,16 +50,16 @@ export default function Faq() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.4, delay: i * 0.06 }}
-              className="group rounded-2xl border border-black/5 bg-white shadow-[0_6px_20px_-8px_rgba(13,12,34,0.08)] transition-colors duration-300 open:border-[#EA4C89] hover:border-black/15"
+              className="group rounded-2xl border border-[var(--db-line)] bg-[var(--db-panel)] shadow-[0_6px_20px_-8px_rgba(13,12,34,0.08)] transition-colors duration-300 open:border-[#EA4C89] hover:border-black/15"
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5 text-sm font-semibold text-[#0D0C22] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5 text-sm font-semibold text-[var(--ink)] [&::-webkit-details-marker]:hidden">
                 {f.q}
                 <ChevronDown
                   size={18}
                   className="shrink-0 text-[#EA4C89] transition-transform duration-300 group-open:rotate-180"
                 />
               </summary>
-              <p className="px-6 pb-5 text-sm leading-relaxed text-[#6E6D7A]">{f.a}</p>
+              <p className="px-6 pb-5 text-sm leading-relaxed text-[var(--db-gray)]">{f.a}</p>
             </motion.details>
           ))}
         </div>

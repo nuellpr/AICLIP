@@ -68,7 +68,7 @@ const features = [
     icon: Cpu,
     title: "Multi Model AI Provider",
     desc: "Beberapa model AI terbaik bisa dipilih sesuai kebutuhan, kualitas, kecepatan, atau hemat biaya.",
-    iconBg: "bg-[#F8F7F4]",
+    iconBg: "bg-[var(--db-cream)]",
   },
 ];
 
@@ -86,10 +86,10 @@ export default function Features() {
           <div className="mb-4 text-xs font-semibold tracking-[0.2em] text-[#EA4C89] uppercase">
             Fitur
           </div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-[#0D0C22] sm:text-5xl">
+          <h2 className="text-3xl font-extrabold tracking-tight text-[var(--ink)] sm:text-5xl">
             Semua yang Kamu Butuhkan, <span className="text-[#EA4C89]">Otomatis</span>
           </h2>
-          <p className="mt-4 text-[#6E6D7A]">
+          <p className="mt-4 text-[var(--db-gray)]">
             Enam kekuatan utama di balik setiap klip viral buatan ClipForge AI.
           </p>
         </motion.div>
@@ -105,12 +105,12 @@ export default function Features() {
               className={`glass-card group relative flex flex-col overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1.5 ${f.span ?? ""}`}
             >
               <div
-                className={`relative flex h-12 w-12 items-center justify-center rounded-xl ${f.iconBg} text-[#0D0C22] transition-transform duration-300 group-hover:rotate-[-8deg] group-hover:scale-110`}
+                className={`relative flex h-12 w-12 items-center justify-center rounded-xl ${f.iconBg} text-[var(--ink)] transition-transform duration-300 group-hover:rotate-[-8deg] group-hover:scale-110`}
               >
                 <f.icon size={23} />
               </div>
-              <h3 className="relative mt-4 text-lg font-bold text-[#0D0C22]">{f.title}</h3>
-              <p className="relative mt-2 flex-1 text-sm leading-relaxed text-[#6E6D7A]">
+              <h3 className="relative mt-4 text-lg font-bold text-[var(--ink)]">{f.title}</h3>
+              <p className="relative mt-2 flex-1 text-sm leading-relaxed text-[var(--db-gray)]">
                 {f.desc}
               </p>
               {f.extra && <div className="relative">{f.extra}</div>}

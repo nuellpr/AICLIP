@@ -22,6 +22,12 @@
   --db-butter: #FDF3D8;
   --db-peach: #FDE3E1;
   --db-gray: #6E6D7A;
+  /* Semantic aliases (light) — dipakai di komponen via var() agar bisa dipakai ulang di dark */
+  --ink: #0D0C22;
+  --db-panel: #FFFFFF;
+  --db-line: rgba(13, 12, 34, 0.08);
+  --db-hover: rgba(13, 12, 34, 0.05);
+  --db-nav: rgba(255, 255, 255, 0.85);
   /* ClipForge AI — ungu-pink + biru-cyan neon (dua aksen, ungu-pink primary) */
   --cf-cyan: #22D3EE;
   --cf-purple: #A855F7;
@@ -29,6 +35,59 @@
   --cf-blue: #3B82F6;
   --cf-glow: rgba(168, 85, 247, 0.35);
   --cf-cyan-glow: rgba(34, 211, 238, 0.3);
+}
+
+/* ============ DARK MODE (.dark on <html>) ============ */
+.dark {
+  --background: #0D0C15;
+  --foreground: #EDEBF4;
+  --muted: #171621;
+  --border: rgba(255, 255, 255, 0.10);
+  --primary-glow: rgba(234, 76, 137, 0.35);
+  --ink: #EDEBF4;
+  --db-panel: #1A1825;
+  --db-cream: #141320;
+  --db-line: rgba(255, 255, 255, 0.10);
+  --db-hover: rgba(255, 255, 255, 0.06);
+  --db-nav: rgba(13, 12, 21, 0.85);
+  --db-gray: #A6A2B8;
+  --db-lavender: #2A2340;
+  --db-mint: #17332A;
+  --db-butter: #342C14;
+  --db-peach: #3A1E1C;
+}
+.dark ::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+.dark .glass-panel {
+  background: rgba(26, 24, 37, 0.9);
+  border-color: var(--border);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+}
+.dark .glass-card {
+  background: var(--db-panel);
+  border: 1px solid var(--db-line);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.dark .glass-card:hover {
+  background: #201E2E;
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.5);
+}
+.dark .cf-mesh {
+  opacity: 0.35;
+}
+.dark .text-gradient {
+  background: linear-gradient(135deg, #FFFFFF 0%, #EA4C89 60%, #A855F7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 @theme inline {

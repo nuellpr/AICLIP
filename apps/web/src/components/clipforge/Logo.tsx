@@ -14,7 +14,7 @@ export function ClipForgeLogo({
     <img
       src="/logo-cf-wide.png"
       alt="ClipForge AI"
-      className={`${h} w-auto shrink-0 ${light ? "rounded-xl bg-white px-1.5 py-0.5" : "drop-shadow-sm"}`}
+      className={`${h} w-auto shrink-0 ${light ? "rounded-xl bg-[var(--db-panel)] px-1.5 py-0.5" : "drop-shadow-sm"}`}
     />
   );
   return (

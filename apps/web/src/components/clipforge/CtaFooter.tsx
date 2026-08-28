@@ -33,13 +33,13 @@ export default function CtaFooter() {
         </Reveal>
       </section>
 
-      <footer className="border-t border-black/5 bg-white">
+      <footer className="border-t border-[var(--db-line)] bg-[var(--db-panel)]">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-5 py-8 sm:flex-row lg:px-8">
           <div className="flex items-center gap-2.5">
             <ClipForgeLogo compact size="sm" />
-            <span className="text-sm font-semibold text-[#0D0C22]">ClipForge AI</span>
+            <span className="text-sm font-semibold text-[var(--ink)]">ClipForge AI</span>
           </div>
-          <p className="text-xs text-[#6E6D7A]">
+          <p className="text-xs text-[var(--db-gray)]">
             © 2026 ClipForge AI · Auto Viral Clipping. All rights reserved.
           </p>
         </div>

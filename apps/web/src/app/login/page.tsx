@@ -14,7 +14,7 @@ const displayFont = { fontFamily: 'var(--font-space-grotesk), system-ui, sans-se
 function MascotEye({ x, y, blinkDelay }: { x: MotionValue<number>; y: MotionValue<number>; blinkDelay: number }) {
   return (
     <motion.div
-      className="relative h-11 w-11 overflow-hidden rounded-full bg-white sm:h-14 sm:w-14"
+      className="relative h-11 w-11 overflow-hidden rounded-full bg-[var(--db-panel)] sm:h-14 sm:w-14"
       animate={{ scaleY: [1, 0.1, 1] }}
       transition={{ duration: 0.15, repeat: Infinity, repeatDelay: 3.5, delay: blinkDelay, ease: 'easeInOut' }}
     >
@@ -40,7 +40,7 @@ function Mascot({ x, y }: { x: MotionValue<number>; y: MotionValue<number> }) {
           animate={{ scale: [1, 1.25, 1] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         />
-        <span className="h-5 w-0.5 bg-white/20" />
+        <span className="h-5 w-0.5 bg-[var(--db-panel)]/20" />
       </div>
 
       {/* kepala */}
@@ -250,9 +250,9 @@ function LoginContent() {
   };
 
   return (
-    <div className="relative min-h-screen bg-white text-[#0D0C22] selection:bg-[#EA4C89] selection:text-white">
+    <div className="relative min-h-screen bg-[var(--db-panel)] text-[var(--ink)] selection:bg-[#EA4C89] selection:text-white">
       <header className="mx-auto flex w-full max-w-7xl items-center justify-end px-6 py-5">
-        <Link href="/home" className="text-xs font-semibold text-[#6E6D7A] transition-colors hover:text-[#EA4C89]">
+        <Link href="/home" className="text-xs font-semibold text-[var(--db-gray)] transition-colors hover:text-[#EA4C89]">
           ← Kembali ke Beranda
         </Link>
       </header>
@@ -291,7 +291,7 @@ function LoginContent() {
                   'Subtitle karaoke auto-sync',
                   'Bayar per kredit — QRIS & transfer',
                 ].map((f) => (
-                  <span key={f} className="rounded-full bg-white/10 px-3.5 py-1.5 text-[11px] font-bold text-white">
+                  <span key={f} className="rounded-full bg-[var(--db-panel)]/10 px-3.5 py-1.5 text-[11px] font-bold text-white">
                     {f}
                   </span>
                 ))}
@@ -307,10 +307,10 @@ function LoginContent() {
               </div>
 
               <div className="mt-6 text-center">
-                <h2 className="text-3xl font-black tracking-tight text-[#0D0C22]" style={displayFont}>
+                <h2 className="text-3xl font-black tracking-tight text-[var(--ink)]" style={displayFont}>
                   {emailMode === 'login' ? 'Selamat datang kembali!' : 'Buat akun gratis'}
                 </h2>
-                <p className="mt-2 text-sm text-[#6E6D7A]">
+                <p className="mt-2 text-sm text-[var(--db-gray)]">
                   {emailMode === 'login'
                     ? 'Masuk untuk lanjut bikin klip viral kamu.'
                     : 'Daftar gratis, dapatkan 5 kredit untuk 5 proyek.'}
@@ -327,32 +327,32 @@ function LoginContent() {
               <div className="mt-6 space-y-4">
                 {emailMode === 'register' && (
                   <div className="space-y-1.5">
-                    <label htmlFor="lf-name" className="text-xs font-semibold text-[#0D0C22]">Nama</label>
+                    <label htmlFor="lf-name" className="text-xs font-semibold text-[var(--ink)]">Nama</label>
                     <input
                       id="lf-name"
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Nama (opsional)"
-                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-[#0D0C22] placeholder-[#9B99AF] transition-colors focus:border-[#EA4C89] focus:outline-none focus:ring-2 focus:ring-[#EA4C89]/20"
+                      className="w-full rounded-xl border border-[var(--db-line)] bg-[var(--db-panel)] px-4 py-3 text-sm text-[var(--ink)] placeholder-[#9B99AF] transition-colors focus:border-[#EA4C89] focus:outline-none focus:ring-2 focus:ring-[#EA4C89]/20"
                     />
                   </div>
                 )}
 
                 <div className="space-y-1.5">
-                  <label htmlFor="lf-email" className="text-xs font-semibold text-[#0D0C22]">Email</label>
+                  <label htmlFor="lf-email" className="text-xs font-semibold text-[var(--ink)]">Email</label>
                   <input
                     id="lf-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="nama@email.com"
-                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-[#0D0C22] placeholder-[#9B99AF] transition-colors focus:border-[#EA4C89] focus:outline-none focus:ring-2 focus:ring-[#EA4C89]/20"
+                    className="w-full rounded-xl border border-[var(--db-line)] bg-[var(--db-panel)] px-4 py-3 text-sm text-[var(--ink)] placeholder-[#9B99AF] transition-colors focus:border-[#EA4C89] focus:outline-none focus:ring-2 focus:ring-[#EA4C89]/20"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="lf-password" className="text-xs font-semibold text-[#0D0C22]">Password</label>
+                  <label htmlFor="lf-password" className="text-xs font-semibold text-[var(--ink)]">Password</label>
                   <input
                     id="lf-password"
                     type="password"
@@ -360,7 +360,7 @@ function LoginContent() {
                     onChange={(e) => setPassword(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleEmailAuth()}
                     placeholder="Min. 8 karakter"
-                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-[#0D0C22] placeholder-[#9B99AF] transition-colors focus:border-[#EA4C89] focus:outline-none focus:ring-2 focus:ring-[#EA4C89]/20"
+                    className="w-full rounded-xl border border-[var(--db-line)] bg-[var(--db-panel)] px-4 py-3 text-sm text-[var(--ink)] placeholder-[#9B99AF] transition-colors focus:border-[#EA4C89] focus:outline-none focus:ring-2 focus:ring-[#EA4C89]/20"
                   />
                 </div>
 
@@ -375,16 +375,16 @@ function LoginContent() {
               </div>
 
               <div className="my-6 flex items-center gap-3">
-                <span className="h-px flex-1 bg-gray-200"></span>
-                <span className="text-xs font-semibold text-[#6E6D7A]">atau</span>
-                <span className="h-px flex-1 bg-gray-200"></span>
+                <span className="h-px flex-1 bg-[var(--db-line)]"></span>
+                <span className="text-xs font-semibold text-[var(--db-gray)]">atau</span>
+                <span className="h-px flex-1 bg-[var(--db-line)]"></span>
               </div>
 
               <button
                 type="button"
                 onClick={handleGoogleButtonClick}
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-3.5 text-sm font-extrabold text-[#0D0C22] transition-all hover:shadow-[0_10px_30px_rgba(13,12,34,0.12)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-3 rounded-full border border-[var(--db-line)] bg-[var(--db-panel)] px-4 py-3.5 text-sm font-extrabold text-[var(--ink)] transition-all hover:shadow-[0_10px_30px_rgba(13,12,34,0.12)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -407,13 +407,13 @@ function LoginContent() {
                 {emailMode === 'login' ? 'Belum punya akun? Daftar di sini' : 'Sudah punya akun? Masuk di sini'}
               </button>
 
-              <p className="mt-6 text-center text-[10px] leading-normal text-[#6E6D7A]">
+              <p className="mt-6 text-center text-[10px] leading-normal text-[var(--db-gray)]">
                 Dengan masuk, kamu setuju dengan{' '}
-                <Link href="#" className="text-[#0D0C22] underline">
+                <Link href="#" className="text-[var(--ink)] underline">
                   Syarat Layanan
                 </Link>{' '}
                 dan{' '}
-                <Link href="#" className="text-[#0D0C22] underline">
+                <Link href="#" className="text-[var(--ink)] underline">
                   Kebijakan Privasi
                 </Link>
                 .
@@ -430,9 +430,9 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen flex-col items-center justify-center space-y-4 bg-white p-6 text-[#0D0C22]">
+        <div className="flex min-h-screen flex-col items-center justify-center space-y-4 bg-[var(--db-panel)] p-6 text-[var(--ink)]">
           <Loader2 className="h-10 w-10 animate-spin text-[#EA4C89]" />
-          <p className="text-sm font-semibold text-[#6E6D7A]">Memuat...</p>
+          <p className="text-sm font-semibold text-[var(--db-gray)]">Memuat...</p>
         </div>
       }
     >

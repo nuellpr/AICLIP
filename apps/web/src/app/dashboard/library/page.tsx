@@ -129,19 +129,19 @@ export default function LibraryPage() {
       )}
 
       {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-black/10 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[var(--db-line)] pb-6">
         <div>
           <h1 className="text-3xl font-bold">Penyimpanan Klip</h1>
-          <p className="text-[#6E6D7A] mt-1">Daftar semua klip video yang telah di-render. Pilih & hapus instan ke Recycle Bin laptop.</p>
+          <p className="text-[var(--db-gray)] mt-1">Daftar semua klip video yang telah di-render. Pilih & hapus instan ke Recycle Bin laptop.</p>
         </div>
 
         {clips.length > 0 && (
           <div className="flex items-center gap-3">
             <button
               onClick={toggleSelectAll}
-              className="flex items-center gap-2 bg-white hover:bg-[#F8F7F4] text-[#0D0C22] px-4 py-2 rounded-xl text-sm font-semibold border border-black/10 transition-colors"
+              className="flex items-center gap-2 bg-[var(--db-panel)] hover:bg-[var(--db-cream)] text-[var(--ink)] px-4 py-2 rounded-xl text-sm font-semibold border border-[var(--db-line)] transition-colors"
             >
-              {isAllSelected ? <CheckSquare className="w-4 h-4 text-[#EA4C89]" /> : <Square className="w-4 h-4 text-[#6E6D7A]" />}
+              {isAllSelected ? <CheckSquare className="w-4 h-4 text-[#EA4C89]" /> : <Square className="w-4 h-4 text-[var(--db-gray)]" />}
               <span>{isAllSelected ? 'Batal Pilih Semua' : 'Pilih Semua'}</span>
             </button>
 
@@ -160,10 +160,10 @@ export default function LibraryPage() {
       </div>
 
       {clips.length === 0 ? (
-        <div className="rounded-2xl border border-black/10 bg-white shadow-sm p-12 text-center">
-          <Video className="mx-auto h-12 w-12 text-[#6E6D7A] mb-4" />
-          <h3 className="text-xl font-medium text-[#0D0C22] mb-2">Belum ada klip</h3>
-          <p className="text-[#6E6D7A] mb-6">Anda belum merender klip apa pun. Buat proyek baru untuk memulai.</p>
+        <div className="rounded-2xl border border-[var(--db-line)] bg-[var(--db-panel)] shadow-sm p-12 text-center">
+          <Video className="mx-auto h-12 w-12 text-[var(--db-gray)] mb-4" />
+          <h3 className="text-xl font-medium text-[var(--ink)] mb-2">Belum ada klip</h3>
+          <p className="text-[var(--db-gray)] mb-6">Anda belum merender klip apa pun. Buat proyek baru untuk memulai.</p>
           <Link href="/dashboard/new" className="inline-block bg-[#EA4C89] hover:bg-[#C32361] text-white px-6 py-2 rounded-lg font-medium transition-colors">
             Buat Proyek
           </Link>
@@ -181,7 +181,7 @@ export default function LibraryPage() {
               <div 
                 key={clip.id} 
                 className={`group relative rounded-2xl border transition-all overflow-hidden flex flex-col ${
-                  isSelected ? 'border-[#EA4C89] bg-white shadow-[0_8px_24px_-8px_rgba(234,76,137,0.35)]' : 'border-black/10 bg-white hover:border-[#EA4C89]/40'
+                  isSelected ? 'border-[#EA4C89] bg-[var(--db-panel)] shadow-[0_8px_24px_-8px_rgba(234,76,137,0.35)]' : 'border-[var(--db-line)] bg-[var(--db-panel)] hover:border-[#EA4C89]/40'
                 }`}
               >
                 <div className="relative aspect-[9/16] bg-black">
@@ -209,10 +209,10 @@ export default function LibraryPage() {
                 
                 <div className="p-4 flex flex-col flex-1">
                   <h3 className="font-bold text-lg mb-1 line-clamp-2">{clip.title}</h3>
-                  <p className="text-sm text-[#6E6D7A] line-clamp-2 mb-4 flex-1">&quot;{clip.hook}&quot;</p>
+                  <p className="text-sm text-[var(--db-gray)] line-clamp-2 mb-4 flex-1">&quot;{clip.hook}&quot;</p>
                   
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-black/5">
-                    <div className="flex items-center text-xs text-[#6E6D7A]">
+                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--db-line)]">
+                    <div className="flex items-center text-xs text-[var(--db-gray)]">
                       <Calendar className="w-3 h-3 mr-1" />
                       {new Date(clip.createdAt).toLocaleDateString()}
                     </div>
@@ -229,7 +229,7 @@ export default function LibraryPage() {
                         href={videoUrl} 
                         download={filename}
                         target="_blank"
-                        className="flex items-center gap-2 bg-white hover:bg-[#F8F7F4] text-[#0D0C22] border border-black/10 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+                        className="flex items-center gap-2 bg-[var(--db-panel)] hover:bg-[var(--db-cream)] text-[var(--ink)] border border-[var(--db-line)] px-3 py-2 rounded-xl text-sm font-medium transition-colors"
                       >
                         <Download className="w-4 h-4" /> Unduh
                       </a>

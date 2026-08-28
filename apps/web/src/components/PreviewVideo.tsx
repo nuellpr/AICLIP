@@ -88,7 +88,7 @@ export function PreviewVideo({ videoSrc, previewWords, captionSettings, startTim
   if (!videoSrc) return null;
 
   return (
-    <div ref={containerRef} className="relative aspect-[9/16] bg-black rounded-xl overflow-hidden w-full max-w-[320px] mx-auto border border-black/10">
+    <div ref={containerRef} className="relative aspect-[9/16] bg-black rounded-xl overflow-hidden w-full max-w-[320px] mx-auto border border-[var(--db-line)]">
       <video 
         ref={videoRef}
         src={videoSrc}
