@@ -68,7 +68,7 @@ const sections: { h: string; p: string[] }[] = [
   },
   {
     h: "10. Kontak",
-    p: ["Pertanyaan mengenai syarat ini dapat dikirim melalui email dukungan kami."],
+    p: ["Pertanyaan mengenai syarat ini dapat dikirim ke support@forgeai.web.id."],
   },
 ];
 
