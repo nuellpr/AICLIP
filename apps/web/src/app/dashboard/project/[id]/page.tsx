@@ -286,17 +286,35 @@ export default function ProjectPage() {
                     {isReady && clip.renderedFileKey ? (
                       <video src={clip.renderedFileKey} controls className="w-full h-full object-cover" />
                     ) : isRendering ? (
-                      <div className="force-motion relative flex flex-col items-center gap-3 w-full h-full">
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-purple-500/10 to-blue-500/20 animate-pulse"></div>
-                        <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(59,130,246,0.08)_0,rgba(59,130,246,0.08)_12px,transparent_12px,transparent_24px)] animate-[shimmer_1.5s_linear_infinite]"></div>
-                        <div className="relative mt-auto mb-auto flex flex-col items-center gap-3">
-                          <div className="relative">
-                            <div className="absolute inset-0 rounded-full bg-blue-500/40 blur-xl animate-ping"></div>
-                            <div className="relative w-16 h-16 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center animate-[spin_2s_linear_infinite]">
-                              <Loader2 className="h-7 w-7 text-blue-400 animate-spin" />
+                      <div className="force-motion relative flex flex-col items-center justify-center w-full h-full overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950/50 to-slate-950">
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-purple-500/15 to-blue-500/20 animate-pulse"></div>
+                        <div className="absolute inset-0 opacity-[0.12] animate-[grid-drift_2.5s_linear_infinite]" style={{ backgroundImage: 'linear-gradient(rgba(59,130,246,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.4) 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+                        <div className="absolute left-0 right-0 h-14 animate-[scan-y_2.4s_ease-in-out_infinite] bg-gradient-to-b from-transparent via-blue-400/25 to-transparent"></div>
+                        <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-blue-400/80 rounded-sm animate-pulse"></div>
+                        <div className="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-blue-400/80 rounded-sm animate-pulse [animation-delay:300ms]"></div>
+                        <div className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-blue-400/80 rounded-sm animate-pulse [animation-delay:600ms]"></div>
+                        <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-blue-400/80 rounded-sm animate-pulse [animation-delay:900ms]"></div>
+                        <div className="absolute bottom-10 left-[15%] w-1 h-1 rounded-full bg-blue-300/80 animate-[float-up_2.6s_ease-out_infinite]"></div>
+                        <div className="absolute bottom-10 left-[32%] w-1.5 h-1.5 rounded-full bg-purple-300/70 animate-[float-up_2.6s_ease-out_infinite] [animation-delay:500ms]"></div>
+                        <div className="absolute bottom-10 left-[52%] w-1 h-1 rounded-full bg-blue-200/70 animate-[float-up_2.6s_ease-out_infinite] [animation-delay:1s]"></div>
+                        <div className="absolute bottom-10 left-[70%] w-1.5 h-1.5 rounded-full bg-purple-300/60 animate-[float-up_2.6s_ease-out_infinite] [animation-delay:1.5s]"></div>
+                        <div className="absolute bottom-10 left-[85%] w-1 h-1 rounded-full bg-blue-300/70 animate-[float-up_2.6s_ease-out_infinite] [animation-delay:2s]"></div>
+                        <div className="relative flex flex-col items-center gap-4">
+                          <div className="relative w-20 h-20">
+                            <div className="absolute inset-0 rounded-full bg-blue-500/30 blur-xl animate-pulse"></div>
+                            <div className="absolute inset-0 rounded-full overflow-hidden animate-[spin_1.2s_linear_infinite]">
+                              <div className="w-full h-full" style={{ background: 'conic-gradient(from 0deg, rgba(59,130,246,0) 0%, rgba(59,130,246,0.15) 45%, rgba(147,197,253,0.95) 100%)' }}></div>
+                            </div>
+                            <div className="absolute inset-[3px] rounded-full bg-slate-950 border border-blue-500/30 flex items-center justify-center">
+                              <Loader2 className="h-6 w-6 text-blue-400 animate-spin" />
                             </div>
                           </div>
-                          <span className="text-blue-300 text-xs font-bold tracking-wider uppercase animate-pulse">Rendering...</span>
+                          <div className="text-blue-300 text-xs font-bold tracking-[0.3em] uppercase drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]">
+                            Rendering<span className="animate-[dot-blink_1.4s_ease-in-out_infinite]">.</span><span className="animate-[dot-blink_1.4s_ease-in-out_infinite] [animation-delay:200ms]">.</span><span className="animate-[dot-blink_1.4s_ease-in-out_infinite] [animation-delay:400ms]">.</span>
+                          </div>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500/10">
+                          <div className="h-full w-1/4 bg-gradient-to-r from-transparent via-blue-400 to-purple-400 animate-[indeterminate_1.4s_ease-in-out_infinite]"></div>
                         </div>
                       </div>
                     ) : (

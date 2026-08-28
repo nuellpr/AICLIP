@@ -88,6 +88,30 @@ p {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(220%); }
 }
+@keyframes grid-drift {
+  0% { background-position: 0 0; }
+  100% { background-position: 32px 32px; }
+}
+@keyframes scan-y {
+  0% { top: -18%; opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { top: 108%; opacity: 0; }
+}
+@keyframes dot-blink {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+@keyframes float-up {
+  0% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 0.9; }
+  80% { opacity: 0.5; }
+  100% { transform: translateY(-140px); opacity: 0; }
+}
+@keyframes indeterminate {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(520%); }
+}
 @keyframes ping-slow {
   0% { transform: scale(0.8); opacity: 0.8; }
   70%, 100% { transform: scale(1.6); opacity: 0; }
