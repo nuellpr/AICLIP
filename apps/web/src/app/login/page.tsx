@@ -330,20 +330,6 @@ function LoginContent() {
                 </div>
               ))}
             </div>
-
-            {!GOOGLE_CLIENT_ID && (
-              <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold">Konfigurasi Google belum lengkap (dev)</p>
-                  <p className="mt-1 text-amber-200/80">
-                    Set <code className="rounded bg-black/30 px-1">NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> &{' '}
-                    <code className="rounded bg-black/30 px-1">GOOGLE_CLIENT_SECRET</code> di <code>.env</code>. Lihat{' '}
-                    <code>.env.example</code> untuk panduan.
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* KANAN: Kartu auth */}
