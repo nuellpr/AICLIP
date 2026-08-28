@@ -131,7 +131,7 @@ async function generateWithOpenAI(config: any, systemMsg: string, vttContent: st
   // Use a very compact system message to minimize token usage
   const systemMsgWithJson = `Analyze VTT subtitles. Extract EXACTLY ${clipCount} viral clip moments.
 Rules: title/hook/reason in Indonesian clickbait style. caption = exact spoken text from VTT (keep informal words). startTime/endTime in SECONDS (float). layoutMode: one of crop_blur/split/gameplay/face/fit_blur. Duration ${targetDuration}s each.${searchQuery ? ` Focus on: "${searchQuery}".` : ''}
-Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTime":30,"viralScore":90,"reason":"...","caption":"...","layoutMode":"fit_blur"}]}`;
+Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTime":30,"viralScore":90,"reason":"...","caption":"...","layoutMode":"fit_blur","hashtags":["#viral"],"contentCategory":"entertainment"}]}`;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
@@ -222,9 +222,11 @@ async function generateWithGemini(config: any, systemMsg: string, prompt: string
             viralScore: { type: Type.NUMBER },
             reason: { type: Type.STRING },
             caption: { type: Type.STRING },
+            hashtags: { type: Type.ARRAY, items: { type: Type.STRING } },
+            contentCategory: { type: Type.STRING },
             layoutMode: { type: Type.STRING, description: "Pilihan: crop_blur, split, gameplay, face, fit_blur" }
           },
-          required: ["title", "hook", "startTime", "endTime", "viralScore", "reason", "caption", "layoutMode"]
+          required: ["title", "hook", "startTime", "endTime", "viralScore", "reason", "caption", "hashtags", "contentCategory", "layoutMode"]
         }
       };
 
