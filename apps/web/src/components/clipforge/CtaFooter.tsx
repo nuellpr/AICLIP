@@ -44,6 +44,9 @@ export default function CtaFooter() {
               © 2026 ClipForge AI · Auto Viral Clipping. All rights reserved.
             </p>
             <div className="flex items-center gap-4 text-xs text-[var(--db-gray)]">
+              <Link href="/bantuan" className="transition-colors hover:text-[#EA4C89]">
+                Bantuan
+              </Link>
               <Link href="/terms" className="transition-colors hover:text-[#EA4C89]">
                 Syarat Layanan
               </Link>
