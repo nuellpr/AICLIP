@@ -285,6 +285,20 @@ export default function ProjectPage() {
                   <div className="aspect-[9/16] bg-black relative flex items-center justify-center">
                     {isReady && clip.renderedFileKey ? (
                       <video src={clip.renderedFileKey} controls className="w-full h-full object-cover" />
+                    ) : isRendering ? (
+                      <div className="relative flex flex-col items-center gap-3 w-full h-full">
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-purple-500/10 to-blue-500/20 animate-pulse"></div>
+                        <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(59,130,246,0.08)_0,rgba(59,130,246,0.08)_12px,transparent_12px,transparent_24px)] animate-[shimmer_1.5s_linear_infinite]"></div>
+                        <div className="relative mt-auto mb-auto flex flex-col items-center gap-3">
+                          <div className="relative">
+                            <div className="absolute inset-0 rounded-full bg-blue-500/40 blur-xl animate-ping"></div>
+                            <div className="relative w-16 h-16 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center animate-[spin_2s_linear_infinite]">
+                              <Loader2 className="h-7 w-7 text-blue-400 animate-spin" />
+                            </div>
+                          </div>
+                          <span className="text-blue-300 text-xs font-bold tracking-wider uppercase animate-pulse">Rendering...</span>
+                        </div>
+                      </div>
                     ) : (
                       <div className="flex flex-col items-center gap-2">
                         {isErrorClip ? <AlertCircle className="h-12 w-12 text-yellow-500" /> : <Video className="h-12 w-12 text-white/20" />}
