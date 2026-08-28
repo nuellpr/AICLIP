@@ -2,6 +2,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
+import { LLMAnalysisResponseSchema } from '@clipforge/shared';
 
 export const MAX_VTT_CHARS = 4000;
 
@@ -158,10 +159,6 @@ Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTi
 
       let text = completion.choices[0].message.content || '';
       const finishReason = completion.choices[0].finish_reason || '';
-      
-      try {
-        require('fs').writeFileSync(require('path').join(__dirname, `../ai_debug_attempt_${attempt}.txt`), text || `(empty, finish_reason=${finishReason})`);
-      } catch(e) {}
 
       if (!text.trim()) {
       attemptErrors.push(`Attempt ${attempt}: empty content (finish_reason=${finishReason})`);
@@ -180,10 +177,13 @@ Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTi
       const parsed = JSON.parse(text);
       
       if (parsed.clips && Array.isArray(parsed.clips) && parsed.clips.length > 0) {
-        try {
-          require('fs').writeFileSync(require('path').join(__dirname, '../ai_debug_last_response.txt'), text);
-        } catch(e) {}
-        return { clips: parsed.clips.slice(0, clipCount) };
+        const valid = LLMAnalysisResponseSchema.safeParse({ clips: parsed.clips });
+        if (valid.success) {
+          return { clips: valid.data.clips.slice(0, clipCount) };
+        }
+        attemptErrors.push(`Attempt ${attempt}: clips gagal validasi: ${valid.error.issues[0]?.message || 'invalid'}`);
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+        continue;
       }
       attemptErrors.push(`Attempt ${attempt}: JSON had no clips (finish_reason=${finishReason})`);
       await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
@@ -196,9 +196,6 @@ Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTi
   }
 
   const errMsg = attemptErrors.slice(-12).join('; ');
-  try {
-    require('fs').writeFileSync(require('path').join(__dirname, '../ai_debug_last_error.txt'), errMsg);
-  } catch(e) {}
   return { clips: [], error: errMsg };
 }
 
@@ -281,7 +278,15 @@ async function generateWithGemini(config: any, systemMsg: string, prompt: string
       let parsed = JSON.parse(text);
       
       if (Array.isArray(parsed)) {
-        return { clips: parsed.slice(0, clipCount) };
+        const valid = LLMAnalysisResponseSchema.safeParse({ clips: parsed });
+        if (valid.success) return { clips: valid.data.clips.slice(0, clipCount) };
+        lastError = `clips gagal validasi: ${valid.error.issues[0]?.message || 'invalid'}`;
+        console.warn(`Gemini clips invalid (Attempt ${attempt}/${MAX_ATTEMPTS}):`, lastError);
+        if (attempt < MAX_ATTEMPTS) {
+          await new Promise(r => setTimeout(r, 5000));
+          continue;
+        }
+        return { clips: [], error: lastError };
       }
       return { clips: [] };
     } catch (error: any) {

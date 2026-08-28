@@ -231,7 +231,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <p className="text-3xl font-black text-white mt-4">{formatRupiah(stats?.totalRevenue ?? 0)}</p>
-          <p className="text-[11px] text-gray-400 mt-1">Transaksi settlement Midtrans</p>
+          <p className="text-[11px] text-gray-400 mt-1">Transaksi settlement</p>
         </div>
 
         <div className="rounded-3xl glass-card p-6 border border-white/10 relative overflow-hidden group hover:border-yellow-500/40 transition-all">

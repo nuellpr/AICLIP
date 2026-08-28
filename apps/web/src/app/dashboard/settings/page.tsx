@@ -3,6 +3,7 @@
 import { Save, User, Key, Settings as SettingsIcon, CheckCircle2, Loader2, LogOut, Camera, Lock } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { getStoredUser, AuthUser, clearAuthSession, setAuthSession, getStoredToken } from "@/lib/auth";
 
@@ -454,8 +455,11 @@ export default function SettingsPage() {
             {activeTab === 'billing' && (
               <>
                 <h3 className="text-xl font-bold border-b border-white/10 pb-4">Penagihan & Paket</h3>
-                <div className="py-8 text-center text-gray-400">
-                  <p>Fitur penagihan belum tersedia di versi MVP ini.</p>
+                <div className="py-8 text-center text-gray-400 space-y-4">
+                  <p>Kelola kredit, riwayat transaksi, dan pembelian paket di halaman penagihan.</p>
+                  <Link href="/dashboard/billing" className="inline-block bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-black font-extrabold px-6 py-3 rounded-2xl text-sm transition-all">
+                    Buka Halaman Penagihan
+                  </Link>
                 </div>
               </>
             )}

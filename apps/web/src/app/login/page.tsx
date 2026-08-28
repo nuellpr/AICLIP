@@ -13,6 +13,11 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [authMode, setAuthMode] = useState<'google' | 'email'>('google');
+  const [emailMode, setEmailMode] = useState<'login' | 'register'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
 
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
@@ -138,6 +143,35 @@ function LoginContent() {
     setLoading(false);
   };
 
+  const handleEmailAuth = async () => {
+    if (!email || !password) {
+      setError('Email dan password wajib diisi');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(getApiUrl(emailMode === 'login' ? '/api/auth/login' : '/api/auth/register'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, ...(emailMode === 'register' && name ? { name } : {}) }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Gagal masuk');
+      }
+
+      setAuthSession(data.token, data.user);
+      router.push('/dashboard');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Gagal masuk';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#05060B] text-white flex flex-col justify-between selection:bg-blue-500 selection:text-black">
       <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between z-20">
@@ -225,6 +259,13 @@ function LoginContent() {
                 </div>
               )}
 
+              <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-white/5 border border-white/10">
+                <button type="button" onClick={() => setAuthMode('google')} className={`py-2 rounded-lg text-xs font-bold transition-colors ${authMode === 'google' ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white'}`}>Google</button>
+                <button type="button" onClick={() => setAuthMode('email')} className={`py-2 rounded-lg text-xs font-bold transition-colors ${authMode === 'email' ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white'}`}>Email</button>
+              </div>
+
+              {authMode === 'google' && (
+              <>
               <div className="space-y-1">
                 <h2 className="text-xl font-black text-white">Lanjutkan dengan Google</h2>
                 <p className="text-xs text-gray-400">
@@ -266,6 +307,63 @@ function LoginContent() {
               <p className="text-[11px] text-gray-500 text-center">
                 Aman & terverifikasi Google OAuth 2.0. Kami hanya akses nama, email & foto profil.
               </p>
+              </>
+              )}
+
+              {authMode === 'email' && (
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <h2 className="text-xl font-black text-white">{emailMode === 'login' ? 'Masuk dengan Email' : 'Daftar dengan Email'}</h2>
+                  <p className="text-xs text-gray-400">
+                    {emailMode === 'login' ? 'Masuk ke akun ClipForge Anda.' : 'Daftar gratis, dapatkan 5 kredit untuk 5 proyek.'}
+                  </p>
+                </div>
+
+                {emailMode === 'register' && (
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Nama (opsional)"
+                    className="w-full rounded-xl border border-white/10 bg-black/50 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  />
+                )}
+
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  className="w-full rounded-xl border border-white/10 bg-black/50 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                />
+
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleEmailAuth()}
+                  placeholder="Password (min. 8 karakter)"
+                  className="w-full rounded-xl border border-white/10 bg-black/50 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                />
+
+                <button
+                  type="button"
+                  onClick={handleEmailAuth}
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-black font-extrabold py-3.5 px-4 rounded-2xl text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : emailMode === 'login' ? 'Masuk' : 'Daftar & Dapatkan 5 Kredit'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setEmailMode(emailMode === 'login' ? 'register' : 'login'); setError(null); }}
+                  className="w-full text-xs text-blue-400 hover:text-blue-300 text-center"
+                >
+                  {emailMode === 'login' ? 'Belum punya akun? Daftar di sini' : 'Sudah punya akun? Masuk di sini'}
+                </button>
+              </div>
+              )}
 
               <div className="pt-4 border-t border-white/10 space-y-3">
                 <p className="text-[11px] font-black uppercase tracking-wider text-gray-400">YANG AKAN TERJADI</p>

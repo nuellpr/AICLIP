@@ -95,17 +95,9 @@ async function processProject(projectId: string) {
   };
 
   try {
-    // 1. DOWNLOADING
-    await updateProgress('DOWNLOADING', 10);
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // 1. TRANSCRIBING — ambil subtitle/transkripsi sumber (yt-dlp VTT untuk URL, Whisper lokal untuk upload)
+    await updateProgress('TRANSCRIBING', 10);
     
-    // 2. EXTRACTING_AUDIO
-    await updateProgress('EXTRACTING_AUDIO', 30);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // 3. TRANSCRIBING
-    await updateProgress('TRANSCRIBING', 50);
-
     const projectData = await prisma.project.findUnique({ where: { id: projectId } });
     if (!projectData) throw new Error('Project not found');
     const isUpload = projectData.sourceType === 'UPLOAD';
@@ -186,7 +178,7 @@ async function processProject(projectId: string) {
     }
 
     // 4. ANALYZING
-    await updateProgress('ANALYZING', 70);
+    await updateProgress('ANALYZING', 40);
     
     let aiClips: any[] = [];
     let aiError: string | undefined;
@@ -206,7 +198,7 @@ async function processProject(projectId: string) {
     }
     
     // 5. GENERATING_CLIPS
-    await updateProgress('GENERATING_CLIPS', 90);
+    await updateProgress('GENERATING_CLIPS', 70);
     
     if (aiClips && aiClips.length > 0) {
       for (const clipData of aiClips) {
@@ -725,6 +717,7 @@ async function startConsumers() {
           if (faceCmdPath && fs.existsSync(faceCmdPath)) fs.unlinkSync(faceCmdPath);
 
           // Generate Hook Intro and prepend to clip
+          let hookDuration = 0;
           if (clip.hook && clip.hook.trim().length > 5 && !clip.hook.startsWith('(Gagal)')) {
             try {
               console.log(`Generating hook intro for clip ${clip.id}: "${clip.hook.substring(0, 50)}..."`);
@@ -734,6 +727,15 @@ async function startConsumers() {
               });
               
               if (hookVideoPath) {
+                try {
+                  const ffprobePath = getFfmpegPath().replace(/ffmpeg(\.exe)?$/i, 'ffprobe$1');
+                  const { stdout: hookProbe } = await execAsync(
+                    `"${ffprobePath}" -v quiet -print_format json -show_format "${hookVideoPath}"`,
+                    { timeout: 10000, encoding: 'utf-8' }
+                  );
+                  hookDuration = parseFloat(JSON.parse(hookProbe)?.format?.duration || '0') || 0;
+                  console.log(`Hook intro duration: ${hookDuration.toFixed(2)}s`);
+                } catch (e) {}
                 const tempWithHook = outputPath.replace('.mp4', '_with_hook.mp4');
                 const concatSuccess = await concatHookAndClip(hookVideoPath, outputPath, tempWithHook);
                 if (concatSuccess && fs.existsSync(tempWithHook)) {
@@ -751,6 +753,9 @@ async function startConsumers() {
           try {
             const whisperWords = styleObj.words || [];
             const sfxEvents = detectSfxTriggers(whisperWords, clip.hook);
+            if (hookDuration > 0) {
+              for (const evt of sfxEvents) evt.timestampSec += hookDuration;
+            }
             if (sfxEvents.length > 0) {
               console.log(`Mixing ${sfxEvents.length} SFX sound effects for clip ${clip.id}...`);
               const tempWithSfx = outputPath.replace('.mp4', '_with_sfx.mp4');
