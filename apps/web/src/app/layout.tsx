@@ -42,9 +42,9 @@ export const metadata: Metadata = {
     siteName: "ClipForge AI",
     locale: "id_ID",
     type: "website",
-    images: [{ url: "/logo-v2.png", width: 512, height: 512, alt: "ClipForge AI" }],
+    images: [{ url: "/logo-cf.jpg", width: 1024, height: 1024, alt: "ClipForge AI" }],
   },
-  icons: { icon: "/logo.svg" },
+  icons: { icon: "/logo-cf.jpg" },
 };
 
 export default function RootLayout({
