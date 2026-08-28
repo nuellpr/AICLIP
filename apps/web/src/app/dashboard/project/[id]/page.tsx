@@ -286,7 +286,7 @@ export default function ProjectPage() {
                     {isReady && clip.renderedFileKey ? (
                       <video src={clip.renderedFileKey} controls className="w-full h-full object-cover" />
                     ) : isRendering ? (
-                      <div className="relative flex flex-col items-center gap-3 w-full h-full">
+                      <div className="force-motion relative flex flex-col items-center gap-3 w-full h-full">
                         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-purple-500/10 to-blue-500/20 animate-pulse"></div>
                         <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(59,130,246,0.08)_0,rgba(59,130,246,0.08)_12px,transparent_12px,transparent_24px)] animate-[shimmer_1.5s_linear_infinite]"></div>
                         <div className="relative mt-auto mb-auto flex flex-col items-center gap-3">
