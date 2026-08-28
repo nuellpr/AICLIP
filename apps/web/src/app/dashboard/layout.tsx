@@ -95,14 +95,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Floating Sidebar for Desktop */}
       <div className="p-4 flex-shrink-0 z-30 hidden md:block">
-        <aside className="w-68 h-[calc(100vh-2rem)] rounded-3xl bg-[var(--db-panel)] p-6 flex flex-col relative overflow-hidden border border-[var(--db-line)] shadow-[0_10px_40px_-10px_rgba(13,12,34,0.1)]">
+        <aside className="w-68 h-[calc(100vh-2rem)] rounded-3xl bg-[var(--db-panel)] p-6 flex flex-col relative overflow-y-auto border border-[var(--db-line)] shadow-[0_10px_40px_-10px_rgba(13,12,34,0.1)]">
           {/* Top Accent Line */}
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#EA4C89] via-[#7C3AED] to-[#F9A8D4]"></div>
 
-          {/* Brand Logo */}
-          <Link href="/home" className="flex items-center gap-3 mb-10 z-10 pt-2 group" title="Kembali ke Tampilan Depan">
-            <ClipForgeLogo compact className="transition-transform group-hover:scale-105" />
-          </Link>
+          {/* Brand Logo + Theme Toggle */}
+          <div className="flex items-center justify-between gap-2 mb-10 z-10 pt-2">
+            <Link href="/home" className="flex items-center gap-3 group" title="Kembali ke Tampilan Depan">
+              <ClipForgeLogo compact className="transition-transform group-hover:scale-105" />
+            </Link>
+            <ThemeToggle />
+          </div>
 
           {/* Navigation Links */}
           <nav className="flex-1 space-y-3.5 z-10">
@@ -143,9 +146,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Credit Widget & User Profile Footer */}
           <div className="mt-auto pt-6 z-10 space-y-4">
-            <div className="flex justify-end">
-              <ThemeToggle />
-            </div>
             <div className="rounded-2xl bg-[var(--db-cream)] p-4 relative overflow-hidden border border-[var(--db-line)]">
               <div className="absolute top-0 right-0 w-24 h-24 bg-[#E7E4F9] rounded-full blur-2xl -mr-10 -mt-10"></div>
               <div className="flex items-center gap-4 relative z-10">
