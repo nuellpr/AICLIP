@@ -116,6 +116,8 @@ async function processProject(projectId: string) {
       jsRuntimes: 'bun,node',
       // ponytail: web_embedded first = 1080p DASH without PO token (verified); android fallback = 360p if not embeddable
       extractorArgs: 'youtube:player_client=web_embedded,android',
+      impersonate: 'chrome',
+      extractorRetries: 3,
       noWarnings: true
     };
     if (fs.existsSync(cookiesPath)) {
@@ -299,6 +301,9 @@ async function startConsumers() {
             forceIpv4: true,
             // ponytail: web_embedded = 1080p DASH w/o PO token (verified 137+140); android fallback = 360p if not embeddable
             extractorArgs: 'youtube:player_client=web_embedded,android',
+            impersonate: 'chrome',
+            extractorRetries: 3,
+            retries: 3,
             noWarnings: true
           };
 

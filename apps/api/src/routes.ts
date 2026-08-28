@@ -491,7 +491,8 @@ export default async function routes(server: FastifyInstance) {
             format: 'bestaudio/best',
             ffmpegLocation: getFfmpegPath(),
             jsRuntimes: 'node',
-            noCheckCertificates: true
+            noCheckCertificates: true,
+            extractorRetries: 3
           };
           if (fs.existsSync(cookiesPath)) {
             options.cookies = cookiesPath;
