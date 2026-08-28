@@ -580,12 +580,10 @@ export default async function authRoutes(server: FastifyInstance) {
 
       const user = await upsertGoogleUser({ email, name, picture, googleId });
       const jwtToken = server.jwt.sign({ sub: user.id, email: user.email });
-      const sanitized = sanitizeUser(user);
-
-      // Redirect to Next.js callback page which will store token & go to dashboard
-      return reply.redirect(
-        `${appUrl}/auth/callback?token=${encodeURIComponent(jwtToken)}&user=${encodeURIComponent(JSON.stringify(sanitized))}`
-      );
+      // NOTE: Jangan masukkan user JSON ke URL redirect — image bisa data-URL base64
+      // ratusan KB sehingga Location header melebihi buffer nginx (upstream sent too big header).
+      // Web callback page akan fetch /auth/me dengan bearer token saja.
+      return reply.redirect(`${appUrl}/auth/callback?token=${encodeURIComponent(jwtToken)}`);
     } catch (e: any) {
       server.log.error({ err: e.message, stack: e.stack }, 'Google OAuth callback error');
       return reply.redirect(`${appUrl}/login?error=${encodeURIComponent('Gagal autentikasi Google: ' + e.message)}`);

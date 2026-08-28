@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { setAuthSession } from '@/lib/auth';
+import { setAuthSession, clearAuthSession } from '@/lib/auth';
 import { Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -35,6 +35,28 @@ function AuthCallbackContent() {
         setTimeout(() => router.push('/login?error=Gagal%20memproses%20sesi'), 1500);
         return;
       }
+    }
+
+    // Token tanpa user (redirect baru): ambil user via /api/auth/me
+    if (token) {
+      localStorage.setItem('clipforge_token', token);
+      fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+        .then((res) => (res.ok ? res.json() : Promise.reject(new Error('me failed'))))
+        .then((data) => {
+          if (data?.user) {
+            setAuthSession(token, data.user);
+            router.replace('/dashboard');
+          } else {
+            throw new Error('no user in me');
+          }
+        })
+        .catch((e) => {
+          console.error('Failed to fetch user via /auth/me:', e);
+          clearAuthSession();
+          setError('Gagal memproses sesi login Google');
+          setTimeout(() => router.push('/login?error=Gagal%20memproses%20sesi'), 1500);
+        });
+      return;
     }
 
     // If direct hit without params, maybe came from GIS without redirect?
