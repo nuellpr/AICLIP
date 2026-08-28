@@ -10,7 +10,7 @@ export interface WelcomeEmailData {
  * Send Welcome Email to newly registered / Google sign-in user's Gmail inbox
  */
 export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean> {
-  const { toEmail, toName, credits = 25 } = data;
+  const { toEmail, toName, credits = 5 } = data;
 
   const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
   const smtpPort = parseInt(process.env.SMTP_PORT || '587');
@@ -48,8 +48,8 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean>
           <p>Selamat datang di <strong>ClipForge AI</strong> — Platform AI Video Clipper No.1 di Indonesia.</p>
 
           <div class="highlight-box">
-            <p>🎁 Saldo Menit AI Anda: ${credits} Menit Gratis Telah Aktif!</p>
-            <span style="font-size: 12px; color: #9ca3af;">Gunakan menit ini untuk mengubah video podcast atau video YouTube favorit Anda menjadi klip 9:16 viral secara otomatis.</span>
+            <p>🎁 Kredit AI Anda: ${credits} Kredit Gratis Telah Aktif!</p>
+            <span style="font-size: 12px; color: #9ca3af;">1 kredit = 1 proyek (3 klip viral). Gunakan kredit untuk mengubah video podcast atau video YouTube favorit Anda menjadi klip 9:16 viral secara otomatis.</span>
           </div>
 
           <h3 style="color: #ffffff; margin-top: 24px;">3 Langkah Mudah Membuat Klip Viral Pertama Anda:</h3>
@@ -90,7 +90,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean>
     await transporter.sendMail({
       from: smtpFrom,
       to: toEmail,
-      subject: `🎉 Selamat Datang di ClipForge AI! Saldo ${credits} Menit AI Anda Sudah Aktif`,
+      subject: `🎉 Selamat Datang di ClipForge AI! ${credits} Kredit AI Anda Sudah Aktif`,
       html: htmlContent,
     });
 

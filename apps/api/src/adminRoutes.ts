@@ -181,7 +181,7 @@ export default async function adminRoutes(server: FastifyInstance) {
         status: 'success',
         userId,
         newCredits: sub.credits,
-        message: `Berhasil ${mode === 'SET' ? 'mengubah' : 'menambahkan'} kredit menjadi ${sub.credits} menit.`,
+        message: `Berhasil ${mode === 'SET' ? 'mengubah' : 'menambahkan'} kredit menjadi ${sub.credits} kredit.`,
       });
     } catch (err: any) {
       server.log.error('Admin add credits error:', err);

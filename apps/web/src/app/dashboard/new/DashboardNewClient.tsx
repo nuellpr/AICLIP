@@ -14,7 +14,7 @@ export default function NewProjectPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [layoutMode, setLayoutMode] = useState("crop_blur");
-  const [clipCount, setClipCount] = useState(5);
+  const [clipCount, setClipCount] = useState(3);
   const [targetDuration, setTargetDuration] = useState("30-60");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAiModel, setSelectedAiModel] = useState("");
@@ -280,15 +280,15 @@ export default function NewProjectPage() {
             <input 
               type="range" 
               min="1" 
-              max="10" 
+              max="3" 
               value={clipCount} 
               onChange={(e) => setClipCount(parseInt(e.target.value))}
               className="w-full accent-blue-500 cursor-pointer h-2 bg-white/10 rounded-lg appearance-none"
             />
             <div className="flex justify-between text-sm font-medium text-gray-500 mt-3 px-1">
               <span>1</span>
-              <span>5</span>
-              <span>10</span>
+              <span>2</span>
+              <span>3</span>
             </div>
           </div>
 

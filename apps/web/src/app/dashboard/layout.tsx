@@ -11,7 +11,7 @@ import { ClipForgeLogo } from '@/components/clipforge/Logo';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [credits, setCredits] = useState<number>(25);
+  const [credits, setCredits] = useState<number>(5);
 
   useEffect(() => {
     const currentUser = getStoredUser();
@@ -146,11 +146,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl -mr-10 -mt-10"></div>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 relative z-10">Kredit AI Tersisa</p>
               <div className="flex items-baseline justify-between relative z-10">
-                <p className="text-3xl font-black text-white">{credits} <span className="text-xs font-semibold text-blue-400">menit</span></p>
+                <p className="text-3xl font-black text-white">{credits} <span className="text-xs font-semibold text-blue-400">kredit</span></p>
                 <span className="text-[10px] font-bold bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30">AKTIF</span>
               </div>
               <div className="w-full bg-white/10 h-1.5 rounded-full mt-3 overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-full w-[70%] rounded-full"></div>
+                <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full" style={{ width: `${Math.min(100, Math.round((credits / 5) * 100))}%` }}></div>
               </div>
             </div>
 

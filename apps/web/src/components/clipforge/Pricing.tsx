@@ -15,7 +15,7 @@ const plans = [
     badge: "REKOMENDASI UTAMA",
     cta: "Pilih Paket Standar",
     benefits: [
-      "Up to 30 menit video per bulan",
+      "Up to 30 kredit video per bulan",
       "AI Auto-Clipping & Skor Momen Viral",
       "Karaoke Subtitle Bahasa Indonesia",
       "Render 9:16 Full HD 1080p",
@@ -31,7 +31,7 @@ const plans = [
     badge: "PALING HEMAT",
     cta: "Pilih Paket Pro",
     benefits: [
-      "Up to 100 menit video per bulan",
+      "Up to 100 kredit video per bulan",
       "Semua fitur Paket Standar",
       "Multi Model AI Provider",
       "Render HD premium & prioritas",

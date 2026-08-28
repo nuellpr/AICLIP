@@ -186,11 +186,11 @@ async function upsertGoogleUser(opts: {
         userId: user.id,
         plan: 'FREE',
         status: 'ACTIVE',
-        credits: 25,
+        credits: 5,
       },
     });
 
-    sendWelcomeEmail({ toEmail: normalizedEmail, toName: name, credits: 25 }).catch((err) =>
+    sendWelcomeEmail({ toEmail: normalizedEmail, toName: name, credits: 5 }).catch((err) =>
       console.error('[Welcome Email Trigger Error]:', err)
     );
 
@@ -211,7 +211,7 @@ async function upsertGoogleUser(opts: {
   const sub = await prisma.subscription.findFirst({ where: { userId: user.id } });
   if (!sub) {
     await prisma.subscription.create({
-      data: { userId: user.id, plan: 'FREE', status: 'ACTIVE', credits: 25 },
+      data: { userId: user.id, plan: 'FREE', status: 'ACTIVE', credits: 5 },
     });
   }
 
@@ -246,13 +246,13 @@ export default async function authRoutes(server: FastifyInstance) {
         },
       });
 
-      // Initialize free subscription (25 mins) for new user
+      // Initialize free subscription (5 credits = 5 proyek) for new user
       await prisma.subscription.create({
         data: {
           userId: user.id,
           plan: 'FREE',
           status: 'ACTIVE',
-          credits: 25,
+          credits: 5,
         },
       });
 

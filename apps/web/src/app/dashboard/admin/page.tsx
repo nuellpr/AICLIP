@@ -335,7 +335,7 @@ export default function AdminDashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold text-white">Manajemen Akun Pengguna & Kredit</h2>
-            <p className="text-xs text-gray-400">Kelola kredit AI menit dan hak akses admin untuk setiap akun.</p>
+            <p className="text-xs text-gray-400">Kelola kredit AI dan hak akses admin untuk setiap akun.</p>
           </div>
         </div>
 
@@ -376,7 +376,7 @@ export default function AdminDashboardPage() {
                     </span>
                   </td>
                   <td className="p-4 font-black text-white text-sm">
-                    {u.credits} <span className="text-[10px] text-gray-400 font-semibold">menit</span>
+                    {u.credits} <span className="text-[10px] text-gray-400 font-semibold">kredit</span>
                   </td>
                   <td className="p-4 font-semibold text-gray-300">{u.projectCount} Proyek</td>
                   <td className="p-4 text-right">
@@ -409,7 +409,7 @@ export default function AdminDashboardPage() {
             <div>
               <h3 className="text-xl font-bold text-white flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-blue-400" />
-                <span>Tambah Kredit Menit AI</span>
+                <span>Tambah Kredit AI</span>
               </h3>
               <p className="text-xs text-gray-400 mt-1">
                 Menambahkan kredit pemrosesan secara manual ke akun <strong className="text-white">{selectedUser.name}</strong> ({selectedUser.email}).
@@ -436,7 +436,7 @@ export default function AdminDashboardPage() {
                         : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
                     }`}
                   >
-                    Tambah (+ Menit)
+                    Tambah (+ Kredit)
                   </button>
                   <button
                     type="button"
@@ -447,13 +447,13 @@ export default function AdminDashboardPage() {
                         : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
                     }`}
                   >
-                    Set Total Menit
+                    Set Total Kredit
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-gray-300 block mb-2">Jumlah Menit Kredit</label>
+                <label className="text-xs font-bold text-gray-300 block mb-2">Jumlah Kredit</label>
                 <input
                   type="number"
                   value={creditAmount}

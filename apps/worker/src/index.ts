@@ -246,6 +246,16 @@ async function processProject(projectId: string) {
       }
     });
     console.error(`Failed project ${projectId}: ${error.message}`);
+
+    // Refund 1 kredit — proyek gagal tidak menghabiskan kredit user
+    const proj = await prisma.project.findUnique({ where: { id: projectId }, select: { userId: true } });
+    if (proj) {
+      await prisma.subscription.updateMany({
+        where: { userId: proj.userId },
+        data: { credits: { increment: 1 } }
+      });
+      console.log(`Refunded 1 credit to user ${proj.userId} (project ${projectId} failed)`);
+    }
   }
 }
 

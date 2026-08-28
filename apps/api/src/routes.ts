@@ -36,14 +36,15 @@ export default async function routes(server: FastifyInstance) {
 
     const targetUserId = getUserId(request);
 
-    // Check user subscription and credit minutes
-    const subscription = await prisma.subscription.findFirst({
-      where: { userId: targetUserId }
+    // 1 kredit = 1 proyek (1 URL YouTube). Potong atomik, tolak jika kredit habis.
+    const deducted = await prisma.subscription.updateMany({
+      where: { userId: targetUserId, credits: { gte: 1 } },
+      data: { credits: { decrement: 1 } }
     });
 
-    if (subscription && subscription.credits <= 0) {
+    if (deducted.count === 0) {
       return reply.code(402).send({
-        error: 'Kredit menit AI Anda telah habis (0 Menit). Silakan lakukan Top-Up atau beli paket di menu Langganan & Tagihan.'
+        error: 'Kredit Anda telah habis (0 Kredit). Silakan lakukan Top-Up atau beli paket di menu Langganan & Tagihan.'
       });
     }
 
@@ -54,7 +55,7 @@ export default async function routes(server: FastifyInstance) {
         sourceType: sourceType || 'URL',
         sourceUrl: sourceUrl,
         layoutMode: layoutMode || 'crop_blur',
-        clipCount: parseInt(clipCount) || 5,
+        clipCount: parseInt(clipCount) || 3,
         targetDuration: targetDuration || '30-60',
         searchQuery: searchQuery || null,
         aiProvider: aiProvider || null,

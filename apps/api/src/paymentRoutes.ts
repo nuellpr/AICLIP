@@ -8,7 +8,7 @@ export interface PlanConfig {
   id: string;
   name: string;
   price: number;
-  credits: number; // In minutes
+  credits: number; // 1 kredit = 1 proyek (1 URL = 3 klip)
   type: 'SUBSCRIPTION' | 'TOPUP';
 }
 
@@ -16,28 +16,28 @@ export interface PlanConfig {
 export const PLANS: Record<string, PlanConfig> = {
   STANDAR: {
     id: 'STANDAR',
-    name: 'Paket Standar (30 Menit)',
+    name: 'Paket Standar (30 Kredit)',
     price: 30000,
     credits: 30,
     type: 'SUBSCRIPTION',
   },
   PRO: {
     id: 'PRO',
-    name: 'Paket Pro (100 Menit)',
+    name: 'Paket Pro (100 Kredit)',
     price: 50000,
     credits: 100,
     type: 'SUBSCRIPTION',
   },
   TOPUP_30: {
     id: 'TOPUP_30',
-    name: 'Top-Up 30 Menit',
+    name: 'Top-Up 30 Kredit',
     price: 29000,
     credits: 30,
     type: 'TOPUP',
   },
   TOPUP_100: {
     id: 'TOPUP_100',
-    name: 'Top-Up 100 Menit',
+    name: 'Top-Up 100 Kredit',
     price: 79000,
     credits: 100,
     type: 'TOPUP',
@@ -46,9 +46,14 @@ export const PLANS: Record<string, PlanConfig> = {
 
 async function settleAndCredit(orderId: string, paymentType: string, server: FastifyInstance) {
   const transaction = await (prisma as any).transaction.findUnique({ where: { orderId } });
-  if (!transaction) return { ok: false, code: 404 as const, error: 'Transaksi tidak ditemukan' };
-  if (transaction.status === 'SETTLEMENT') return { ok: true, transaction, already: true as const };
-  await (prisma as any).transaction.update({ where: { orderId }, data: { status: 'SETTLEMENT', paymentType } });
+  if (!transaction) return { ok: false as const, code: 404 as const, error: 'Transaksi tidak ditemukan' };
+  // Atomic CAS: hanya proses transaksi berstatus PENDING sekali; webhook/callback/simulate
+  // yang datang paralel tidak akan double-credit.
+  const settled = await (prisma as any).transaction.updateMany({
+    where: { orderId, status: 'PENDING' },
+    data: { status: 'SETTLEMENT', paymentType }
+  });
+  if (settled.count === 0) return { ok: true as const, transaction, already: true as const };
   let subscription = await prisma.subscription.findFirst({ where: { userId: transaction.userId } });
   if (!subscription) {
     subscription = await prisma.subscription.create({
@@ -65,7 +70,7 @@ async function settleAndCredit(orderId: string, paymentType: string, server: Fas
     });
   }
   server.log.info(`Added ${transaction.creditsAdded} credits to user ${transaction.userId} via ${paymentType}`);
-  return { ok: true, transaction, already: false as const };
+  return { ok: true as const, transaction, already: false as const };
 }
 
 export default async function paymentRoutes(server: FastifyInstance) {
@@ -264,39 +269,19 @@ export default async function paymentRoutes(server: FastifyInstance) {
       const { orderId } = request.body as { orderId: string };
       if (!orderId) return reply.status(400).send({ error: 'orderId wajib diisi' });
 
-      const transaction = await (prisma as any).transaction.findUnique({
-        where: { orderId },
-      });
+      const result = await settleAndCredit(orderId, 'qris_simulated', server);
+      if (!result.ok) return reply.code(result.code).send({ error: result.error });
 
-      if (!transaction) return reply.status(404).send({ error: 'Transaksi tidak ditemukan' });
+      const transaction = result.transaction;
       if (transaction.userId !== userId) return reply.status(403).send({ error: 'Akses ditolak' });
 
-      await (prisma as any).transaction.update({
-        where: { orderId },
-        data: { status: 'SETTLEMENT', paymentType: 'qris_simulated' },
-      });
+      const subscription = await prisma.subscription.findFirst({ where: { userId } });
 
-      let subscription = await prisma.subscription.findFirst({
-        where: { userId: transaction.userId },
-      });
-
-      if (!subscription) {
-        subscription = await prisma.subscription.create({
-          data: {
-            userId: transaction.userId,
-            plan: transaction.plan.startsWith('TOPUP') ? 'FREE' : transaction.plan,
-            status: 'ACTIVE',
-            credits: transaction.creditsAdded,
-          },
-        });
-      } else {
-        subscription = await prisma.subscription.update({
-          where: { id: subscription.id },
-          data: {
-            credits: subscription.credits + transaction.creditsAdded,
-            plan: transaction.plan.startsWith('TOPUP') ? subscription.plan : transaction.plan,
-            status: 'ACTIVE',
-          },
+      if (result.already) {
+        return reply.send({
+          status: 'already',
+          message: 'Transaksi ini sudah diselesaikan sebelumnya.',
+          newCredits: subscription?.credits ?? 0,
         });
       }
 
@@ -304,8 +289,8 @@ export default async function paymentRoutes(server: FastifyInstance) {
 
       return reply.send({
         status: 'success',
-        message: `Simulasi pembayaran berhasil! ${transaction.creditsAdded} menit kredit telah ditambahkan ke akun.`,
-        newCredits: subscription.credits,
+        message: `Simulasi pembayaran berhasil! ${transaction.creditsAdded} kredit telah ditambahkan ke akun.`,
+        newCredits: subscription?.credits ?? 0,
       });
     } catch (e: any) {
       return reply.status(500).send({ error: e.message });

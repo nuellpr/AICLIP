@@ -135,7 +135,7 @@ export default function BillingPage() {
             <span>Langganan & Pembelian Kredit</span>
           </h1>
           <p className="text-sm text-gray-400 mt-1">
-            Pilih paket langganan atau top-up menit AI instan menggunakan QRIS, GoPay, Transfer Bank, atau Kartu Kredit.
+            Pilih paket langganan atau top-up kredit AI instan menggunakan QRIS, GoPay, Transfer Bank, atau Kartu Kredit.
           </p>
         </div>
 
@@ -171,10 +171,10 @@ export default function BillingPage() {
               </span>
             </div>
             <p className="text-4xl sm:text-5xl font-black text-white mt-2">
-              {subscription?.credits ?? 25} <span className="text-lg font-bold text-gray-400">Menit AI Tersisa</span>
+              {subscription?.credits ?? 5} <span className="text-lg font-bold text-gray-400">Kredit AI Tersisa</span>
             </p>
             <p className="text-xs text-gray-400 mt-2">
-              1 Menit Kredit = 1 Menit pemrosesan AI video YouTube / Upload.
+              1 Kredit = 1 Proyek (1 URL YouTube menghasilkan 3 klip viral).
             </p>
           </div>
 
@@ -195,7 +195,7 @@ export default function BillingPage() {
             <Sparkles className="w-5 h-5 text-purple-400" />
             <span>Paket Berlangganan Hemat</span>
           </h2>
-          <p className="text-xs text-gray-400">Dapatkan alokasi menit AI lebih besar dengan harga lebih terjangkau.</p>
+          <p className="text-xs text-gray-400">Dapatkan alokasi kredit AI lebih besar dengan harga lebih terjangkau.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -216,7 +216,7 @@ export default function BillingPage() {
               <div className="my-6 border-t border-white/10 pt-6 space-y-3">
                 <div className="flex items-center gap-3 text-xs text-gray-200">
                   <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                  <span><strong>30 Menit</strong> Kredit AI Video</span>
+                  <span><strong>30 Kredit</strong> AI Video</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-200">
                   <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
@@ -262,7 +262,7 @@ export default function BillingPage() {
               <div className="my-6 border-t border-white/10 pt-6 space-y-3">
                 <div className="flex items-center gap-3 text-xs text-gray-200">
                   <Check className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                  <span><strong>100 Menit</strong> Kredit AI Video</span>
+                  <span><strong>100 Kredit</strong> AI Video</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-200">
                   <Check className="w-4 h-4 text-purple-400 flex-shrink-0" />
@@ -304,13 +304,13 @@ export default function BillingPage() {
             <Zap className="w-5 h-5 text-yellow-400" />
             <span>Top-Up Kredit Instan (Tanpa Langganan)</span>
           </h2>
-          <p className="text-xs text-gray-400">Butuh menit tambahan tanpa berlangganan bulanan? Isi ulang kapan saja.</p>
+          <p className="text-xs text-gray-400">Butuh kredit tambahan tanpa berlangganan bulanan? Isi ulang kapan saja.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="glass-card p-5 rounded-2xl border border-white/10 flex items-center justify-between hover:border-yellow-500/30 transition-all">
             <div>
-              <p className="text-sm font-bold text-white">Top-Up 30 Menit</p>
+              <p className="text-sm font-bold text-white">Top-Up 30 Kredit</p>
               <p className="text-xs text-gray-400 mt-0.5">Berlaku selamanya tanpa kadaluarsa</p>
               <p className="text-lg font-black text-yellow-400 mt-2">{formatRupiah(29000)}</p>
             </div>
@@ -325,7 +325,7 @@ export default function BillingPage() {
 
           <div className="glass-card p-5 rounded-2xl border border-white/10 flex items-center justify-between hover:border-yellow-500/30 transition-all">
             <div>
-              <p className="text-sm font-bold text-white">Top-Up 100 Menit</p>
+              <p className="text-sm font-bold text-white">Top-Up 100 Kredit</p>
               <p className="text-xs text-gray-400 mt-0.5">Hemat 20% dibanding eceran</p>
               <p className="text-lg font-black text-yellow-400 mt-2">{formatRupiah(79000)}</p>
             </div>
@@ -368,7 +368,7 @@ export default function BillingPage() {
                     <td className="p-4 font-mono font-bold text-white">{tx.orderId}</td>
                     <td className="p-4 font-semibold text-gray-200">{tx.plan}</td>
                     <td className="p-4 font-bold text-blue-400">{formatRupiah(tx.amount)}</td>
-                    <td className="p-4">+{tx.creditsAdded} Menit</td>
+                    <td className="p-4">+{tx.creditsAdded} Kredit</td>
                     <td className="p-4">{getStatusBadge(tx.status)}</td>
                     <td className="p-4 text-gray-400">{new Date(tx.createdAt).toLocaleDateString('id-ID')}</td>
                     <td className="p-4 text-right">
