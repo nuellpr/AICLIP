@@ -16,7 +16,8 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean>
   const smtpPort = parseInt(process.env.SMTP_PORT || '587');
   const smtpUser = process.env.SMTP_USER || '';
   const smtpPass = process.env.SMTP_PASS || '';
-  const smtpFrom = process.env.SMTP_FROM || 'ClipForge AI <noreply@forgeai.web.id>';
+  const smtpFrom = process.env.SMTP_FROM || 'ClipForge AI <support@forgeai.web.id>';
+  const supportEmail = process.env.SUPPORT_EMAIL || 'support@forgeai.web.id';
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://forgeai.web.id';
 
   const htmlContent = `
@@ -64,6 +65,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean>
           </div>
         </div>
         <div class="footer">
+          <p>Butuh bantuan? Hubungi kami di <a href="mailto:${supportEmail}" style="color: #9ca3af;">${supportEmail}</a></p>
           <p>© 2026 ClipForge AI — Auto Viral AI Clipping System. Semua hak dilindungi.</p>
         </div>
       </div>
@@ -89,6 +91,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean>
 
     await transporter.sendMail({
       from: smtpFrom,
+      replyTo: supportEmail,
       to: toEmail,
       subject: `🎉 Selamat Datang di ClipForge AI! ${credits} Kredit AI Anda Sudah Aktif`,
       html: htmlContent,
