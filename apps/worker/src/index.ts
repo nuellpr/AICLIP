@@ -114,7 +114,8 @@ async function processProject(projectId: string) {
       // ponytail: force IPv4 — VPS DNS resolves IPv6 first, IPv6 blackholes on YouTube (hang). -4 proven working.
       forceIpv4: true,
       jsRuntimes: 'bun,node',
-      extractorArgs: 'youtube:player_client=android,web',
+      // ponytail: web_embedded first = 1080p DASH without PO token (verified); android fallback = 360p if not embeddable
+      extractorArgs: 'youtube:player_client=web_embedded,android',
       noWarnings: true
     };
     if (fs.existsSync(cookiesPath)) {
@@ -296,7 +297,8 @@ async function startConsumers() {
             jsRuntimes: 'bun,node',
             noCheckCertificates: true,
             forceIpv4: true,
-            extractorArgs: 'youtube:player_client=android,web',
+            // ponytail: web_embedded = 1080p DASH w/o PO token (verified 137+140); android fallback = 360p if not embeddable
+            extractorArgs: 'youtube:player_client=web_embedded,android',
             noWarnings: true
           };
 

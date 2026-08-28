@@ -74,6 +74,8 @@ backend/clips/
 # VPS / deploy artifacts - never commit to GitHub
 watchdog.js
 NUL
+embedtest*.js
+subtest*.js
 deploy*.js
 deploy*.ps1
 deploy*.tar.gz
