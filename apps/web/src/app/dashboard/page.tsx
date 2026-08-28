@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Plus, Clock, Search, Filter, Video, Sparkles, Film, PlayCircle, CheckCircle2, AlertCircle, ExternalLink, Loader2 } from 'lucide-react';
+import { Plus, Clock, Search, Video, Sparkles, CheckCircle2, AlertCircle, ExternalLink, Loader2, Folder, Clapperboard, Coins } from 'lucide-react';
 import { MotionDiv } from '@/components/Motion';
 import { getStoredUser } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
@@ -13,9 +12,14 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [firstName, setFirstName] = useState<string>('kreator');
+  const [credits, setCredits] = useState<number | null>(null);
 
   useEffect(() => {
     const user = getStoredUser();
+    const first = user?.name?.trim().split(/\s+/)[0];
+    if (first) setFirstName(first);
+
     if (!user || !user.id) {
       setProjects([]);
       setLoading(false);
@@ -29,12 +33,20 @@ export default function DashboardPage() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+
+    apiFetch('/api/payment/subscription')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.subscription) setCredits(data.subscription.credits);
+      })
+      .catch(console.error);
   }, []);
 
+  // Klip siap = klip milik proyek READY (payload proyek tidak punya status per-klip)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const totalClips = projects.reduce((sum: number, p: any) => sum + (p._count?.clips || 0), 0);
+  const readyClips = projects.filter((p: any) => p.status === 'READY').reduce((sum: number, p: any) => sum + (p._count?.clips || 0), 0);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const readyProjects = projects.filter((p: any) => p.status === 'READY').length;
+  const processingProjects = projects.filter((p: any) => p.status && !['READY', 'FAILED', 'CANCELLED'].includes(p.status)).length;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const filteredProjects = projects.filter((p: any) => {
@@ -61,14 +73,11 @@ export default function DashboardPage() {
         className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-black/5 pb-8"
       >
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-[#0D0C22] flex items-center gap-3">
-            Dashboard Proyek
-            <span className="text-xs font-bold uppercase tracking-widest text-[#C32361] bg-[#FDE3E1] px-3 py-1 rounded-full">
-              Live Workspace
-            </span>
+          <h1 className="text-4xl font-black tracking-tight text-[#0D0C22] flex items-center gap-3" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>
+            Halo, {firstName} 👋
           </h1>
           <p className="text-[#6E6D7A] mt-2 text-base">
-            Kelola dan konversi video panjang Anda menjadi deretan klip pendek siap viral.
+            Kelola semua proyek klip kamu di satu tempat.
           </p>
         </div>
 
@@ -80,42 +89,40 @@ export default function DashboardPage() {
         </Link>
       </MotionDiv>
 
-      {/* Quick Summary Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="glass-card rounded-2xl p-5 relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider">Total Proyek</p>
-              <h3 className="text-3xl font-black text-[#0D0C22] mt-1">{projects.length}</h3>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-[#FDE3E1] text-[#C32361] flex items-center justify-center">
-              <Film className="h-6 w-6" />
-            </div>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+        <div className="rounded-2xl bg-white border border-black/5 shadow-sm p-5">
+          <div className="h-11 w-11 rounded-xl bg-[#E7E4F9] text-[#5B3FBF] flex items-center justify-center mb-4">
+            <Folder className="h-5 w-5" />
           </div>
+          <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider">Total Proyek</p>
+          <h3 className="text-3xl font-black text-[#0D0C22] mt-1" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>{projects.length}</h3>
         </div>
 
-        <div className="glass-card rounded-2xl p-5 relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider">Klip Viral Dihasilkan</p>
-              <h3 className="text-3xl font-black text-[#5B3FBF] mt-1">{totalClips}</h3>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-[#E7E4F9] text-[#5B3FBF] flex items-center justify-center">
-              <PlayCircle className="h-6 w-6" />
-            </div>
+        <div className="rounded-2xl bg-white border border-black/5 shadow-sm p-5">
+          <div className="h-11 w-11 rounded-xl bg-[#DBF3E8] text-[#166534] flex items-center justify-center mb-4">
+            <Clapperboard className="h-5 w-5" />
           </div>
+          <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider">Klip Siap</p>
+          <h3 className="text-3xl font-black text-[#0D0C22] mt-1" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>{readyClips}</h3>
         </div>
 
-        <div className="glass-card rounded-2xl p-5 relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider">Proyek Selesai</p>
-              <h3 className="text-3xl font-black text-[#166534] mt-1">{readyProjects}</h3>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-[#DBF3E8] text-[#166534] flex items-center justify-center">
-              <CheckCircle2 className="h-6 w-6" />
-            </div>
+        <div className="rounded-2xl bg-white border border-black/5 shadow-sm p-5">
+          <div className="h-11 w-11 rounded-xl bg-[#FDF3D8] text-[#92400E] flex items-center justify-center mb-4">
+            <Loader2 className={`h-5 w-5 ${processingProjects > 0 ? 'animate-spin' : ''}`} />
           </div>
+          <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider">Sedang Diproses</p>
+          <h3 className="text-3xl font-black text-[#0D0C22] mt-1" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>{processingProjects}</h3>
+        </div>
+
+        <div className="rounded-2xl bg-white border border-black/5 shadow-sm p-5">
+          <div className="h-11 w-11 rounded-xl bg-[#FDE3E1] text-[#EA4C89] flex items-center justify-center mb-4">
+            <Coins className="h-5 w-5" />
+          </div>
+          <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider">Kredit Tersisa</p>
+          <h3 className="text-3xl font-black text-[#EA4C89] mt-1" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>
+            {credits === null ? '—' : credits}
+          </h3>
         </div>
       </div>
 

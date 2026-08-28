@@ -3,27 +3,100 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CheckCircle2, AlertCircle, Loader2, Sparkles, Zap } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { motion, useMotionValue, useSpring, type MotionValue } from 'framer-motion';
 import { setAuthSession } from '@/lib/auth';
 import { getApiUrl } from '@/lib/api';
 import { ClipForgeLogo } from '@/components/clipforge/Logo';
 
 const displayFont = { fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' } as React.CSSProperties;
 
-const EQ_BARS = [38, 62, 45, 80, 55, 92, 48, 70, 40, 85, 58, 76, 44, 66, 52];
+function MascotEye({ x, y, blinkDelay }: { x: MotionValue<number>; y: MotionValue<number>; blinkDelay: number }) {
+  return (
+    <motion.div
+      className="relative h-11 w-11 overflow-hidden rounded-full bg-white sm:h-14 sm:w-14"
+      animate={{ scaleY: [1, 0.1, 1] }}
+      transition={{ duration: 0.15, repeat: Infinity, repeatDelay: 3.5, delay: blinkDelay, ease: 'easeInOut' }}
+    >
+      <motion.div
+        className="absolute left-1/2 top-1/2 -ml-2 -mt-2 h-4 w-4 rounded-full bg-[#0D0C22] sm:-ml-2.5 sm:-mt-2.5 sm:h-5 sm:w-5"
+        style={{ x, y }}
+      />
+    </motion.div>
+  );
+}
+
+function Mascot({ x, y }: { x: MotionValue<number>; y: MotionValue<number> }) {
+  return (
+    <motion.div
+      className="relative flex flex-col items-center"
+      animate={{ y: [0, -6, 0] }}
+      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+    >
+      {/* antena */}
+      <div className="flex flex-col items-center">
+        <motion.span
+          className="h-3.5 w-3.5 rounded-full bg-[#EA4C89] shadow-[0_0_16px_rgba(234,76,137,0.8)]"
+          animate={{ scale: [1, 1.25, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <span className="h-5 w-0.5 bg-white/20" />
+      </div>
+
+      {/* kepala */}
+      <div className="relative rounded-[1.75rem] border border-white/10 bg-[#1A1929] px-8 pb-7 pt-8 shadow-[0_30px_80px_rgba(0,0,0,0.5)] sm:px-12">
+        <div className="flex items-center justify-center gap-4 sm:gap-5">
+          <MascotEye x={x} y={y} blinkDelay={0} />
+          <MascotEye x={x} y={y} blinkDelay={0.4} />
+        </div>
+        {/* mulut: 3 titik LED */}
+        <div className="mt-5 flex items-center justify-center gap-2">
+          {[0, 1, 2].map((i) => (
+            <motion.span
+              key={i}
+              className="h-1.5 w-1.5 rounded-full bg-[#EA4C89]"
+              animate={{ opacity: [0.25, 1, 0.25] }}
+              transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.3, ease: 'easeInOut' }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* badge play di dada */}
+      <div className="absolute -bottom-5 left-1/2 grid h-10 w-10 -translate-x-1/2 place-items-center rounded-xl bg-[#EA4C89] shadow-[0_10px_30px_rgba(234,76,137,0.45)]">
+        <svg viewBox="0 0 12 12" className="h-4 w-4 text-white" fill="currentColor" aria-hidden>
+          <path d="M4 2.5v7l6-3.5z" />
+        </svg>
+      </div>
+    </motion.div>
+  );
+}
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [authMode, setAuthMode] = useState<'google' | 'email'>('google');
   const [emailMode, setEmailMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+
+  // Eye tracking: pupil mengikuti kursor (max ~5px), spring untuk gerak halus
+  const pupilX = useMotionValue(0);
+  const pupilY = useMotionValue(0);
+  const springX = useSpring(pupilX, { stiffness: 150, damping: 15 });
+  const springY = useSpring(pupilY, { stiffness: 150, damping: 15 });
+
+  const handleEyeMove = (e: React.MouseEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const dx = e.clientX - (rect.left + rect.width / 2);
+    const dy = e.clientY - (rect.top + rect.height / 2);
+    pupilX.set(Math.max(-5, Math.min(5, dx / 40)));
+    pupilY.set(Math.max(-5, Math.min(5, dy / 40)));
+  };
 
   // If already authenticated, skip login
   useEffect(() => {
@@ -177,159 +250,141 @@ function LoginContent() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-white text-[#0D0C22] selection:bg-[#EA4C89] selection:text-white">
-      <style>{`
-        @keyframes lf-story { 0% { width: 4%; } 70% { width: 100%; } 100% { width: 100%; } }
-        @keyframes lf-pop {
-          0% { opacity: 0; transform: translateY(10px) scale(0.8); }
-          6% { opacity: 1; transform: translateY(0) scale(1); }
-          28% { opacity: 1; transform: translateY(0) scale(1); }
-          34% { opacity: 0; transform: translateY(-8px) scale(0.95); }
-          100% { opacity: 0; }
-        }
-        @keyframes lf-eq { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
-        @keyframes lf-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-      `}</style>
-
-      {/* Blob pastel dekoratif */}
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-32 right-[-8%] h-[28rem] w-[28rem] rounded-full bg-[#E7E4F9] opacity-60 blur-[100px]"></div>
-        <div className="absolute bottom-[-15%] left-[-8%] h-[26rem] w-[26rem] rounded-full bg-[#DBF3E8] opacity-60 blur-[110px]"></div>
-        <div className="absolute left-1/3 top-1/2 h-[20rem] w-[20rem] rounded-full bg-[#FDF3D8] opacity-50 blur-[110px]"></div>
-      </div>
-
-      <header className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6">
-        <Link href="/home" className="flex items-center gap-3 group">
-          <ClipForgeLogo />
-        </Link>
+    <div className="relative min-h-screen bg-white text-[#0D0C22] selection:bg-[#EA4C89] selection:text-white">
+      <header className="mx-auto flex w-full max-w-7xl items-center justify-end px-6 py-5">
         <Link href="/home" className="text-xs font-semibold text-[#6E6D7A] transition-colors hover:text-[#EA4C89]">
           ← Kembali ke Beranda
         </Link>
       </header>
 
-      <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 items-center px-6 pb-16 pt-4">
-        <div className="grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-10">
-          {/* KIRI: Branding (di bawah pada mobile) */}
-          <div className="order-2 space-y-8 lg:order-1 lg:col-span-7 lg:pr-8">
-            <div className="inline-flex items-center gap-2.5 rounded-full bg-[#F8F7F4] px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-[#0D0C22]">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#EA4C89] opacity-60"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#EA4C89]"></span>
-              </span>
-              AI Video Clipper No.1 di Indonesia
-            </div>
+      <main className="mx-auto w-full max-w-7xl px-4 pb-10 sm:px-6">
+        <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12 lg:gap-8">
+          {/* KIRI: panel hitam + maskot */}
+          <section
+            onMouseMove={handleEyeMove}
+            className="relative flex flex-col overflow-hidden rounded-3xl bg-[#0D0C22] px-6 py-10 sm:px-10 lg:col-span-7 lg:px-14 lg:py-12"
+          >
+            {/* glow radial pink */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#EA4C89]/20 blur-[100px]"
+            ></div>
 
-            <h1 className="text-4xl font-black leading-[1.1] tracking-tight text-[#0D0C22] sm:text-5xl xl:text-[3.6rem]" style={displayFont}>
+            <h1
+              className="relative text-center text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl xl:text-[2.75rem]"
+              style={displayFont}
+            >
               Satu link YouTube.
               <br />
               <span className="text-[#EA4C89]">Tiga klip viral.</span>
             </h1>
 
-            <p className="max-w-xl text-sm font-medium leading-relaxed text-[#6E6D7A] sm:text-base">
-              Tempel link, AI yang memotong. Klip pertama jadi dalam 5 menit — lengkap subtitle karaoke, crop 9:16, dan hook yang bikin orang berhenti scroll.
-            </p>
+            <div className="relative flex flex-1 items-center justify-center py-14">
+              <Mascot x={springX} y={springY} />
+            </div>
 
-            {/* Checklist fitur */}
-            <ul className="space-y-3">
-              {[
-                'AI pilih 3 momen terbaik otomatis',
-                'Subtitle karaoke Bahasa Indonesia, auto-sync',
-                'Bayar per kredit — QRIS & transfer, tanpa langganan',
-              ].map((f) => (
-                <li key={f} className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EA4C89]">
-                    <svg viewBox="0 0 12 12" className="h-3 w-3 text-white" fill="none" aria-hidden>
-                      <path d="M2.5 6.5 5 9l4.5-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </span>
-                  <span className="text-sm font-semibold text-[#0D0C22]">{f}</span>
-                </li>
-              ))}
-            </ul>
-
-            {/* Mockup produk animasi (light) */}
-            <div className="force-motion relative hidden items-end gap-6 pt-2 sm:flex">
-              {/* Phone 9:16 */}
-              <div className="relative w-[200px] shrink-0 sm:w-[225px]">
-                <div className="relative aspect-[9/16] overflow-hidden rounded-[1.8rem] border border-[#0D0C22]/10 bg-white shadow-[0_30px_70px_rgba(13,12,34,0.18)]">
-                  {/* "footage" pastel */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#E7E4F9] via-[#F8F7F4] to-[#FDE3E1]"></div>
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_25%,rgba(234,76,137,0.18),transparent_55%)]"></div>
-
-                  {/* story progress */}
-                  <div className="absolute left-3 right-3 top-3 flex gap-1.5">
-                    <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#0D0C22]/10"><div className="h-full rounded-full bg-[#EA4C89]" style={{ animation: 'lf-story 4.5s ease-in-out infinite' }}></div></div>
-                    <div className="h-1 flex-1 rounded-full bg-[#0D0C22]/10"></div>
-                    <div className="h-1 flex-1 rounded-full bg-[#0D0C22]/10"></div>
-                  </div>
-
-                  {/* caption karaoke */}
-                  <div className="absolute inset-x-3 bottom-14 text-center" style={displayFont}>
-                    <div className="mx-auto w-max rounded-md bg-[#0D0C22] px-2.5 py-1 text-[13px] font-extrabold uppercase text-white shadow-lg" style={{ animation: 'lf-pop 7.5s ease-in-out infinite' }}>POV:</div>
-                    <div className="mx-auto mt-1.5 w-max rounded-md bg-[#EA4C89] px-2.5 py-1 text-[13px] font-extrabold uppercase text-white shadow-lg" style={{ animation: 'lf-pop 7.5s ease-in-out infinite 2.5s' }}>DIAM-DIAM</div>
-                    <div className="mx-auto mt-1.5 w-max rounded-md bg-[#0D0C22] px-2.5 py-1 text-[13px] font-extrabold uppercase text-white shadow-lg" style={{ animation: 'lf-pop 7.5s ease-in-out infinite 5s' }}>KAMU DIPIGILIN!</div>
-                  </div>
-
-                  {/* equalizer */}
-                  <div className="absolute inset-x-4 bottom-5 flex h-6 items-end justify-between gap-[3px]">
-                    {EQ_BARS.map((h, i) => (
-                      <span key={i} className="w-full origin-bottom rounded-sm bg-gradient-to-t from-[#EA4C89] to-[#C32361]" style={{ height: `${h}%`, animation: `lf-eq 1.1s ease-in-out infinite ${i * 0.09}s` }}></span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* chip melayang */}
-                <div className="absolute -right-4 top-10 flex items-center gap-1.5 rounded-xl border border-[#0D0C22]/10 bg-white px-3 py-1.5 text-[11px] font-black text-[#EA4C89] shadow-[0_12px_30px_rgba(13,12,34,0.12)]" style={{ animation: 'lf-bob 3.4s ease-in-out infinite' }}>
-                  <Sparkles className="h-3.5 w-3.5" /> Score 92
-                </div>
-                <div className="absolute -left-5 bottom-16 flex items-center gap-1.5 rounded-xl border border-[#0D0C22]/10 bg-white px-3 py-1.5 text-[11px] font-black text-[#0D0C22] shadow-[0_12px_30px_rgba(13,12,34,0.12)]" style={{ animation: 'lf-bob 3.9s ease-in-out infinite 0.6s' }}>
-                  <Zap className="h-3.5 w-3.5 text-[#EA4C89]" /> +12 rb views
-                </div>
-              </div>
-
-              {/* Chip pill fitur */}
-              <div className="hidden flex-1 flex-wrap content-end gap-2 pb-8 md:flex" aria-hidden>
-                {['TikTok', 'Reels', 'Shorts', 'AI Crop 9:16', 'Hook Generator', 'SFX Otomatis'].map((w, i) => (
-                  <span
-                    key={w}
-                    className={`rounded-full px-3.5 py-1.5 text-[11px] font-bold text-[#0D0C22] ${['bg-[#E7E4F9]', 'bg-[#DBF3E8]', 'bg-[#FDF3D8]', 'bg-[#FDE3E1]'][i % 4]}`}
-                  >
-                    {w}
+            <div className="relative flex flex-col items-center gap-6">
+              <ClipForgeLogo light />
+              <div className="hidden flex-wrap justify-center gap-2 md:flex">
+                {[
+                  'AI pilih 3 momen terbaik otomatis',
+                  'Subtitle karaoke auto-sync',
+                  'Bayar per kredit — QRIS & transfer',
+                ].map((f) => (
+                  <span key={f} className="rounded-full bg-white/10 px-3.5 py-1.5 text-[11px] font-bold text-white">
+                    {f}
                   </span>
                 ))}
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* KANAN: Kartu auth (di atas pada mobile) */}
-          <div className="order-1 lg:order-2 lg:col-span-5">
-            <div className="relative space-y-6 rounded-3xl border border-[#0D0C22]/[0.08] bg-white p-6 shadow-[0_24px_60px_rgba(13,12,34,0.1)] sm:p-8">
+          {/* KANAN: form terpusat */}
+          <div className="flex items-center justify-center lg:col-span-5">
+            <div className="w-full max-w-sm py-12">
+              <div className="flex justify-center">
+                <ClipForgeLogo compact />
+              </div>
+
+              <div className="mt-6 text-center">
+                <h2 className="text-3xl font-black tracking-tight text-[#0D0C22]" style={displayFont}>
+                  {emailMode === 'login' ? 'Selamat datang kembali!' : 'Buat akun gratis'}
+                </h2>
+                <p className="mt-2 text-sm text-[#6E6D7A]">
+                  {emailMode === 'login'
+                    ? 'Masuk untuk lanjut bikin klip viral kamu.'
+                    : 'Daftar gratis, dapatkan 5 kredit untuk 5 proyek.'}
+                </p>
+              </div>
+
               {error && (
-                <div className="flex items-start gap-2 rounded-xl bg-[#FDE3E1] p-3 text-xs text-[#B42318]" role="alert">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <div className="mt-6 flex items-start gap-2 rounded-xl bg-[#FDE3E1] p-3 text-xs text-[#B42318]" role="alert">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span className="leading-snug">{error}</span>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-1 rounded-full bg-[#F8F7F4] p-1" role="tablist" aria-label="Metode masuk">
-                <button type="button" role="tab" aria-selected={authMode === 'google'} onClick={() => setAuthMode('google')} className={`rounded-full py-2 text-xs font-bold transition-colors ${authMode === 'google' ? 'bg-[#0D0C22] text-white shadow' : 'text-[#6E6D7A] hover:text-[#0D0C22]'}`}>Google</button>
-                <button type="button" role="tab" aria-selected={authMode === 'email'} onClick={() => setAuthMode('email')} className={`rounded-full py-2 text-xs font-bold transition-colors ${authMode === 'email' ? 'bg-[#0D0C22] text-white shadow' : 'text-[#6E6D7A] hover:text-[#0D0C22]'}`}>Email</button>
+              <div className="mt-6 space-y-4">
+                {emailMode === 'register' && (
+                  <div className="space-y-1.5">
+                    <label htmlFor="lf-name" className="text-xs font-semibold text-[#0D0C22]">Nama</label>
+                    <input
+                      id="lf-name"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Nama (opsional)"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-[#0D0C22] placeholder-[#9B99AF] transition-colors focus:border-[#EA4C89] focus:outline-none focus:ring-2 focus:ring-[#EA4C89]/20"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label htmlFor="lf-email" className="text-xs font-semibold text-[#0D0C22]">Email</label>
+                  <input
+                    id="lf-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="nama@email.com"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-[#0D0C22] placeholder-[#9B99AF] transition-colors focus:border-[#EA4C89] focus:outline-none focus:ring-2 focus:ring-[#EA4C89]/20"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="lf-password" className="text-xs font-semibold text-[#0D0C22]">Password</label>
+                  <input
+                    id="lf-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleEmailAuth()}
+                    placeholder="Min. 8 karakter"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-[#0D0C22] placeholder-[#9B99AF] transition-colors focus:border-[#EA4C89] focus:outline-none focus:ring-2 focus:ring-[#EA4C89]/20"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleEmailAuth}
+                  disabled={loading}
+                  className="w-full rounded-full bg-[#0D0C22] px-4 py-3.5 text-sm font-extrabold text-white transition-colors hover:bg-[#EA4C89] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loading ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : emailMode === 'login' ? 'Masuk' : 'Daftar & Dapatkan 5 Kredit'}
+                </button>
               </div>
 
-              {authMode === 'google' && (
-              <>
-              <div className="space-y-1">
-                <h2 className="text-2xl font-black text-[#0D0C22]" style={displayFont}>Lanjutkan dengan Google</h2>
-                <p className="text-xs text-[#6E6D7A]">
-                  Masuk cepat dengan Google. Klip pertama gratis (1 kredit), gak perlu setor duit di depan.
-                </p>
+              <div className="my-6 flex items-center gap-3">
+                <span className="h-px flex-1 bg-gray-200"></span>
+                <span className="text-xs font-semibold text-[#6E6D7A]">atau</span>
+                <span className="h-px flex-1 bg-gray-200"></span>
               </div>
 
               <button
                 type="button"
                 onClick={handleGoogleButtonClick}
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-3 rounded-full border border-[#0D0C22]/15 bg-white px-4 py-3.5 text-sm font-extrabold text-[#0D0C22] transition-all hover:shadow-[0_10px_30px_rgba(13,12,34,0.12)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-3.5 text-sm font-extrabold text-[#0D0C22] transition-all hover:shadow-[0_10px_30px_rgba(13,12,34,0.12)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -344,97 +399,15 @@ function LoginContent() {
                 <span>{loading ? 'Menghubungkan...' : 'Lanjutkan dengan Google'}</span>
               </button>
 
-              <p className="text-center text-[11px] text-[#6E6D7A]">
-                Aman & terverifikasi Google OAuth 2.0. Kami hanya akses nama, email & foto profil.
-              </p>
-              </>
-              )}
+              <button
+                type="button"
+                onClick={() => { setEmailMode(emailMode === 'login' ? 'register' : 'login'); setError(null); }}
+                className="mt-6 w-full text-center text-xs font-semibold text-[#EA4C89] transition-colors hover:text-[#C32361]"
+              >
+                {emailMode === 'login' ? 'Belum punya akun? Daftar di sini' : 'Sudah punya akun? Masuk di sini'}
+              </button>
 
-              {authMode === 'email' && (
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <h2 className="text-2xl font-black text-[#0D0C22]" style={displayFont}>{emailMode === 'login' ? 'Masuk' : 'Daftar'}</h2>
-                  <p className="text-xs text-[#6E6D7A]">
-                    {emailMode === 'login' ? 'Masuk ke akun ClipForge Anda.' : 'Daftar gratis, dapatkan 5 kredit untuk 5 proyek.'}
-                  </p>
-                </div>
-
-                {emailMode === 'register' && (
-                  <div className="space-y-1.5">
-                    <label htmlFor="lf-name" className="text-[11px] font-black uppercase tracking-wider text-[#0D0C22]">Nama</label>
-                    <input
-                      id="lf-name"
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Nama (opsional)"
-                      className="w-full rounded-xl border border-transparent bg-[#F8F7F4] px-4 py-3 text-sm text-[#0D0C22] placeholder-[#6E6D7A] transition-colors focus:border-[#EA4C89] focus:outline-none focus:ring-2 focus:ring-[#EA4C89]/20"
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-1.5">
-                  <label htmlFor="lf-email" className="text-[11px] font-black uppercase tracking-wider text-[#0D0C22]">Email</label>
-                  <input
-                    id="lf-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="nama@email.com"
-                    className="w-full rounded-xl border border-transparent bg-[#F8F7F4] px-4 py-3 text-sm text-[#0D0C22] placeholder-[#6E6D7A] transition-colors focus:border-[#EA4C89] focus:outline-none focus:ring-2 focus:ring-[#EA4C89]/20"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="lf-password" className="text-[11px] font-black uppercase tracking-wider text-[#0D0C22]">Password</label>
-                  <input
-                    id="lf-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleEmailAuth()}
-                    placeholder="Min. 8 karakter"
-                    className="w-full rounded-xl border border-transparent bg-[#F8F7F4] px-4 py-3 text-sm text-[#0D0C22] placeholder-[#6E6D7A] transition-colors focus:border-[#EA4C89] focus:outline-none focus:ring-2 focus:ring-[#EA4C89]/20"
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleEmailAuth}
-                  disabled={loading}
-                  className="w-full rounded-full bg-[#EA4C89] py-3.5 px-4 text-sm font-extrabold text-white shadow-[0_10px_30px_rgba(234,76,137,0.3)] transition-all hover:bg-[#C32361] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {loading ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : emailMode === 'login' ? 'Masuk' : 'Daftar & Dapatkan 5 Kredit'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setEmailMode(emailMode === 'login' ? 'register' : 'login'); setError(null); }}
-                  className="w-full text-center text-xs font-semibold text-[#EA4C89] transition-colors hover:text-[#C32361]"
-                >
-                  {emailMode === 'login' ? 'Belum punya akun? Daftar di sini' : 'Sudah punya akun? Masuk di sini'}
-                </button>
-              </div>
-              )}
-
-              <div className="space-y-3 border-t border-[#0D0C22]/[0.08] pt-4">
-                <p className="text-[11px] font-black uppercase tracking-wider text-[#6E6D7A]">YANG AKAN TERJADI</p>
-
-                <div className="space-y-3">
-                  {[
-                    'Buat akun (atau masuk) dengan Google, tanpa password.',
-                    'Tempel link YouTube di dashboard, AI memilih 3 momen viral.',
-                    'Download klip 9:16 + subtitle karaoke, langsung upload ke TikTok / Reels / Shorts.',
-                  ].map((step, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FDE3E1] text-xs font-black text-[#EA4C89]">{i + 1}</span>
-                      <p className="text-xs leading-snug text-[#6E6D7A]">{step}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <p className="pt-2 text-center text-[10px] leading-normal text-[#6E6D7A]">
+              <p className="mt-6 text-center text-[10px] leading-normal text-[#6E6D7A]">
                 Dengan masuk, kamu setuju dengan{' '}
                 <Link href="#" className="text-[#0D0C22] underline">
                   Syarat Layanan
@@ -449,21 +422,6 @@ function LoginContent() {
           </div>
         </div>
       </main>
-
-      <footer className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between border-t border-[#0D0C22]/[0.08] px-6 py-4 text-[11px] text-[#6E6D7A]">
-        <p>© 2026 ClipForge AI · All rights reserved.</p>
-        <div className="flex items-center gap-4">
-          <Link href="#" className="transition-colors hover:text-[#0D0C22]">
-            Privasi
-          </Link>
-          <Link href="#" className="transition-colors hover:text-[#0D0C22]">
-            Syarat
-          </Link>
-          <Link href="#" className="transition-colors hover:text-[#0D0C22]">
-            Kontak
-          </Link>
-        </div>
-      </footer>
     </div>
   );
 }

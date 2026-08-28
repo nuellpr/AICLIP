@@ -143,13 +143,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="mt-auto pt-6 z-10 space-y-4">
             <div className="rounded-2xl bg-[#F8F7F4] p-4 relative overflow-hidden border border-black/5">
               <div className="absolute top-0 right-0 w-24 h-24 bg-[#E7E4F9] rounded-full blur-2xl -mr-10 -mt-10"></div>
-              <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider mb-1 relative z-10">Kredit AI Tersisa</p>
-              <div className="flex items-baseline justify-between relative z-10">
-                <p className="text-3xl font-black text-[#0D0C22]">{credits} <span className="text-xs font-semibold text-[#EA4C89]">kredit</span></p>
-                <span className="text-[10px] font-bold bg-[#DBF3E8] text-[#166534] px-2 py-0.5 rounded-full">AKTIF</span>
-              </div>
-              <div className="w-full bg-[#EDEBE6] h-1.5 rounded-full mt-3 overflow-hidden">
-                <div className="bg-gradient-to-r from-[#EA4C89] to-[#7C3AED] h-full rounded-full" style={{ width: `${Math.min(100, Math.round((credits / 5) * 100))}%` }}></div>
+              <div className="flex items-center gap-4 relative z-10">
+                <CreditRing value={credits} />
+                <div className="flex flex-col items-start gap-2">
+                  <span className="text-[10px] font-bold bg-[#DBF3E8] text-[#166534] px-2 py-0.5 rounded-full">AKTIF</span>
+                  <p className="text-xs font-semibold text-[#6E6D7A] leading-snug">kredit pemrosesan<br />AI tersisa</p>
+                </div>
               </div>
             </div>
 
@@ -218,6 +217,50 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Link>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Mini SVG progress ring untuk kredit sidebar (rumus persen sama dengan bar lama: credits/5*100, cap 100)
+function CreditRing({ value }: { value: number }) {
+  const SIZE = 80;
+  const STROKE = 7;
+  const R = (SIZE - STROKE) / 2;
+  const C = 2 * Math.PI * R;
+  const pct = Math.min(100, Math.round((value / 5) * 100));
+  const offset = C * (1 - pct / 100);
+
+  return (
+    <div className="flex flex-col items-center shrink-0">
+      <div className="relative" style={{ width: SIZE, height: SIZE }}>
+        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="-rotate-90">
+          <defs>
+            <linearGradient id="creditRingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#EA4C89" />
+              <stop offset="100%" stopColor="#7C3AED" />
+            </linearGradient>
+          </defs>
+          <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke="rgba(13,12,34,0.08)" strokeWidth={STROKE} />
+          <circle
+            cx={SIZE / 2}
+            cy={SIZE / 2}
+            r={R}
+            fill="none"
+            stroke="url(#creditRingGradient)"
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+            strokeDasharray={C}
+            strokeDashoffset={offset}
+            style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-xl font-black text-[#0D0C22]" style={{ fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif' }}>
+            {value}
+          </span>
+        </div>
+      </div>
+      <span className="text-[10px] font-bold text-[#6E6D7A] uppercase tracking-wider mt-1.5">Kredit</span>
     </div>
   );
 }

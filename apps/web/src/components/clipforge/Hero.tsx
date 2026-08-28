@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView, useMotionValue, useSpring, useTransform, useScroll } from "framer-motion";
-import { ArrowRight, Link2, Sparkles, Flame, Play } from "lucide-react";
+import { ArrowRight, Link2, Sparkles, Flame, Play, Zap, Target, Captions, Crop } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { fadeUp, stagger } from "./Reveal";
 
 function Counter({
@@ -48,11 +49,50 @@ const stats: {
   decimals?: number;
   suffix?: string;
   raw?: string;
+  icon: LucideIcon;
+  chip: string;
+  delta: string;
+  deltaBg: string;
 }[] = [
-  { label: "Lebih Cepat", raw: "10x", note: "Render paralel" },
-  { label: "Akurasi Subtitle", value: 99.4, decimals: 1, suffix: "%", note: "Word-by-word" },
-  { label: "Preset Subtitle", value: 5, suffix: "+", note: "Hormozi, karaoke" },
-  { label: "Auto Reframe", raw: "9:16", note: "Face tracking" },
+  {
+    label: "Lebih Cepat",
+    raw: "10x",
+    note: "Render paralel",
+    icon: Zap,
+    chip: "bg-[#E7E4F9]",
+    delta: "+38% minggu ini",
+    deltaBg: "bg-[#DBF3E8]",
+  },
+  {
+    label: "Akurasi Subtitle",
+    value: 99.4,
+    decimals: 1,
+    suffix: "%",
+    note: "Word-by-word",
+    icon: Target,
+    chip: "bg-[#DBF3E8]",
+    delta: "Akurat",
+    deltaBg: "bg-[#E7E4F9]",
+  },
+  {
+    label: "Preset Subtitle",
+    value: 5,
+    suffix: "+",
+    note: "Hormozi, karaoke",
+    icon: Captions,
+    chip: "bg-[#FDF3D8]",
+    delta: "Auto",
+    deltaBg: "bg-[#FDF3D8]",
+  },
+  {
+    label: "Auto Reframe",
+    raw: "9:16",
+    note: "Face tracking",
+    icon: Crop,
+    chip: "bg-[#FDE3E1]",
+    delta: "9:16",
+    deltaBg: "bg-[#FDE3E1]",
+  },
 ];
 
 const trust = [
@@ -136,7 +176,17 @@ export default function Hero() {
             >
               Ubah Video Panjang
               <br />
-              Menjadi Puluhan <span className="text-[#EA4C89]">Klip Viral</span>
+              Menjadi Puluhan{" "}
+              <span className="relative inline-block text-[#EA4C89]">
+                Klip Viral
+                <motion.span
+                  aria-hidden="true"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.7, delay: 0.6, ease: [0.21, 0.47, 0.32, 0.98] }}
+                  className="absolute inset-x-0 bottom-1 h-3 origin-left rounded-sm bg-[#EA4C89]/20"
+                />
+              </span>
             </motion.h1>
 
             <motion.p
@@ -165,23 +215,31 @@ export default function Hero() {
               </a>
             </motion.div>
 
-            <motion.div variants={fadeUp} className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <motion.div variants={fadeUp} className="mt-10 grid grid-cols-2 gap-3 lg:grid-cols-4">
               {stats.map((s) => (
                 <div
                   key={s.label}
-                  className="glass-card group rounded-2xl p-4 text-center transition-all duration-300 hover:-translate-y-1"
+                  className="group rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
                 >
-                  <div className="text-2xl font-extrabold sm:text-[1.7rem]">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${s.chip}`}>
+                      <s.icon size={16} className="text-[#0D0C22]" />
+                    </div>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap text-[#0D0C22] ${s.deltaBg}`}
+                    >
+                      {s.delta}
+                    </span>
+                  </div>
+                  <div className="mt-3 text-2xl font-extrabold text-[#0D0C22] sm:text-[1.7rem]">
                     {s.raw ? (
                       <span className="cf-num">{s.raw}</span>
                     ) : (
                       <Counter value={s.value ?? 0} decimals={s.decimals} suffix={s.suffix} />
                     )}
                   </div>
-                  <div className="mt-1 text-[11px] font-semibold tracking-wide text-[#0D0C22] uppercase">
-                    {s.label}
-                  </div>
-                  <div className="text-[10px] text-[#6E6D7A]">{s.note}</div>
+                  <div className="mt-1 text-xs font-semibold text-[#0D0C22]">{s.label}</div>
+                  <div className="text-[11px] text-[#6E6D7A]">{s.note}</div>
                 </div>
               ))}
             </motion.div>
