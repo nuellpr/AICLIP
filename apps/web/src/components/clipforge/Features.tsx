@@ -23,10 +23,12 @@ const features = [
     extra: (
       <div className="mt-6 flex items-end gap-1.5" aria-hidden="true">
         {[35, 60, 45, 80, 50, 90, 65, 40, 75, 55, 85, 62, 45, 70].map((h, i) => (
-          <div
+          <motion.div
             key={i}
-            className="w-full rounded-t-md bg-gradient-to-t from-cyan-500/25 to-purple-500/45 transition-all duration-300 group-hover:from-cyan-500/40 group-hover:to-purple-500/65"
+            className="w-full origin-bottom rounded-t-md bg-gradient-to-t from-cyan-500/25 to-purple-500/45 transition-colors duration-300 group-hover:from-cyan-500/40 group-hover:to-purple-500/65"
             style={{ height: `${h}%` }}
+            animate={{ scaleY: [0.45, 1, 0.6, 0.95, 0.45] }}
+            transition={{ duration: 2.2 + (i % 5) * 0.3, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }}
           />
         ))}
       </div>
@@ -102,7 +104,7 @@ export default function Features() {
             >
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.04] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               <div
-                className={`relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${f.grad} text-white shadow-lg`}
+                className={`relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${f.grad} text-white shadow-lg transition-transform duration-300 group-hover:rotate-[-8deg] group-hover:scale-110`}
               >
                 <f.icon size={23} />
               </div>

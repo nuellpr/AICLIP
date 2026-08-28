@@ -12,6 +12,9 @@ export default function CtaFooter() {
         <Reveal className="mx-auto max-w-5xl">
           <div className="gradient-border relative overflow-hidden rounded-[2rem] p-10 text-center sm:p-16">
             <div className="cf-mesh" aria-hidden="true" />
+            <div className="pointer-events-none absolute -top-24 -left-16 h-64 w-64 rounded-full bg-blue-500/20 blur-[90px] [animation:cf-aurora_9s_ease-in-out_infinite]" aria-hidden="true" />
+            <div className="pointer-events-none absolute -right-16 -bottom-24 h-72 w-72 rounded-full bg-purple-500/20 blur-[100px] [animation:cf-aurora_11s_ease-in-out_infinite_reverse]" aria-hidden="true" />
+            <div className="pointer-events-none absolute top-1/3 left-1/2 h-52 w-52 rounded-full bg-pink-500/15 blur-[80px] [animation:cf-aurora_13s_ease-in-out_infinite]" aria-hidden="true" />
             <h2 className="relative text-3xl font-extrabold tracking-tight sm:text-5xl">
               Siap Mengubah Konten Anda Menjadi{" "}
               <span className="text-gradient-blue">Viral?</span>

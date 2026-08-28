@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { motion, useInView, useReducedMotion, useMotionValue, useSpring, useTransform, useScroll } from "framer-motion";
 import { ArrowRight, Link2, Sparkles, Flame, Play } from "lucide-react";
 import { fadeUp, stagger } from "./Reveal";
 
@@ -64,8 +64,63 @@ const trust = [
 ];
 
 export default function Hero() {
+  const reduce = useReducedMotion();
+  const sectionRef = useRef<HTMLElement>(null);
+  const mockupRef = useRef<HTMLDivElement>(null);
+
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end start"] });
+  const orbY1 = useTransform(scrollYProgress, [0, 1], [0, -110]);
+  const orbY2 = useTransform(scrollYProgress, [0, 1], [0, 70]);
+
+  const glowX = useMotionValue(50);
+  const glowY = useMotionValue(30);
+  const glowLeft = useSpring(useTransform(glowX, (v) => `${v}%`), { stiffness: 60, damping: 20 });
+  const glowTop = useSpring(useTransform(glowY, (v) => `${v}%`), { stiffness: 60, damping: 20 });
+
+  const rx = useSpring(0, { stiffness: 140, damping: 18 });
+  const ry = useSpring(0, { stiffness: 140, damping: 18 });
+
+  const onSectionMove = (e: React.MouseEvent) => {
+    if (reduce) return;
+    const rect = sectionRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    glowX.set(((e.clientX - rect.left) / rect.width) * 100);
+    glowY.set(((e.clientY - rect.top) / rect.height) * 100);
+  };
+
+  const onMockupMove = (e: React.MouseEvent) => {
+    if (reduce) return;
+    const rect = mockupRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    ry.set(((e.clientX - rect.left) / rect.width - 0.5) * 10);
+    rx.set(-((e.clientY - rect.top) / rect.height - 0.5) * 10);
+  };
+  const onMockupLeave = () => {
+    rx.set(0);
+    ry.set(0);
+  };
+
   return (
-    <section className="relative overflow-hidden pt-32 pb-16 lg:pt-40 lg:pb-20">
+    <section
+      ref={sectionRef}
+      onMouseMove={onSectionMove}
+      className="relative overflow-hidden pt-32 pb-16 lg:pt-40 lg:pb-20"
+    >
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute h-[420px] w-[420px] rounded-full bg-purple-500/[0.07] blur-[110px]"
+        style={{ left: glowLeft, top: glowTop, translateX: "-50%", translateY: "-50%" }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-24 -left-24 h-72 w-72 rounded-full bg-cyan-500/[0.09] blur-[100px]"
+        style={{ y: orbY1 }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute right-[-6rem] bottom-10 h-80 w-80 rounded-full bg-pink-500/[0.07] blur-[110px]"
+        style={{ y: orbY2 }}
+      />
       <div className="cf-mesh" aria-hidden="true" />
       <div
         className="absolute inset-0"
@@ -154,9 +209,16 @@ export default function Hero() {
             initial={{ opacity: 0, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7, ease: [0.21, 0.47, 0.32, 0.98], delay: 0.15 }}
+            ref={mockupRef}
+            onMouseMove={onMockupMove}
+            onMouseLeave={onMockupLeave}
+            style={{ perspective: 1100 }}
             className="relative mx-auto hidden w-full max-w-md lg:block"
           >
-            <div className="relative rounded-3xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm">
+            <motion.div
+              style={{ rotateX: rx, rotateY: ry, transformStyle: "preserve-3d" }}
+              className="relative rounded-3xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm"
+            >
               <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#0B0D16] px-4 py-2.5">
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <Link2 size={14} className="text-cyan-300" />
@@ -215,12 +277,16 @@ export default function Hero() {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="absolute -top-5 -right-4 rounded-2xl border border-white/10 bg-[#0B0D16]/95 px-4 py-3 shadow-[0_0_40px_rgba(168,85,247,0.25)]">
+            <motion.div
+              animate={reduce ? undefined : { y: [0, -8, 0] }}
+              transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -top-5 -right-4 rounded-2xl border border-white/10 bg-[#0B0D16]/95 px-4 py-3 shadow-[0_0_40px_rgba(168,85,247,0.25)]"
+            >
               <div className="text-[10px] text-slate-400">Skor Momen Viral</div>
               <div className="text-xl font-extrabold text-amber-300">92/100</div>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
 

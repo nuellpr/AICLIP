@@ -116,6 +116,21 @@ p {
   0% { transform: scale(0.8); opacity: 0.8; }
   70%, 100% { transform: scale(1.6); opacity: 0; }
 }
+@keyframes cf-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.cf-marquee-track {
+  animation: cf-marquee 30s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf-marquee-track { animation-duration: 60s; }
+}
+@keyframes cf-aurora {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(6%, -10%) scale(1.15); }
+  66% { transform: translate(-8%, 8%) scale(0.9); }
+}
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {

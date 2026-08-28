@@ -71,7 +71,8 @@ export default function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.55, delay: i * 0.1, ease: [0.21, 0.47, 0.32, 0.98] }}
-              className={`relative rounded-3xl p-[1.5px] ${
+              whileHover={reduce ? undefined : { y: -8 }}
+              className={`relative rounded-3xl p-[1.5px] transition-shadow duration-300 hover:shadow-[0_20px_60px_rgba(59,130,246,0.15)] ${
                 p.highlight
                   ? "bg-gradient-to-b from-blue-400 via-purple-500/60 to-transparent shadow-[0_0_60px_rgba(59,130,246,0.18)]"
                   : "bg-white/[0.08]"
