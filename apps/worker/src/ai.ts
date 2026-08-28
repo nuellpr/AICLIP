@@ -62,10 +62,12 @@ export async function generateGoldenMoments(vttContent: string, clipCount: numbe
     const userProvider = config.provider || 'b-ai';
     const providerKey =
       userProvider === 'google-gemini' ? (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY)
+      : userProvider === 'forgeapi' ? process.env.FORGE_API_KEY
       : (userProvider === 'openai' || userProvider === 'groq' || userProvider === 'custom') ? (process.env.OPENAI_API_KEY || process.env.AI_API_KEY)
       : undefined;
     if (providerKey) {
       config.apiKey = providerKey;
+      if (userProvider === 'forgeapi' && !config.baseUrl) config.baseUrl = 'https://www.forgeapi.org/v1';
       console.log(`Using user-chosen AI provider: ${userProvider} model=${config.model || '(default)'} (config: ${configFileName})`);
     } else {
       config.apiKey = envKey;
@@ -103,7 +105,7 @@ Anda WAJIB memprioritaskan momen-momen di dalam VTT/Video yang paling relevan de
 
   const prompt = `VTT Content:\n${limitVttContent(vttContent)}`;
 
-  if (config.provider === 'openai' || config.provider === 'groq' || config.provider === 'custom' || config.provider === 'b-ai') {
+  if (config.provider === 'openai' || config.provider === 'groq' || config.provider === 'custom' || config.provider === 'b-ai' || config.provider === 'forgeapi') {
     const result = await generateWithOpenAI(config, systemMsg, vttContent, clipCount, targetDuration, searchQuery);
     return { clips: result.clips, error: result.error };
   } else {
