@@ -10,7 +10,7 @@ import 'dotenv/config';
 import OpenAI from 'openai';
 import { generateGoldenMoments } from './ai';
 import { generateAssFromVtt } from './subtitle';
-import { parseYouTubeVttWords } from '@clipforge/shared';
+import { parseYouTubeVttWords, createYtThrottle } from '@clipforge/shared';
 import { Worker, Queue } from 'bullmq';
 import { startCleanupCron } from './cleanup';
 import { generateHookIntro, concatHookAndClip } from './hookGenerator';
@@ -23,6 +23,9 @@ import Redis from 'ioredis';
 import { spawn, ChildProcess } from 'child_process';
 
 const execAsync = promisify(exec);
+
+// ponytail: serialize yt-dlp calls per-process with 3s gap — YouTube throttles IPs that burst requests. per-process only; add Redis mutex for cross-process if traffic grows.
+const throttledYtdl = createYtThrottle(youtubedl, 3000);
 
 // ponytail: persistent whisper daemon — load base once per worker, reuse per clip (saves 15-20s/clip, best accuracy)
 let whisperProc: ChildProcess | null = null;
@@ -118,6 +121,7 @@ async function processProject(projectId: string) {
       extractorArgs: 'youtube:player_client=web_embedded,android',
       impersonate: 'chrome',
       extractorRetries: 3,
+      remoteComponents: 'ejs:github',
       noWarnings: true
     };
     if (fs.existsSync(cookiesPath)) {
@@ -130,7 +134,7 @@ async function processProject(projectId: string) {
     try {
       // ponytail: timeout subtitle fetch — yt-dlp can hang on YouTube bot detection; fall back to existing VTT if any
       await Promise.race([
-        youtubedl(projectData.sourceUrl, options),
+        throttledYtdl(projectData.sourceUrl, options),
         new Promise((_, rej) => setTimeout(() => rej(new Error('yt-dlp subtitle fetch timeout 120s')), 120000))
       ]);
     } catch (err: any) {
@@ -304,13 +308,14 @@ async function startConsumers() {
             impersonate: 'chrome',
             extractorRetries: 3,
             retries: 3,
+            remoteComponents: 'ejs:github',
             noWarnings: true
           };
 
           try {
             // ponytail: 120s timeout avoids BullMQ stalled-job duplicate (default lock 30s -> 5min now, but still guard)
             await Promise.race([
-              youtubedl(clip.project.sourceUrl, options),
+              throttledYtdl(clip.project.sourceUrl, options),
               new Promise((_, rej) => setTimeout(() => rej(new Error('yt-dlp timeout 120s')), 120000))
             ]);
           } catch (dlErr: any) {

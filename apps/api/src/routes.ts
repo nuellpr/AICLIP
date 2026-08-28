@@ -172,7 +172,7 @@ export default async function routes(server: FastifyInstance) {
 
     const fs = require('fs');
     const path = require('path');
-    const { parseYouTubeVttWords } = require('@clipforge/shared');
+    const { parseYouTubeVttWords, createYtThrottle } = require('@clipforge/shared');
 
     // 1. Check if custom edited/whisper JSON file exists first
     const whisperFile = path.join(rendersDir, `whisper_${id}.json`);
@@ -476,7 +476,8 @@ export default async function routes(server: FastifyInstance) {
           sourceFile = path.join(workerDir, tempFiles[0]);
         } else if (clip.project.sourceUrl) {
           // Download audio segment directly from YouTube if clip is not rendered yet
-          const youtubedl = require('youtube-dl-exec');
+          const { createYtThrottle } = require('@clipforge/shared');
+          const youtubedl = createYtThrottle(require('youtube-dl-exec'), 3000);
           const ffmpegStatic = require('ffmpeg-static');
           const getFfmpegPath = () => {
             if (ffmpegStatic && fs.existsSync(ffmpegStatic)) {
