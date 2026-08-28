@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { motion, useInView, useReducedMotion, useMotionValue, useSpring, useTransform, useScroll } from "framer-motion";
+import { motion, useInView, useMotionValue, useSpring, useTransform, useScroll } from "framer-motion";
 import { ArrowRight, Link2, Sparkles, Flame, Play } from "lucide-react";
 import { fadeUp, stagger } from "./Reveal";
 
@@ -17,11 +17,10 @@ function Counter({
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-40px" });
-  const reduce = useReducedMotion();
   const [n, setN] = useState(0);
 
   useEffect(() => {
-    if (!inView || reduce) return;
+    if (!inView) return;
     const start = performance.now();
     const dur = 1300;
     let raf: number;
@@ -32,11 +31,11 @@ function Counter({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [inView, value, reduce]);
+  }, [inView, value]);
 
   return (
     <span ref={ref} className="cf-num">
-      {reduce ? value : n.toFixed(decimals)}
+      {n.toFixed(decimals)}
       {suffix}
     </span>
   );
@@ -64,7 +63,6 @@ const trust = [
 ];
 
 export default function Hero() {
-  const reduce = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
   const mockupRef = useRef<HTMLDivElement>(null);
 
@@ -81,7 +79,6 @@ export default function Hero() {
   const ry = useSpring(0, { stiffness: 140, damping: 18 });
 
   const onSectionMove = (e: React.MouseEvent) => {
-    if (reduce) return;
     const rect = sectionRef.current?.getBoundingClientRect();
     if (!rect) return;
     glowX.set(((e.clientX - rect.left) / rect.width) * 100);
@@ -89,7 +86,6 @@ export default function Hero() {
   };
 
   const onMockupMove = (e: React.MouseEvent) => {
-    if (reduce) return;
     const rect = mockupRef.current?.getBoundingClientRect();
     if (!rect) return;
     ry.set(((e.clientX - rect.left) / rect.width - 0.5) * 10);
@@ -280,7 +276,7 @@ export default function Hero() {
             </motion.div>
 
             <motion.div
-              animate={reduce ? undefined : { y: [0, -8, 0] }}
+              animate={{ y: [0, -8, 0] }}
               transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
               className="absolute -top-5 -right-4 rounded-2xl border border-white/10 bg-[#0B0D16]/95 px-4 py-3 shadow-[0_0_40px_rgba(168,85,247,0.25)]"
             >

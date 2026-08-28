@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { fadeUp } from "./Reveal";
 
 const faqs = [
@@ -24,13 +24,12 @@ const faqs = [
 ];
 
 export default function Faq() {
-  const reduce = useReducedMotion();
   return (
     <section id="faq" className="relative py-24 lg:py-32">
       <div className="mx-auto max-w-3xl px-5 lg:px-8">
         <motion.div
           variants={fadeUp}
-          initial={reduce ? false : "hidden"}
+          initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.2 }}
           className="mb-12 text-center"
@@ -47,7 +46,7 @@ export default function Faq() {
           {faqs.map((f, i) => (
             <motion.details
               key={f.q}
-              initial={reduce ? false : { opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.4, delay: i * 0.06 }}

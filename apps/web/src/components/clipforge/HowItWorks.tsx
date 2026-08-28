@@ -1,7 +1,7 @@
 "use client";
 
 import { Link2, Sparkles, Download, Check, Upload } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { fadeUp } from "./Reveal";
 
 const steps = [
@@ -84,13 +84,12 @@ const steps = [
 ];
 
 export default function HowItWorks() {
-  const reduce = useReducedMotion();
   return (
     <section id="cara-kerja" className="relative py-24 lg:py-32">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <motion.div
           variants={fadeUp}
-          initial={reduce ? false : "hidden"}
+          initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.2 }}
           className="mx-auto mb-16 max-w-2xl text-center"
@@ -116,7 +115,7 @@ export default function HowItWorks() {
           {steps.map((s, i) => (
             <motion.div
               key={s.n}
-              initial={reduce ? false : { opacity: 0, y: 32 }}
+              initial={{ opacity: 0, y: 32 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.55, delay: i * 0.12, ease: [0.21, 0.47, 0.32, 0.98] }}

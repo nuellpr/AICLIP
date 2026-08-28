@@ -123,14 +123,22 @@ p {
 .cf-marquee-track {
   animation: cf-marquee 30s linear infinite;
 }
+/* Landing /home: paksa animasi tetap jalan walau OS reduced-motion (user minta animasi terlihat) */
 @media (prefers-reduced-motion: reduce) {
-  .cf-marquee-track { animation-duration: 60s; }
+  .cf-marquee-track { animation: cf-marquee 30s linear infinite !important; }
+  .cf-blob-1 { animation: cf-aurora 9s ease-in-out infinite !important; }
+  .cf-blob-2 { animation: cf-aurora 11s ease-in-out infinite reverse !important; }
+  .cf-blob-3 { animation: cf-aurora 13s ease-in-out infinite !important; }
+  .cf-cta-pulse { animation: cf-pulse 2.4s ease-in-out infinite !important; }
 }
 @keyframes cf-aurora {
   0%, 100% { transform: translate(0, 0) scale(1); }
   33% { transform: translate(6%, -10%) scale(1.15); }
   66% { transform: translate(-8%, 8%) scale(0.9); }
 }
+.cf-blob-1 { animation: cf-aurora 9s ease-in-out infinite; }
+.cf-blob-2 { animation: cf-aurora 11s ease-in-out infinite reverse; }
+.cf-blob-3 { animation: cf-aurora 13s ease-in-out infinite; }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {

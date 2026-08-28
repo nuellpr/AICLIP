@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Check, Crown } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { fadeUp } from "./Reveal";
 
 const plans = [
@@ -41,13 +41,12 @@ const plans = [
 ];
 
 export default function Pricing() {
-  const reduce = useReducedMotion();
   return (
     <section id="harga" className="relative py-24 lg:py-32">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <motion.div
           variants={fadeUp}
-          initial={reduce ? false : "hidden"}
+          initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.2 }}
           className="mx-auto mb-16 max-w-2xl text-center"
@@ -67,11 +66,11 @@ export default function Pricing() {
           {plans.map((p, i) => (
             <motion.div
               key={p.name}
-              initial={reduce ? false : { opacity: 0, y: 28 }}
+              initial={{ opacity: 0, y: 28 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.55, delay: i * 0.1, ease: [0.21, 0.47, 0.32, 0.98] }}
-              whileHover={reduce ? undefined : { y: -8 }}
+              whileHover={{ y: -8 }}
               className={`relative rounded-3xl p-[1.5px] transition-shadow duration-300 hover:shadow-[0_20px_60px_rgba(59,130,246,0.15)] ${
                 p.highlight
                   ? "bg-gradient-to-b from-blue-400 via-purple-500/60 to-transparent shadow-[0_0_60px_rgba(59,130,246,0.18)]"
