@@ -4,6 +4,7 @@ import { Queue } from 'bullmq';
 import youtubedl from 'youtube-dl-exec';
 import Redis from 'ioredis';
 import path from 'path';
+import fs from 'fs';
 import { authenticate, sseAuthenticate, getUserId, loadOwnedClip } from './guards';
 
 const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
@@ -16,6 +17,27 @@ const rendersDir = process.env.RENDERS_DIR || path.join(__dirname, '../public/re
 const workerDir = process.env.WORKER_DIR || path.join(__dirname, '../../worker');
 
 export default async function routes(server: FastifyInstance) {
+  // Upload video source (raw octet-stream body, no multipart dependency needed)
+  server.post('/upload', { preHandler: [authenticate], bodyLimit: 500 * 1024 * 1024 }, async (request, reply) => {
+    const userId = getUserId(request);
+    const uploadsDir = path.join(__dirname, '../uploads');
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+    const fileKey = `${Date.now()}_${userId.slice(0, 8)}.mp4`;
+    const dest = path.join(uploadsDir, fileKey);
+
+    await new Promise<void>((resolve, reject) => {
+      const ws = fs.createWriteStream(dest);
+      request.raw.pipe(ws);
+      ws.on('finish', resolve);
+      ws.on('error', reject);
+      request.raw.on('error', reject);
+    });
+
+    const size = fs.statSync(dest).size;
+    return { fileKey, size };
+  });
+
   server.get('/projects', { preHandler: [authenticate] }, async (request, reply) => {
     const userId = getUserId(request);
 
@@ -32,7 +54,7 @@ export default async function routes(server: FastifyInstance) {
   });
 
   server.post('/projects', { preHandler: [authenticate] }, async (request, reply) => {
-    const { title, sourceUrl, sourceType, layoutMode, clipCount, targetDuration, searchQuery, aiProvider, aiModel } = request.body as any;
+    const { title, sourceUrl, sourceType, sourceFileKey, layoutMode, clipCount, targetDuration, searchQuery, aiProvider, aiModel } = request.body as any;
 
     const targetUserId = getUserId(request);
 
@@ -54,6 +76,7 @@ export default async function routes(server: FastifyInstance) {
         title: title || 'New Video Project',
         sourceType: sourceType || 'URL',
         sourceUrl: sourceUrl,
+        sourceFileKey: sourceFileKey || null,
         layoutMode: layoutMode || 'crop_blur',
         clipCount: parseInt(clipCount) || 3,
         targetDuration: targetDuration || '30-60',

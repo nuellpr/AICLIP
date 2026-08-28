@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Link as LinkIcon, Settings2, ArrowRight, Loader2, Sparkles, PlaySquare, Crop, SplitSquareVertical, Zap, ScanFace } from "lucide-react";
+import { Upload, Link as LinkIcon, Settings2, ArrowRight, Loader2, Sparkles, PlaySquare, Crop, SplitSquareVertical, Zap, ScanFace, FileVideo, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MotionDiv } from "@/components/Motion";
@@ -11,6 +11,7 @@ export default function NewProjectPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'url' | 'upload'>('url');
   const [url, setUrl] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [layoutMode, setLayoutMode] = useState("crop_blur");
@@ -18,10 +19,14 @@ export default function NewProjectPage() {
   const [targetDuration, setTargetDuration] = useState("30-60");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAiModel, setSelectedAiModel] = useState("");
-  
+
   const handleSubmit = async () => {
     if (activeTab === 'url' && !url) {
       setError("Masukkan URL video terlebih dahulu");
+      return;
+    }
+    if (activeTab === 'upload' && !file) {
+      setError("Pilih file video terlebih dahulu");
       return;
     }
 
@@ -29,20 +34,36 @@ export default function NewProjectPage() {
     setError("");
 
     try {
+      let body: any = {
+        title: activeTab === 'url' ? "Proyek dari URL" : "Proyek dari File",
+        sourceType: activeTab === 'url' ? "URL" : "UPLOAD",
+        layoutMode: layoutMode,
+        clipCount: clipCount,
+        targetDuration: targetDuration,
+        searchQuery: searchQuery,
+        aiProvider: selectedAiModel ? selectedAiModel.split(':')[0] : null,
+        aiModel: selectedAiModel ? selectedAiModel.split(':')[1] : null,
+      };
+
+      if (activeTab === 'upload') {
+        const up = await apiFetch("/api/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/octet-stream" },
+          body: file,
+        });
+        const upData = await up.json().catch(() => ({}));
+        if (!up.ok) {
+          throw new Error(upData.error || "Gagal mengunggah file");
+        }
+        body.sourceFileKey = upData.fileKey;
+      } else {
+        body.sourceUrl = url;
+      }
+
       const res = await apiFetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "Proyek dari URL",
-          sourceType: "URL",
-          sourceUrl: url,
-          layoutMode: layoutMode,
-          clipCount: clipCount,
-          targetDuration: targetDuration,
-          searchQuery: searchQuery,
-          aiProvider: selectedAiModel ? selectedAiModel.split(':')[0] : null,
-          aiModel: selectedAiModel ? selectedAiModel.split(':')[1] : null,
-        })
+        body: JSON.stringify(body),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -118,16 +139,51 @@ export default function NewProjectPage() {
           </div>
         ) : (
           <div className="space-y-6 relative z-10">
-            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/10 bg-black/30 p-16 text-center hover:border-blue-500/50 hover:bg-blue-500/5 transition-all cursor-pointer group">
-              <div className="p-4 rounded-full bg-white/5 group-hover:bg-blue-500/20 group-hover:scale-110 transition-all duration-300 mb-6">
-                <Upload className="h-10 w-10 text-gray-400 group-hover:text-blue-400 transition-colors" />
+            {file ? (
+              <div className="flex items-center justify-between gap-4 rounded-2xl border-2 border-blue-500/40 bg-blue-500/5 p-6">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="p-4 rounded-xl bg-blue-500/20 text-blue-400">
+                    <FileVideo className="h-10 w-10" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-white truncate">{file.name}</p>
+                    <p className="text-sm text-gray-400 mt-1">{(file.size / (1024 * 1024)).toFixed(1)} MB</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setFile(null)}
+                  className="p-3 rounded-xl bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-gray-400 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
               </div>
-              <h3 className="text-xl font-bold text-white group-hover:text-blue-100 transition-colors">Seret & lepas video ke sini</h3>
-              <p className="mt-2 text-sm text-gray-400">atau klik untuk memilih file dari komputer Anda</p>
-              <div className="mt-6 px-4 py-2 rounded-full bg-white/5 text-xs font-medium text-gray-400 border border-white/10">
-                Mendukung MP4, MOV, MKV, WebM. Maks. 500MB.
-              </div>
-            </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/10 bg-black/30 p-16 text-center hover:border-blue-500/50 hover:bg-blue-500/5 transition-all cursor-pointer group">
+                <input
+                  type="file"
+                  accept="video/mp4,video/quicktime,video/x-matroska,video/webm"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) {
+                      if (f.size > 500 * 1024 * 1024) {
+                        setError("Ukuran file maksimal 500MB");
+                        return;
+                      }
+                      setFile(f);
+                    }
+                  }}
+                />
+                <div className="p-4 rounded-full bg-white/5 group-hover:bg-blue-500/20 group-hover:scale-110 transition-all duration-300 mb-6">
+                  <Upload className="h-10 w-10 text-gray-400 group-hover:text-blue-400 transition-colors" />
+                </div>
+                <h3 className="text-xl font-bold text-white group-hover:text-blue-100 transition-colors">Seret & lepas video ke sini</h3>
+                <p className="mt-2 text-sm text-gray-400">atau klik untuk memilih file dari komputer Anda</p>
+                <div className="mt-6 px-4 py-2 rounded-full bg-white/5 text-xs font-medium text-gray-400 border border-white/10">
+                  Mendukung MP4, MOV, MKV, WebM. Maks. 500MB.
+                </div>
+              </label>
+            )}
           </div>
         )}
       </div>

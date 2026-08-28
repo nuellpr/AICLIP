@@ -105,48 +105,84 @@ async function processProject(projectId: string) {
     
     // 3. TRANSCRIBING
     await updateProgress('TRANSCRIBING', 50);
-    const cookiesPath = path.join(__dirname, '../cookies.txt');
-    const options: any = {
-      writeAutoSubs: true,
-      subLangs: 'id',
-      skipDownload: true,
-      subFormat: 'vtt',
-      output: path.join(__dirname, `../transcript_${projectId}_%(id)s.%(ext)s`),
-      noCheckCertificates: true,
-      // ponytail: force IPv4 — VPS DNS resolves IPv6 first, IPv6 blackholes on YouTube (hang). -4 proven working.
-      forceIpv4: true,
-      jsRuntimes: 'bun,node',
-      // ponytail: web_embedded first = 1080p DASH without PO token (verified); android fallback = 360p if not embeddable
-      extractorArgs: 'youtube:player_client=web_embedded,android',
-      impersonate: 'chrome',
-      extractorRetries: 3,
-      remoteComponents: 'ejs:github',
-      noWarnings: true
-    };
-    if (fs.existsSync(cookiesPath)) {
-      options.cookies = cookiesPath;
-    }
 
     const projectData = await prisma.project.findUnique({ where: { id: projectId } });
-    if (!projectData || !projectData.sourceUrl) throw new Error('No source URL');
+    if (!projectData) throw new Error('Project not found');
+    const isUpload = projectData.sourceType === 'UPLOAD';
+    const uploadPath = isUpload && projectData.sourceFileKey
+      ? path.resolve(__dirname, '../../api/uploads', projectData.sourceFileKey)
+      : null;
+    if (!isUpload && !projectData.sourceUrl) throw new Error('No source URL');
+    if (isUpload && (!uploadPath || !fs.existsSync(uploadPath))) throw new Error('Uploaded file tidak ditemukan');
 
-    try {
-      // ponytail: timeout subtitle fetch — yt-dlp can hang on YouTube bot detection; fall back to existing VTT if any
-      await Promise.race([
-        throttledYtdl(projectData.sourceUrl, options),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('yt-dlp subtitle fetch timeout 120s')), 120000))
-      ]);
-    } catch (err: any) {
-      console.warn("Youtubedl subtitle fetch warning:", err?.message || err);
-    }
-    
-    // Find the downloaded vtt file (scoped to this project only)
-    const files = fs.readdirSync(path.join(__dirname, '..'));
-    const subFile = files.find(f => f.startsWith(`transcript_${projectId}_`) && f.endsWith('.vtt'));
-    
     let vttContent = '';
-    if (subFile) {
-      vttContent = fs.readFileSync(path.join(__dirname, '..', subFile), 'utf-8');
+
+    if (isUpload) {
+      // UPLOAD: transkripsi lokal via Whisper daemon (tanpa yt-dlp)
+      console.log(`Transcribing uploaded file: ${uploadPath}`);
+      const audioTmpPath = path.join(__dirname, `../temp_audio_${projectId}.wav`);
+      try {
+        await execAsync(`"${getFfmpegPath()}" -y -i "${uploadPath}" -vn -ac 1 -ar 16000 -f wav "${audioTmpPath}"`, { timeout: 300000 });
+        const parsed = await transcribeWithDaemon(audioTmpPath);
+        const words = (parsed && parsed.words) || [];
+        if (words.length > 0) {
+          const fmt = (s: number) => {
+            if (s < 0) s = 0;
+            const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60), cs = Math.floor((s % 1) * 1000);
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}.${String(cs).padStart(3, '0')}`;
+          };
+          vttContent = 'WEBVTT\n\n' + words.map((w: any, i: number) =>
+            `${i + 1}\n${fmt(w.start)} --> ${fmt(w.end)}\n${w.text}\n`
+          ).join('\n');
+          fs.writeFileSync(path.join(__dirname, `../transcript_${projectId}_upload.vtt`), vttContent);
+          console.log(`Upload transcription done: ${words.length} words`);
+        }
+      } catch (err: any) {
+        console.warn('Upload transcription failed:', err.message);
+      } finally {
+        if (fs.existsSync(audioTmpPath)) fs.unlinkSync(audioTmpPath);
+      }
+    } else {
+      const cookiesPath = path.join(__dirname, '../cookies.txt');
+      const options: any = {
+        writeAutoSubs: true,
+        subLangs: 'id',
+        skipDownload: true,
+        subFormat: 'vtt',
+        output: path.join(__dirname, `../transcript_${projectId}_%(id)s.%(ext)s`),
+        noCheckCertificates: true,
+        // ponytail: force IPv4 — VPS DNS resolves IPv6 first, IPv6 blackholes on YouTube (hang). -4 proven working.
+        forceIpv4: true,
+        jsRuntimes: 'bun,node',
+        // ponytail: web_embedded first = 1080p DASH without PO token (verified); android fallback = 360p if not embeddable
+        extractorArgs: 'youtube:player_client=web_embedded,android',
+        impersonate: 'chrome',
+        extractorRetries: 3,
+        remoteComponents: 'ejs:github',
+        noWarnings: true
+      };
+      if (fs.existsSync(cookiesPath)) {
+        options.cookies = cookiesPath;
+      }
+
+      try {
+        // ponytail: timeout subtitle fetch — yt-dlp can hang on YouTube bot detection; fall back to existing VTT if any
+        await Promise.race([
+          throttledYtdl(projectData.sourceUrl!, options),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('yt-dlp subtitle fetch timeout 120s')), 120000))
+        ]);
+      } catch (err: any) {
+        console.warn("Youtubedl subtitle fetch warning:", err?.message || err);
+      }
+    }
+
+    if (!vttContent) {
+      // Find the downloaded vtt file (scoped to this project only)
+      const files = fs.readdirSync(path.join(__dirname, '..'));
+      const subFile = files.find(f => f.startsWith(`transcript_${projectId}_`) && f.endsWith('.vtt'));
+      if (subFile) {
+        vttContent = fs.readFileSync(path.join(__dirname, '..', subFile), 'utf-8');
+      }
     }
 
     // 4. ANALYZING
@@ -280,8 +316,8 @@ async function startConsumers() {
         where: { id: clipId },
         include: { project: true }
       });
-      if (clip && clip.project.sourceUrl) {
-        console.log(`Started rendering clip ${clip.id} from ${clip.project.sourceUrl}`);
+      if (clip && (clip.project.sourceUrl || (clip.project.sourceType === 'UPLOAD' && clip.project.sourceFileKey))) {
+        console.log(`Started rendering clip ${clip.id} from ${clip.project.sourceUrl || clip.project.sourceFileKey}`);
         await prisma.clip.update({
           where: { id: clip.id },
           data: { renderStatus: 'RENDERING', lockedAt: new Date() }
@@ -303,30 +339,41 @@ async function startConsumers() {
           const clipEndSec = parseFloat(clip.endTime.toString());
 
           console.log(`Downloading segment... Start: ${clipStartSec}s, End: ${clipEndSec}s, Duration: ${clipEndSec - clipStartSec}s`);
-          const cookiesPath = path.join(__dirname, '../cookies.txt');
-          const options: any = {
-            downloadSections: `*${clipStartSec}-${clipEndSec}`,
-            output: tempPath,
-            format: 'bestvideo[height>=1080]+bestaudio/bestvideo[height>=720]+bestaudio/bestvideo+bestaudio/best',
-            ffmpegLocation: getFfmpegPath(),
-            jsRuntimes: 'bun,node',
-            noCheckCertificates: true,
-            forceIpv4: true,
-            // ponytail: web_embedded = 1080p DASH w/o PO token (verified 137+140); android fallback = 360p if not embeddable
-            extractorArgs: 'youtube:player_client=web_embedded,android',
-            impersonate: 'chrome',
-            extractorRetries: 3,
-            retries: 3,
-            remoteComponents: 'ejs:github',
-            noWarnings: true
-          };
+
+          const isUploadRender = clip.project.sourceType === 'UPLOAD' && clip.project.sourceFileKey;
+          const uploadVideoPath = isUploadRender
+            ? path.resolve(__dirname, '../../api/uploads', clip.project.sourceFileKey!)
+            : null;
 
           try {
-            // ponytail: 120s timeout avoids BullMQ stalled-job duplicate (default lock 30s -> 5min now, but still guard)
-            await Promise.race([
-              throttledYtdl(clip.project.sourceUrl, options),
-              new Promise((_, rej) => setTimeout(() => rej(new Error('yt-dlp timeout 120s')), 120000))
-            ]);
+            if (uploadVideoPath && fs.existsSync(uploadVideoPath)) {
+              console.log('Slicing segment from uploaded file using native FFmpeg...');
+              await execAsync(`"${getFfmpegPath()}" -y -ss ${clipStartSec} -i "${uploadVideoPath}" -t ${clipEndSec - clipStartSec} -c copy "${tempPath}"`);
+            } else {
+              const cookiesPath = path.join(__dirname, '../cookies.txt');
+              const options: any = {
+                downloadSections: `*${clipStartSec}-${clipEndSec}`,
+                output: tempPath,
+                format: 'bestvideo[height>=1080]+bestaudio/bestvideo[height>=720]+bestaudio/bestvideo+bestaudio/best',
+                ffmpegLocation: getFfmpegPath(),
+                jsRuntimes: 'bun,node',
+                noCheckCertificates: true,
+                forceIpv4: true,
+                // ponytail: web_embedded = 1080p DASH w/o PO token (verified 137+140); android fallback = 360p if not embeddable
+                extractorArgs: 'youtube:player_client=web_embedded,android',
+                impersonate: 'chrome',
+                extractorRetries: 3,
+                retries: 3,
+                remoteComponents: 'ejs:github',
+                noWarnings: true
+              };
+
+              // ponytail: 120s timeout avoids BullMQ stalled-job duplicate (default lock 30s -> 5min now, but still guard)
+              await Promise.race([
+                throttledYtdl(clip.project.sourceUrl!, options),
+                new Promise((_, rej) => setTimeout(() => rej(new Error('yt-dlp timeout 120s')), 120000))
+              ]);
+            }
           } catch (dlErr: any) {
             console.warn('yt-dlp section download failed, checking local file fallback:', dlErr.message);
             const sourceVideoPath = path.join(__dirname, `../temp_${clip.projectId}.mp4`);
