@@ -5,6 +5,7 @@ import youtubedl from 'youtube-dl-exec';
 import Redis from 'ioredis';
 import path from 'path';
 import fs from 'fs';
+import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { authenticate, sseAuthenticate, getUserId, loadOwnedClip } from './guards';
 
 const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
@@ -15,6 +16,43 @@ const renderQueue = new Queue('renderQueue', { connection });
 
 const rendersDir = process.env.RENDERS_DIR || path.join(__dirname, '../public/renders');
 const workerDir = process.env.WORKER_DIR || path.join(__dirname, '../../worker');
+const webRendersDir = path.resolve(__dirname, '../../web/public/renders');
+
+// Hapus permanen semua salinan video klip: lokal (api + web renders) dan cloud S3/R2 bila ada.
+async function deleteClipAssets(clip: { id: string; title: string; renderedFileKey?: string | null }): Promise<void> {
+  const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, '').trim() || clip.id;
+  const names = new Set<string>([`${safeTitle}.mp4`]);
+  const base = clip.renderedFileKey?.split('/').pop();
+  if (base) names.add(decodeURIComponent(base));
+
+  for (const filename of names) {
+    for (const dir of [rendersDir, webRendersDir]) {
+      const filePath = path.join(dir, filename);
+      try {
+        if (fs.existsSync(filePath)) fs.rmSync(filePath, { force: true });
+      } catch {}
+    }
+  }
+
+  if (clip.renderedFileKey?.startsWith('http') && process.env.S3_BUCKET_NAME) {
+    const key = clip.renderedFileKey.split('/renders/')[1];
+    if (key) {
+      try {
+        const s3 = new S3Client({
+          region: process.env.S3_REGION || 'auto',
+          ...(process.env.S3_ENDPOINT ? { endpoint: process.env.S3_ENDPOINT } : {}),
+          credentials: {
+            accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+            secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+          },
+        });
+        await s3.send(new DeleteObjectCommand({ Bucket: process.env.S3_BUCKET_NAME, Key: `renders/${key}` }));
+      } catch (e: any) {
+        console.warn('[Delete] Gagal hapus file cloud:', e.message);
+      }
+    }
+  }
+}
 
 export default async function routes(server: FastifyInstance) {
   // Upload video source (raw octet-stream body, no multipart dependency needed)
@@ -296,20 +334,7 @@ export default async function routes(server: FastifyInstance) {
       if (!owned) return reply.code(404).send({ error: 'Clip not found' });
       const clip = owned;
 
-      const fs = require('fs');
-      const path = require('path');
-
-      const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id;
-      const filename = `${safeTitle}.mp4`;
-      const filePath = path.join(rendersDir, filename);
-      
-      if (fs.existsSync(filePath)) {
-        try {
-          fs.rmSync(filePath, { force: true });
-        } catch (e) {
-          try { fs.unlinkSync(filePath); } catch (err) {}
-        }
-      }
+      await deleteClipAssets(clip);
       await prisma.clip.delete({ where: { id } });
       return { success: true };
     } catch (error) {
@@ -334,21 +359,8 @@ export default async function routes(server: FastifyInstance) {
         return reply.code(403).send({ error: 'Akses ditolak' });
       }
 
-      const fs = require('fs');
-      const path = require('path');
-
       for (const clip of ownedClips) {
-        const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id;
-        const filename = `${safeTitle}.mp4`;
-        const filePath = path.join(rendersDir, filename);
-
-        if (fs.existsSync(filePath)) {
-          try {
-            fs.rmSync(filePath, { force: true });
-          } catch (e) {
-            try { fs.unlinkSync(filePath); } catch (err) {}
-          }
-        }
+        await deleteClipAssets(clip);
       }
       await prisma.clip.deleteMany({
         where: { id: { in: clipIds } }
