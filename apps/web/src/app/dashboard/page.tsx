@@ -46,7 +46,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#EA4C89]" />
       </div>
     );
   }
@@ -58,23 +58,23 @@ export default function DashboardPage() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-white/10 pb-8"
+        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-black/5 pb-8"
       >
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-white flex items-center gap-3">
+          <h1 className="text-4xl font-black tracking-tight text-[#0D0C22] flex items-center gap-3">
             Dashboard Proyek
-            <span className="text-xs font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/30">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#C32361] bg-[#FDE3E1] px-3 py-1 rounded-full">
               Live Workspace
             </span>
           </h1>
-          <p className="text-gray-400 mt-2 text-base">
+          <p className="text-[#6E6D7A] mt-2 text-base">
             Kelola dan konversi video panjang Anda menjadi deretan klip pendek siap viral.
           </p>
         </div>
 
-        <Link href="/dashboard/new" className="gradient-border group shrink-0">
-          <div className="flex items-center gap-2.5 rounded-xl bg-black px-7 py-3.5 font-black text-white transition-all hover:bg-black/50 text-sm shadow-[0_0_20px_rgba(37,99,235,0.3)]">
-            <Sparkles className="h-5 w-5 text-blue-400 group-hover:text-pink-400 transition-colors" />
+        <Link href="/dashboard/new" className="group shrink-0">
+          <div className="flex items-center gap-2.5 rounded-xl bg-[#EA4C89] hover:bg-[#C32361] px-7 py-3.5 font-black text-white transition-all text-sm shadow-[0_8px_24px_-8px_rgba(234,76,137,0.5)]">
+            <Sparkles className="h-5 w-5 text-white" />
             <span>Buat Proyek Baru</span>
           </div>
         </Link>
@@ -82,37 +82,37 @@ export default function DashboardPage() {
 
       {/* Quick Summary Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="glass-card rounded-2xl p-5 relative overflow-hidden border border-white/10">
+        <div className="glass-card rounded-2xl p-5 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Proyek</p>
-              <h3 className="text-3xl font-black text-white mt-1">{projects.length}</h3>
+              <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider">Total Proyek</p>
+              <h3 className="text-3xl font-black text-[#0D0C22] mt-1">{projects.length}</h3>
             </div>
-            <div className="h-12 w-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+            <div className="h-12 w-12 rounded-xl bg-[#FDE3E1] text-[#C32361] flex items-center justify-center">
               <Film className="h-6 w-6" />
             </div>
           </div>
         </div>
 
-        <div className="glass-card rounded-2xl p-5 relative overflow-hidden border border-white/10">
+        <div className="glass-card rounded-2xl p-5 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Klip Viral Dihasilkan</p>
-              <h3 className="text-3xl font-black text-purple-400 mt-1">{totalClips}</h3>
+              <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider">Klip Viral Dihasilkan</p>
+              <h3 className="text-3xl font-black text-[#5B3FBF] mt-1">{totalClips}</h3>
             </div>
-            <div className="h-12 w-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20">
+            <div className="h-12 w-12 rounded-xl bg-[#E7E4F9] text-[#5B3FBF] flex items-center justify-center">
               <PlayCircle className="h-6 w-6" />
             </div>
           </div>
         </div>
 
-        <div className="glass-card rounded-2xl p-5 relative overflow-hidden border border-white/10">
+        <div className="glass-card rounded-2xl p-5 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Proyek Selesai</p>
-              <h3 className="text-3xl font-black text-emerald-400 mt-1">{readyProjects}</h3>
+              <p className="text-xs font-bold text-[#6E6D7A] uppercase tracking-wider">Proyek Selesai</p>
+              <h3 className="text-3xl font-black text-[#166534] mt-1">{readyProjects}</h3>
             </div>
-            <div className="h-12 w-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+            <div className="h-12 w-12 rounded-xl bg-[#DBF3E8] text-[#166534] flex items-center justify-center">
               <CheckCircle2 className="h-6 w-6" />
             </div>
           </div>
@@ -127,13 +127,13 @@ export default function DashboardPage() {
         className="flex flex-col sm:flex-row gap-4"
       >
         <div className="relative flex-1 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-400 transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6E6D7A] group-focus-within:text-[#EA4C89] transition-colors" />
           <input 
             type="text" 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Cari nama proyek atau video..." 
-            className="w-full rounded-2xl border border-white/10 bg-white/5 pl-12 pr-4 py-3.5 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+            className="w-full rounded-2xl border border-transparent bg-[#F8F7F4] pl-12 pr-4 py-3.5 text-[#0D0C22] placeholder-[#6E6D7A] focus:border-[#EA4C89] focus:outline-none focus:ring-1 focus:ring-[#EA4C89] transition-all text-sm"
           />
         </div>
       </MotionDiv>
@@ -144,17 +144,17 @@ export default function DashboardPage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-center py-20 border border-white/10 rounded-3xl glass-panel relative overflow-hidden"
+          className="text-center py-20 rounded-3xl glass-panel relative overflow-hidden"
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 via-purple-500/5 to-transparent pointer-events-none"></div>
-          <div className="h-20 w-20 mx-auto rounded-3xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 mb-6 shadow-[0_0_30px_rgba(37,99,235,0.3)]">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#E7E4F9]/40 via-[#FDE3E1]/30 to-transparent pointer-events-none"></div>
+          <div className="h-20 w-20 mx-auto rounded-3xl bg-[#FDE3E1] flex items-center justify-center text-[#EA4C89] mb-6 shadow-[0_8px_24px_-8px_rgba(234,76,137,0.35)]">
             <Video className="h-10 w-10" />
           </div>
-          <h3 className="text-3xl font-black text-white mb-3 relative z-10">Belum Ada Proyek</h3>
-          <p className="text-gray-400 mb-8 max-w-md mx-auto relative z-10 text-sm leading-relaxed">
+          <h3 className="text-3xl font-black text-[#0D0C22] mb-3 relative z-10">Belum Ada Proyek</h3>
+          <p className="text-[#6E6D7A] mb-8 max-w-md mx-auto relative z-10 text-sm leading-relaxed">
             Mulailah dengan memasukkan link video YouTube untuk membiarkan AI mengekstrak klip viral pertama Anda!
           </p>
-          <Link href="/dashboard/new" className="inline-flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 px-8 py-4 font-black text-white hover:opacity-90 transition-all shadow-[0_0_25px_rgba(37,99,235,0.5)] hover:-translate-y-1 relative z-10 text-sm">
+          <Link href="/dashboard/new" className="inline-flex items-center gap-2.5 rounded-2xl bg-[#EA4C89] hover:bg-[#C32361] px-8 py-4 font-black text-white transition-all shadow-[0_8px_24px_-8px_rgba(234,76,137,0.5)] hover:-translate-y-1 relative z-10 text-sm">
             <Plus className="h-5 w-5" />
             Mulai Buat Proyek Pertama
           </Link>
@@ -169,49 +169,49 @@ export default function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.08 * index }}
             >
-              <div className="flex items-center justify-between rounded-2xl glass-card p-6 group relative overflow-hidden border border-white/10 hover:border-blue-500/50">
+              <div className="flex items-center justify-between rounded-2xl glass-card p-6 group relative overflow-hidden hover:border-[#EA4C89]/40">
                 <div className="flex items-center gap-6 relative z-10">
-                  <Link href={`/dashboard/project/${project.id}`} className="flex h-16 w-16 items-center justify-center rounded-2xl bg-black/60 border border-white/10 group-hover:border-blue-500/50 group-hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all duration-300 shrink-0">
-                    <Video className="h-8 w-8 text-gray-500 group-hover:text-blue-400 transition-colors duration-300" />
+                  <Link href={`/dashboard/project/${project.id}`} className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F8F7F4] border border-black/5 group-hover:border-[#EA4C89]/40 group-hover:shadow-[0_8px_20px_-8px_rgba(234,76,137,0.35)] transition-all duration-300 shrink-0">
+                    <Video className="h-8 w-8 text-[#6E6D7A] group-hover:text-[#EA4C89] transition-colors duration-300" />
                   </Link>
                   <div>
                     {project.sourceUrl ? (
                       <div className="flex items-center gap-2.5">
-                        <span className="text-xs font-black text-red-400 bg-red-500/10 px-2.5 py-1 rounded-lg border border-red-500/20 uppercase tracking-wide shrink-0">
+                        <span className="text-xs font-black text-[#B91C1C] bg-[#FDE3E1] px-2.5 py-1 rounded-lg uppercase tracking-wide shrink-0">
                           Link: YouTube
                         </span>
                         <a 
                           href={project.sourceUrl} 
                           target="_blank" 
                           rel="noreferrer"
-                          className="text-base font-bold text-blue-400 hover:text-blue-300 hover:underline truncate max-w-md transition-colors flex items-center gap-1.5"
+                          className="text-base font-bold text-[#EA4C89] hover:text-[#C32361] hover:underline truncate max-w-md transition-colors flex items-center gap-1.5"
                           title={project.sourceUrl}
                         >
                           <span className="truncate">{project.sourceUrl}</span>
-                          <ExternalLink className="h-4 w-4 shrink-0 text-blue-400" />
+                          <ExternalLink className="h-4 w-4 shrink-0 text-[#EA4C89]" />
                         </a>
                       </div>
                     ) : (
-                      <Link href={`/dashboard/project/${project.id}`} className="text-xl font-bold text-gray-100 group-hover:text-white transition-colors duration-300 block">
+                      <Link href={`/dashboard/project/${project.id}`} className="text-xl font-bold text-[#0D0C22] group-hover:text-[#EA4C89] transition-colors duration-300 block">
                         {project.title}
                       </Link>
                     )}
-                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-400 font-medium">
-                      <span suppressHydrationWarning className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-gray-500" /> {new Date(project.createdAt).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
-                      <span className="text-gray-600">•</span>
-                      <span className="bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full font-bold border border-blue-500/20">{project._count?.clips || 0} Klip High Quality</span>
+                    <div className="flex items-center gap-3 mt-2 text-xs text-[#6E6D7A] font-medium">
+                      <span suppressHydrationWarning className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-[#6E6D7A]" /> {new Date(project.createdAt).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="text-[#6E6D7A]/60">•</span>
+                      <span className="bg-[#E7E4F9] text-[#5B3FBF] px-3 py-1 rounded-full font-bold">{project._count?.clips || 0} Klip High Quality</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="relative z-10 flex items-center gap-3">
-                  <Link href={`/dashboard/project/${project.id}`} className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors">
+                  <Link href={`/dashboard/project/${project.id}`} className="px-4 py-2 rounded-xl bg-white border border-black/10 hover:border-[#EA4C89]/50 hover:text-[#EA4C89] text-[#0D0C22] font-bold text-xs transition-colors">
                     Buka Proyek
                   </Link>
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-black uppercase tracking-wider border
-                    ${project.status === 'READY' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 
-                      (project.status === 'FAILED' || project.status === 'CANCELLED') ? 'bg-red-500/15 text-red-400 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 
-                      'bg-blue-500/15 text-blue-400 border-blue-500/30 shadow-[0_0_15px_rgba(37,99,235,0.3)] animate-pulse'}`}>
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-black uppercase tracking-wider
+                    ${project.status === 'READY' ? 'bg-[#DBF3E8] text-[#166534]' : 
+                      (project.status === 'FAILED' || project.status === 'CANCELLED') ? 'bg-[#FDE3E1] text-[#B91C1C]' : 
+                      'bg-[#FDF3D8] text-[#92400E] animate-pulse'}`}>
                     {project.status === 'READY' && <CheckCircle2 className="h-3.5 w-3.5" />}
                     {project.status === 'FAILED' && <AlertCircle className="h-3.5 w-3.5" />}
                     {project.status}

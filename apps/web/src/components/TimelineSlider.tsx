@@ -80,7 +80,7 @@ export function TimelineSlider({ min, max, startTime, endTime, onChange }: Timel
     <div className="w-full select-none py-6">
       <div 
         ref={containerRef}
-        className="relative h-12 bg-[#222] rounded-lg border border-white/10 cursor-pointer overflow-hidden"
+        className="relative h-12 bg-[#F8F7F4] rounded-lg border border-black/[0.08] cursor-pointer overflow-hidden"
       >
         {/* Background markers (optional visual enhancement) */}
         <div></div>
@@ -96,7 +96,7 @@ export function TimelineSlider({ min, max, startTime, endTime, onChange }: Timel
           onPointerDown={(e) => handlePointerDown(e, 'range')}
         >
           {/* Active styling when dragging */}
-          <div className="w-full h-full flex items-center justify-center pointer-events-none opacity-50 text-primary-foreground text-xs font-bold font-mono">
+          <div className="w-full h-full flex items-center justify-center pointer-events-none text-[#0D0C22] text-xs font-bold font-mono">
             {(endTime - startTime).toFixed(1)}s
           </div>
         </div>
@@ -120,7 +120,7 @@ export function TimelineSlider({ min, max, startTime, endTime, onChange }: Timel
         </div>
       </div>
       
-      <div className="flex justify-between mt-2 text-xs font-mono text-gray-500">
+      <div className="flex justify-between mt-2 text-xs font-mono text-[#6E6D7A]">
         <span>{startTime.toFixed(2)}s</span>
         <span>{endTime.toFixed(2)}s</span>
       </div>

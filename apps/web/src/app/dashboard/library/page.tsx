@@ -111,7 +111,7 @@ export default function LibraryPage() {
   if (!mounted || isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#EA4C89]" />
       </div>
     );
   }
@@ -122,26 +122,26 @@ export default function LibraryPage() {
     <div className="max-w-6xl mx-auto space-y-8 relative">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-emerald-500 text-black font-bold px-4 py-3 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-bounce">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-emerald-500 text-white font-bold px-4 py-3 rounded-xl shadow-[0_8px_24px_-8px_rgba(16,185,129,0.5)] animate-bounce">
           <CheckCircle2 className="h-5 w-5" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/10 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-black/10 pb-6">
         <div>
           <h1 className="text-3xl font-bold">Penyimpanan Klip</h1>
-          <p className="text-gray-400 mt-1">Daftar semua klip video yang telah di-render. Pilih & hapus instan ke Recycle Bin laptop.</p>
+          <p className="text-[#6E6D7A] mt-1">Daftar semua klip video yang telah di-render. Pilih & hapus instan ke Recycle Bin laptop.</p>
         </div>
 
         {clips.length > 0 && (
           <div className="flex items-center gap-3">
             <button
               onClick={toggleSelectAll}
-              className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl text-sm font-semibold border border-white/10 transition-colors"
+              className="flex items-center gap-2 bg-white hover:bg-[#F8F7F4] text-[#0D0C22] px-4 py-2 rounded-xl text-sm font-semibold border border-black/10 transition-colors"
             >
-              {isAllSelected ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4 text-gray-400" />}
+              {isAllSelected ? <CheckSquare className="w-4 h-4 text-[#EA4C89]" /> : <Square className="w-4 h-4 text-[#6E6D7A]" />}
               <span>{isAllSelected ? 'Batal Pilih Semua' : 'Pilih Semua'}</span>
             </button>
 
@@ -149,7 +149,7 @@ export default function LibraryPage() {
               <button
                 onClick={handleBatchDelete}
                 disabled={isDeleting}
-                className="flex items-center gap-2 bg-red-500 hover:bg-red-400 text-black px-4 py-2 rounded-xl text-sm font-extrabold transition-all shadow-[0_0_15px_rgba(239,68,68,0.4)] disabled:opacity-50"
+                className="flex items-center gap-2 bg-[#B42318] hover:bg-[#9A1F15] text-white px-4 py-2 rounded-xl text-sm font-extrabold transition-all shadow-[0_8px_20px_-8px_rgba(180,35,24,0.5)] disabled:opacity-50"
               >
                 {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 <span>Hapus Terpilih ({selectedIds.length})</span>
@@ -160,11 +160,11 @@ export default function LibraryPage() {
       </div>
 
       {clips.length === 0 ? (
-        <div className="rounded-xl border border-white/10 bg-white/5 p-12 text-center">
-          <Video className="mx-auto h-12 w-12 text-gray-500 mb-4" />
-          <h3 className="text-xl font-medium text-white mb-2">Belum ada klip</h3>
-          <p className="text-gray-400 mb-6">Anda belum merender klip apa pun. Buat proyek baru untuk memulai.</p>
-          <Link href="/dashboard/new" className="inline-block bg-blue-500 hover:bg-blue-400 text-black px-6 py-2 rounded-lg font-medium transition-colors">
+        <div className="rounded-2xl border border-black/10 bg-white shadow-sm p-12 text-center">
+          <Video className="mx-auto h-12 w-12 text-[#6E6D7A] mb-4" />
+          <h3 className="text-xl font-medium text-[#0D0C22] mb-2">Belum ada klip</h3>
+          <p className="text-[#6E6D7A] mb-6">Anda belum merender klip apa pun. Buat proyek baru untuk memulai.</p>
+          <Link href="/dashboard/new" className="inline-block bg-[#EA4C89] hover:bg-[#C32361] text-white px-6 py-2 rounded-lg font-medium transition-colors">
             Buat Proyek
           </Link>
         </div>
@@ -181,7 +181,7 @@ export default function LibraryPage() {
               <div 
                 key={clip.id} 
                 className={`group relative rounded-2xl border transition-all overflow-hidden flex flex-col ${
-                  isSelected ? 'border-blue-400 bg-blue-500/10 shadow-[0_0_20px_rgba(37,99,235,0.3)]' : 'border-white/10 bg-white/5 hover:border-white/20'
+                  isSelected ? 'border-[#EA4C89] bg-white shadow-[0_8px_24px_-8px_rgba(234,76,137,0.35)]' : 'border-black/10 bg-white hover:border-[#EA4C89]/40'
                 }`}
               >
                 <div className="relative aspect-[9/16] bg-black">
@@ -198,21 +198,21 @@ export default function LibraryPage() {
                     className="absolute top-3 right-3 z-20 flex items-center justify-center h-8 w-8 rounded-lg bg-black/70 backdrop-blur-md border border-white/20 text-white transition-transform hover:scale-110"
                     title={isSelected ? "Batal Pilih" : "Pilih Klip"}
                   >
-                    {isSelected ? <CheckSquare className="w-5 h-5 text-blue-400" /> : <Square className="w-5 h-5 text-gray-400" />}
+                    {isSelected ? <CheckSquare className="w-5 h-5 text-[#EA4C89]" /> : <Square className="w-5 h-5 text-gray-400" />}
                   </button>
 
                   {/* Project Title Badge */}
-                  <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md text-xs font-semibold border border-white/10 text-blue-400">
+                  <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md text-xs font-semibold border border-white/10 text-[#F9A8D4]">
                     {clip.project?.title || "Video"}
                   </div>
                 </div>
                 
                 <div className="p-4 flex flex-col flex-1">
                   <h3 className="font-bold text-lg mb-1 line-clamp-2">{clip.title}</h3>
-                  <p className="text-sm text-gray-400 line-clamp-2 mb-4 flex-1">&quot;{clip.hook}&quot;</p>
+                  <p className="text-sm text-[#6E6D7A] line-clamp-2 mb-4 flex-1">&quot;{clip.hook}&quot;</p>
                   
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/10">
-                    <div className="flex items-center text-xs text-gray-500">
+                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-black/5">
+                    <div className="flex items-center text-xs text-[#6E6D7A]">
                       <Calendar className="w-3 h-3 mr-1" />
                       {new Date(clip.createdAt).toLocaleDateString()}
                     </div>
@@ -220,7 +220,7 @@ export default function LibraryPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleDelete(clip.id)}
-                        className="flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl transition-colors"
+                        className="flex items-center justify-center bg-[#FDE3E1] hover:bg-[#FAD5D2] text-[#B42318] p-2 rounded-xl transition-colors"
                         title="Pindahkan ke Recycle Bin Laptop"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -229,7 +229,7 @@ export default function LibraryPage() {
                         href={videoUrl} 
                         download={filename}
                         target="_blank"
-                        className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+                        className="flex items-center gap-2 bg-white hover:bg-[#F8F7F4] text-[#0D0C22] border border-black/10 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
                       >
                         <Download className="w-4 h-4" /> Unduh
                       </a>

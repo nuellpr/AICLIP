@@ -1,10 +1,12 @@
 export function ClipForgeLogo({
   compact = false,
   size = "md",
+  light = false,
   className = "",
 }: {
   compact?: boolean;
   size?: "sm" | "md";
+  light?: boolean;
   className?: string;
 }) {
   const box = size === "sm" ? "h-7 w-7" : "h-9 w-9";
@@ -12,8 +14,7 @@ export function ClipForgeLogo({
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       <div className={`relative ${box} shrink-0`}>
-        <div className={`absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 blur-[6px] opacity-50`} />
-        <div className={`relative grid ${box} place-items-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-400 shadow-[0_0_18px_rgba(59,130,246,0.35)]`}>
+        <div className={`relative grid ${box} place-items-center rounded-xl bg-gradient-to-br from-[#EA4C89] to-[#C32361] shadow-[0_6px_18px_rgba(234,76,137,0.35)]`}>
           <svg viewBox="0 0 32 32" className={`${icon} text-white`} fill="none" aria-hidden>
             {/* scissors */}
             <circle cx="11" cy="11" r="2" stroke="currentColor" strokeWidth="1.6" />
@@ -28,12 +29,14 @@ export function ClipForgeLogo({
       {!compact && (
         <div className="leading-none">
           <div className="flex items-baseline gap-1.5">
-            <span className="text-[19px] font-black tracking-tight text-white">ClipForge</span>
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-[15px] font-black text-transparent">
-              AI
+            <span className={`text-[19px] font-black tracking-tight ${light ? "text-white" : "text-[#0D0C22]"}`}>
+              ClipForge
             </span>
+            <span className="text-[15px] font-black text-[#EA4C89]">AI</span>
           </div>
-          <div className="mt-1 text-[10px] font-bold tracking-[0.22em] text-white/60">AUTO VIRAL CLIPPING</div>
+          <div className={`mt-1 text-[10px] font-bold tracking-[0.22em] ${light ? "text-white/60" : "text-[#6E6D7A]"}`}>
+            AUTO VIRAL CLIPPING
+          </div>
         </div>
       )}
     </div>

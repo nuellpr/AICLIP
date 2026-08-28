@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Ubah Video Panjang Menjadi Klip Viral dalam Hitungan Menit.",
     start_url: "/home",
     display: "standalone",
-    background_color: "#05060B",
-    theme_color: "#2563EB",
+    background_color: "#FFFFFF",
+    theme_color: "#EA4C89",
     icons: [
       { src: "/logo.svg", sizes: "any", type: "image/svg+xml" },
     ],

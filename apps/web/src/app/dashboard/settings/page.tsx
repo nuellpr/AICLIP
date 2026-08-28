@@ -198,43 +198,43 @@ export default function SettingsPage() {
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-bold">Pengaturan</h1>
-        <p className="text-gray-400 mt-1">Kelola preferensi akun dan konfigurasi AI Anda.</p>
+        <p className="text-[#6E6D7A] mt-1">Kelola preferensi akun dan konfigurasi AI Anda.</p>
       </div>
 
       <div className="grid gap-8 md:grid-cols-3">
         {/* Sidebar */}
-        <div className="md:col-span-1 space-y-2">
+        <div className="md:col-span-1 space-y-2 bg-[#F8F7F4] rounded-xl p-2">
           <button 
             onClick={() => setActiveTab('profile')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'profile' ? 'bg-white/10 text-white' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'profile' ? 'bg-white shadow-sm text-[#0D0C22]' : 'hover:bg-white text-[#6E6D7A] hover:text-[#0D0C22]'}`}
           >
-            <User className={`h-5 w-5 ${activeTab === 'profile' ? 'text-blue-400' : ''}`} /> Profil Akun
+            <User className={`h-5 w-5 ${activeTab === 'profile' ? 'text-[#EA4C89]' : ''}`} /> Profil Akun
           </button>
           
           <button 
             onClick={() => setActiveTab('ai')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'ai' ? 'bg-white/10 text-white' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'ai' ? 'bg-white shadow-sm text-[#0D0C22]' : 'hover:bg-white text-[#6E6D7A] hover:text-[#0D0C22]'}`}
           >
-            <SettingsIcon className={`h-5 w-5 ${activeTab === 'ai' ? 'text-blue-400' : ''}`} /> AI Models
+            <SettingsIcon className={`h-5 w-5 ${activeTab === 'ai' ? 'text-[#EA4C89]' : ''}`} /> AI Models
           </button>
           
           <button 
             onClick={() => setActiveTab('billing')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'billing' ? 'bg-white/10 text-white' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'billing' ? 'bg-white shadow-sm text-[#0D0C22]' : 'hover:bg-white text-[#6E6D7A] hover:text-[#0D0C22]'}`}
           >
-            <Key className={`h-5 w-5 ${activeTab === 'billing' ? 'text-blue-400' : ''}`} /> Penagihan
+            <Key className={`h-5 w-5 ${activeTab === 'billing' ? 'text-[#EA4C89]' : ''}`} /> Penagihan
           </button>
         </div>
 
         {/* Content */}
         <div className="md:col-span-2 space-y-6">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-6 md:p-8 space-y-6">
+          <div className="rounded-2xl border border-black/10 bg-white shadow-sm p-6 md:p-8 space-y-6">
             
             {activeTab === 'profile' && (
               <>
-                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center justify-between border-b border-black/10 pb-4">
                   <h3 className="text-xl font-bold">Profil Akun</h3>
-                  <span className="text-xs px-2 py-1 rounded-full bg-white/10 text-gray-400">{user?.email?.includes('google') || user?.image ? 'Google' : 'Email'}</span>
+                  <span className="text-xs px-2 py-1 rounded-full bg-[#F8F7F4] text-[#6E6D7A]">{user?.email?.includes('google') || user?.image ? 'Google' : 'Email'}</span>
                 </div>
 
                 {/* Avatar */}
@@ -242,104 +242,104 @@ export default function SettingsPage() {
                   <div className="relative">
                     {previewImage ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={previewImage} alt={user?.name || 'User'} className="h-20 w-20 rounded-2xl object-cover border border-blue-400/30" />
+                      <img src={previewImage} alt={user?.name || 'User'} className="h-20 w-20 rounded-2xl object-cover border border-[#EA4C89]/30" />
                     ) : (
-                      <div className="h-20 w-20 rounded-2xl bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center font-black text-black text-xl">
+                      <div className="h-20 w-20 rounded-2xl bg-gradient-to-tr from-[#EA4C89] to-[#7C3AED] flex items-center justify-center font-black text-white text-xl">
                         {(editName || user?.name || 'DU').substring(0,2).toUpperCase()}
                       </div>
                     )}
-                    <button onClick={()=> fileRef.current?.click()} className="absolute -bottom-2 -right-2 bg-blue-500 hover:bg-blue-400 text-black p-2 rounded-xl shadow-lg transition-colors" title="Ganti foto">
+                    <button onClick={()=> fileRef.current?.click()} className="absolute -bottom-2 -right-2 bg-[#EA4C89] hover:bg-[#C32361] text-white p-2 rounded-xl shadow-lg transition-colors" title="Ganti foto">
                       <Camera className="h-4 w-4" />
                     </button>
                   </div>
                   <div>
-                    <p className="font-bold text-white">{editName || user?.name || 'Demo User'}</p>
-                    <p className="text-sm text-gray-400">{user?.email || 'demo@clipforge.ai'}</p>
-                    <button onClick={()=> fileRef.current?.click()} className="text-xs text-blue-400 hover:text-blue-300 mt-1 underline">Ganti foto profil</button>
+                    <p className="font-bold text-[#0D0C22]">{editName || user?.name || 'Demo User'}</p>
+                    <p className="text-sm text-[#6E6D7A]">{user?.email || 'demo@clipforge.ai'}</p>
+                    <button onClick={()=> fileRef.current?.click()} className="text-xs text-[#EA4C89] hover:text-[#C32361] mt-1 underline">Ganti foto profil</button>
                     <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
-                    <p className="text-[10px] text-gray-500 mt-1">JPG/PNG max 2MB. Bisa foto sendiri atau URL Google.</p>
+                    <p className="text-[10px] text-[#6E6D7A] mt-1">JPG/PNG max 2MB. Bisa foto sendiri atau URL Google.</p>
                   </div>
                 </div>
 
                 {profileMsg && (
-                  <div className={`p-3 rounded-xl text-xs font-medium border ${profileMsg.type==='success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+                  <div className={`p-3 rounded-xl text-xs font-medium border ${profileMsg.type==='success' ? 'bg-[#DBF3E8] border-[#DBF3E8] text-[#14532D]' : 'bg-[#FDE3E1] border-[#FDE3E1] text-[#B42318]'}`}>
                     {profileMsg.text}
                   </div>
                 )}
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Nama Lengkap *</label>
-                    <input type="text" value={editName} onChange={e=> setEditName(e.target.value)} placeholder="Nama kamu" className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                    <label className="block text-sm font-medium text-[#0D0C22] mb-2">Nama Lengkap *</label>
+                    <input type="text" value={editName} onChange={e=> setEditName(e.target.value)} placeholder="Nama kamu" className="w-full rounded-lg border border-transparent bg-[#F8F7F4] px-4 py-3 text-[#0D0C22] placeholder-[#6E6D7A] focus:outline-none focus:border-[#EA4C89] focus:ring-1 focus:ring-[#EA4C89]" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Alamat Email</label>
-                    <input type="email" value={user?.email || ""} disabled className="w-full rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-gray-400 font-medium cursor-not-allowed" />
-                    <p className="text-xs text-gray-500 mt-1">Email tidak bisa diubah. Login via Google terhubung ke email ini.</p>
+                    <label className="block text-sm font-medium text-[#0D0C22] mb-2">Alamat Email</label>
+                    <input type="email" value={user?.email || ""} disabled className="w-full rounded-lg border border-transparent bg-[#F8F7F4] px-4 py-3 text-[#6E6D7A] font-medium cursor-not-allowed" />
+                    <p className="text-xs text-[#6E6D7A] mt-1">Email tidak bisa diubah. Login via Google terhubung ke email ini.</p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Tanggal Lahir</label>
-                      <input type="date" value={editBirthDate} onChange={e=> setEditBirthDate(e.target.value)} className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 [color-scheme:dark]" />
+                      <label className="block text-sm font-medium text-[#0D0C22] mb-2">Tanggal Lahir</label>
+                      <input type="date" value={editBirthDate} onChange={e=> setEditBirthDate(e.target.value)} className="w-full rounded-lg border border-transparent bg-[#F8F7F4] px-4 py-3 text-[#0D0C22] placeholder-[#6E6D7A] focus:outline-none focus:border-[#EA4C89] focus:ring-1 focus:ring-[#EA4C89] [color-scheme:light]" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">No. HP / WhatsApp</label>
-                      <input type="tel" value={editPhone} onChange={e=> setEditPhone(e.target.value)} placeholder="08xxxxxxxxxx" className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                      <label className="block text-sm font-medium text-[#0D0C22] mb-2">No. HP / WhatsApp</label>
+                      <input type="tel" value={editPhone} onChange={e=> setEditPhone(e.target.value)} placeholder="08xxxxxxxxxx" className="w-full rounded-lg border border-transparent bg-[#F8F7F4] px-4 py-3 text-[#0D0C22] placeholder-[#6E6D7A] focus:outline-none focus:border-[#EA4C89] focus:ring-1 focus:ring-[#EA4C89]" />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Bio <span className="text-gray-500 font-normal">(opsional)</span></label>
-                    <textarea rows={3} value={editBio} onChange={e=> setEditBio(e.target.value)} placeholder="Ceritain kamu kreator di niche apa..." className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" maxLength={500} />
-                    <p className="text-xs text-gray-500 text-right mt-1">{editBio.length}/500</p>
+                    <label className="block text-sm font-medium text-[#0D0C22] mb-2">Bio <span className="text-[#6E6D7A] font-normal">(opsional)</span></label>
+                    <textarea rows={3} value={editBio} onChange={e=> setEditBio(e.target.value)} placeholder="Ceritain kamu kreator di niche apa..." className="w-full rounded-lg border border-transparent bg-[#F8F7F4] px-4 py-3 text-[#0D0C22] placeholder-[#6E6D7A] focus:outline-none focus:border-[#EA4C89] focus:ring-1 focus:ring-[#EA4C89]" maxLength={500} />
+                    <p className="text-xs text-[#6E6D7A] text-right mt-1">{editBio.length}/500</p>
                   </div>
                 </div>
 
                 <div className="flex justify-end pt-2">
-                  <button onClick={handleSaveProfile} disabled={isSavingProfile} className="flex items-center gap-2 bg-blue-500 hover:bg-blue-400 text-black px-6 py-2.5 rounded-xl font-bold transition-colors disabled:opacity-50">
+                  <button onClick={handleSaveProfile} disabled={isSavingProfile} className="flex items-center gap-2 bg-[#EA4C89] hover:bg-[#C32361] text-white px-6 py-2.5 rounded-xl font-bold transition-colors disabled:opacity-50">
                     {isSavingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Simpan Profil
                   </button>
                 </div>
 
                 {/* Password Section */}
-                <div className="pt-6 border-t border-white/10 space-y-4">
+                <div className="pt-6 border-t border-black/10 space-y-4">
                   <div className="flex items-center gap-2">
-                    <Lock className="h-5 w-5 text-blue-400" />
-                    <h4 className="font-bold text-white">Password</h4>
-                    <span className="text-xs text-gray-400 ml-2">{hasPassword ? '• sudah ada password' : '• belum ada password (Google only)'}</span>
+                    <Lock className="h-5 w-5 text-[#EA4C89]" />
+                    <h4 className="font-bold text-[#0D0C22]">Password</h4>
+                    <span className="text-xs text-[#6E6D7A] ml-2">{hasPassword ? '• sudah ada password' : '• belum ada password (Google only)'}</span>
                   </div>
                   {passwordMsg && (
-                    <div className={`p-3 rounded-xl text-xs font-medium border ${passwordMsg.type==='success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+                    <div className={`p-3 rounded-xl text-xs font-medium border ${passwordMsg.type==='success' ? 'bg-[#DBF3E8] border-[#DBF3E8] text-[#14532D]' : 'bg-[#FDE3E1] border-[#FDE3E1] text-[#B42318]'}`}>
                       {passwordMsg.text}
                     </div>
                   )}
                   {hasPassword && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Password Lama</label>
-                      <input type="password" value={oldPassword} onChange={e=> setOldPassword(e.target.value)} placeholder="••••••••" className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                      <label className="block text-sm font-medium text-[#0D0C22] mb-2">Password Lama</label>
+                      <input type="password" value={oldPassword} onChange={e=> setOldPassword(e.target.value)} placeholder="••••••••" className="w-full rounded-lg border border-transparent bg-[#F8F7F4] px-4 py-3 text-[#0D0C22] placeholder-[#6E6D7A] focus:outline-none focus:border-[#EA4C89] focus:ring-1 focus:ring-[#EA4C89]" />
                     </div>
                   )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">{hasPassword ? 'Password Baru' : 'Buat Password'}</label>
-                      <input type="password" value={newPassword} onChange={e=> setNewPassword(e.target.value)} placeholder="min 8 karakter" className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                      <label className="block text-sm font-medium text-[#0D0C22] mb-2">{hasPassword ? 'Password Baru' : 'Buat Password'}</label>
+                      <input type="password" value={newPassword} onChange={e=> setNewPassword(e.target.value)} placeholder="min 8 karakter" className="w-full rounded-lg border border-transparent bg-[#F8F7F4] px-4 py-3 text-[#0D0C22] placeholder-[#6E6D7A] focus:outline-none focus:border-[#EA4C89] focus:ring-1 focus:ring-[#EA4C89]" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Konfirmasi Password</label>
-                      <input type="password" value={confirmPassword} onChange={e=> setConfirmPassword(e.target.value)} placeholder="ulang password baru" className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                      <label className="block text-sm font-medium text-[#0D0C22] mb-2">Konfirmasi Password</label>
+                      <input type="password" value={confirmPassword} onChange={e=> setConfirmPassword(e.target.value)} placeholder="ulang password baru" className="w-full rounded-lg border border-transparent bg-[#F8F7F4] px-4 py-3 text-[#0D0C22] placeholder-[#6E6D7A] focus:outline-none focus:border-[#EA4C89] focus:ring-1 focus:ring-[#EA4C89]" />
                     </div>
                   </div>
                   <div className="flex justify-end">
-                    <button onClick={handleSavePassword} disabled={isSavingPassword} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/10 px-6 py-2.5 rounded-xl font-bold transition-colors disabled:opacity-50">
+                    <button onClick={handleSavePassword} disabled={isSavingPassword} className="flex items-center gap-2 bg-white hover:bg-[#F8F7F4] text-[#0D0C22] border border-black/10 px-6 py-2.5 rounded-xl font-bold transition-colors disabled:opacity-50">
                       {isSavingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />} {hasPassword ? 'Ganti Password' : 'Simpan Password'}
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500">Password dipakai kalau mau login pakai email+password. Akun Google tetap bisa login tanpa password.</p>
+                  <p className="text-xs text-[#6E6D7A]">Password dipakai kalau mau login pakai email+password. Akun Google tetap bisa login tanpa password.</p>
                 </div>
 
-                <div className="pt-4 border-t border-white/10">
+                <div className="pt-4 border-t border-black/10">
                   <button
                     onClick={() => { clearAuthSession(); router.push('/login'); }}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-4 py-3 font-bold transition-colors"
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#FDE3E1] hover:bg-[#FAD5D2] text-[#B42318] border border-transparent px-4 py-3 font-bold transition-colors"
                   >
                     <LogOut className="h-4 w-4" /> Keluar / Logout
                   </button>
@@ -349,8 +349,8 @@ export default function SettingsPage() {
 
             {activeTab === 'ai' && (
               <>
-                <div className="flex items-center gap-2 border-b border-white/10 pb-4">
-                  <SettingsIcon className="h-5 w-5 text-blue-400" />
+                <div className="flex items-center gap-2 border-b border-black/10 pb-4">
+                  <SettingsIcon className="h-5 w-5 text-[#EA4C89]" />
                   <h3 className="text-xl font-bold">Provider Type</h3>
                 </div>
                 
@@ -359,7 +359,7 @@ export default function SettingsPage() {
                     <select 
                       value={provider}
                       onChange={handleProviderChange}
-                      className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none"
+                      className="w-full rounded-lg border border-transparent bg-[#F8F7F4] px-4 py-3 text-[#0D0C22] placeholder-[#6E6D7A] focus:outline-none focus:border-[#EA4C89] focus:ring-1 focus:ring-[#EA4C89] appearance-none"
                     >
                       <option value="google-gemini">Google Gemini</option>
                       <option value="openai">OpenAI</option>
@@ -369,38 +369,38 @@ export default function SettingsPage() {
                     </select>
                   </div>
 
-                  <div className="pt-4 flex items-center gap-2 border-b border-white/10 pb-4">
-                    <Key className="h-5 w-5 text-blue-400" />
+                  <div className="pt-4 flex items-center gap-2 border-b border-black/10 pb-4">
+                    <Key className="h-5 w-5 text-[#EA4C89]" />
                     <h3 className="text-xl font-bold">API Configuration</h3>
                   </div>
 
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Base URL</label>
+                      <label className="block text-sm font-medium text-[#0D0C22] mb-2">Base URL</label>
                       <input 
                         type="text" 
                         placeholder="https://api.openai.com/v1" 
                         value={baseUrl}
                         onChange={(e) => setBaseUrl(e.target.value)}
-                        className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-lg border border-transparent bg-[#F8F7F4] px-4 py-3 text-[#0D0C22] placeholder-[#6E6D7A] focus:outline-none focus:border-[#EA4C89] focus:ring-1 focus:ring-[#EA4C89]"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">API Key</label>
-                      <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-gray-400">
-                        <Lock className="h-4 w-4 text-emerald-400 shrink-0" />
+                      <label className="block text-sm font-medium text-[#0D0C22] mb-2">API Key</label>
+                      <div className="flex items-center gap-3 rounded-lg border border-transparent bg-[#F8F7F4] px-4 py-3 text-[#6E6D7A]">
+                        <Lock className="h-4 w-4 text-emerald-600 shrink-0" />
                         <span className="text-sm">API key dikelola server (B.ai) — otomatis untuk semua user. Tidak perlu diisi.</span>
                       </div>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Model</label>
+                      <label className="block text-sm font-medium text-[#0D0C22] mb-2">Model</label>
                       <div className="flex gap-2">
                         {availableModels.length > 0 ? (
                           <select
                             value={model}
                             onChange={(e) => setModel(e.target.value)}
-                            className="flex-1 rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="flex-1 rounded-lg border border-transparent bg-[#F8F7F4] px-4 py-3 text-[#0D0C22] placeholder-[#6E6D7A] focus:outline-none focus:border-[#EA4C89] focus:ring-1 focus:ring-[#EA4C89]"
                           >
                             {availableModels.map(m => (
                               <option key={m} value={m}>{m}</option>
@@ -412,14 +412,14 @@ export default function SettingsPage() {
                             placeholder="gpt-4o-mini" 
                             value={model}
                             onChange={(e) => setModel(e.target.value)}
-                            className="flex-1 rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="flex-1 rounded-lg border border-transparent bg-[#F8F7F4] px-4 py-3 text-[#0D0C22] placeholder-[#6E6D7A] focus:outline-none focus:border-[#EA4C89] focus:ring-1 focus:ring-[#EA4C89]"
                           />
                         )}
                         
                         <button 
                           onClick={handleLoadModels}
                           disabled={isLoadingModels}
-                          className="px-6 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium transition-colors flex items-center gap-2"
+                          className="px-6 rounded-lg bg-white hover:bg-[#F8F7F4] text-[#0D0C22] border border-black/10 font-medium transition-colors flex items-center gap-2"
                         >
                           {isLoadingModels ? <Loader2 className="h-4 w-4 animate-spin" /> : "Load"}
                         </button>
@@ -427,22 +427,22 @@ export default function SettingsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">System Message <span className="text-gray-500 font-normal">(Opsional)</span></label>
+                      <label className="block text-sm font-medium text-[#0D0C22] mb-2">System Message <span className="text-[#6E6D7A] font-normal">(Opsional)</span></label>
                       <textarea 
                         rows={3}
                         placeholder="Instruksi kustom untuk mendeteksi highlight..." 
                         value={systemMessage}
                         onChange={(e) => setSystemMessage(e.target.value)}
-                        className="w-full rounded-lg border border-white/10 bg-black/50 px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-lg border border-transparent bg-[#F8F7F4] px-4 py-3 text-[#0D0C22] placeholder-[#6E6D7A] focus:outline-none focus:border-[#EA4C89] focus:ring-1 focus:ring-[#EA4C89]"
                       />
                     </div>
                   </div>
 
-                  <div className="flex justify-end pt-6 border-t border-white/10">
+                  <div className="flex justify-end pt-6 border-t border-black/10">
                     <button 
                       onClick={handleSaveAi}
                       disabled={isSaving}
-                      className="flex items-center gap-2 bg-blue-500 hover:bg-blue-400 text-black px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                      className="flex items-center gap-2 bg-[#EA4C89] hover:bg-[#C32361] text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
                     >
                       {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : (isSaved ? <CheckCircle2 className="h-4 w-4" /> : <Save className="h-4 w-4" />)} 
                       {isSaved ? "Tersimpan!" : "Simpan Pengaturan"}
@@ -454,10 +454,10 @@ export default function SettingsPage() {
 
             {activeTab === 'billing' && (
               <>
-                <h3 className="text-xl font-bold border-b border-white/10 pb-4">Penagihan & Paket</h3>
-                <div className="py-8 text-center text-gray-400 space-y-4">
+                <h3 className="text-xl font-bold border-b border-black/10 pb-4">Penagihan & Paket</h3>
+                <div className="py-8 text-center text-[#6E6D7A] space-y-4">
                   <p>Kelola kredit, riwayat transaksi, dan pembelian paket di halaman penagihan.</p>
-                  <Link href="/dashboard/billing" className="inline-block bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-black font-extrabold px-6 py-3 rounded-2xl text-sm transition-all">
+                  <Link href="/dashboard/billing" className="inline-block bg-[#EA4C89] hover:bg-[#C32361] text-white font-extrabold px-6 py-3 rounded-2xl text-sm transition-all">
                     Buka Halaman Penagihan
                   </Link>
                 </div>

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#05060B] text-white selection:bg-purple-500 selection:text-white">
+    <div className="min-h-screen bg-white text-[#0D0C22] selection:bg-[#EA4C89] selection:text-white">
       <ScrollProgress />
       <Navbar />
       <main>

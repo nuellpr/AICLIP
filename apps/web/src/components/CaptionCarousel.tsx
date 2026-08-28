@@ -99,21 +99,21 @@ export function CaptionCarousel({ selectedId, onSelect }: CaptionCarouselProps) 
   return (
     <div className="relative group w-full mb-6">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Caption Style Presets</h3>
+        <h3 className="text-sm font-semibold text-[#6E6D7A] uppercase tracking-wider">Caption Style Presets</h3>
         <div className="flex gap-2">
           <button 
             type="button"
             onClick={() => scroll('left')}
-            className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition"
+            className="p-1 rounded-full bg-[#F8F7F4] hover:bg-[#EFEDE8] transition"
           >
-            <ChevronLeft className="w-5 h-5 text-gray-300" />
+            <ChevronLeft className="w-5 h-5 text-[#0D0C22]" />
           </button>
           <button 
             type="button"
             onClick={() => scroll('right')}
-            className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition"
+            className="p-1 rounded-full bg-[#F8F7F4] hover:bg-[#EFEDE8] transition"
           >
-            <ChevronRight className="w-5 h-5 text-gray-300" />
+            <ChevronRight className="w-5 h-5 text-[#0D0C22]" />
           </button>
         </div>
       </div>
@@ -136,10 +136,11 @@ export function CaptionCarousel({ selectedId, onSelect }: CaptionCarouselProps) 
               }}
               className={`snap-start shrink-0 rounded-xl border-2 transition-all duration-200 
                 ${preset.isLocked ? 'cursor-not-allowed opacity-90' : 'cursor-pointer'} 
-                ${isSelected && !preset.isLocked ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 bg-[#1A1A1A] hover:border-white/30'}`}
+                ${isSelected && !preset.isLocked ? 'border-[#EA4C89] ring-2 ring-[#EA4C89]/20' : 'border-black/[0.08] hover:border-black/20'} 
+                [&:nth-child(4n+1)]:bg-[#E7E4F9] [&:nth-child(4n+2)]:bg-[#DBF3E8] [&:nth-child(4n+3)]:bg-[#FDF3D8] [&:nth-child(4n+4)]:bg-[#FDE3E1]`}
               style={{ width: '160px' }}
             >
-              <div className="h-28 w-full flex items-center justify-center rounded-t-lg overflow-hidden p-2 relative bg-black/40">
+              <div className="h-28 w-full flex items-center justify-center rounded-t-lg overflow-hidden p-2 relative bg-black">
                 {preset.id === 'no-caption' ? (
                   <div className="w-12 h-12 rounded-full border-4 border-gray-500 relative flex items-center justify-center">
                     <div className="w-14 h-1 bg-gray-500 rotate-45 absolute" />
@@ -155,8 +156,8 @@ export function CaptionCarousel({ selectedId, onSelect }: CaptionCarouselProps) 
                   </div>
                 )}
               </div>
-              <div className="p-3 text-center border-t border-white/10">
-                <p className={`text-sm font-semibold ${isSelected ? 'text-blue-400' : 'text-gray-300'}`}>
+              <div className="p-3 text-center border-t border-black/[0.08]">
+                <p className={`text-sm font-semibold ${isSelected ? 'text-[#EA4C89]' : 'text-[#0D0C22]'}`}>
                   {preset.name}
                 </p>
               </div>

@@ -100,25 +100,25 @@ export default function BillingPage() {
     switch (status.toUpperCase()) {
       case 'SETTLEMENT':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-green-500/20 text-green-400 px-2.5 py-1 rounded-full border border-green-500/30">
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#DBF3E8] text-[#14532D] px-2.5 py-1 rounded-full">
             <CheckCircle2 className="w-3.5 h-3.5" /> Berhasil
           </span>
         );
       case 'PENDING':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-full border border-yellow-500/30">
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#FDF3D8] text-[#854D0E] px-2.5 py-1 rounded-full">
             <Clock className="w-3.5 h-3.5" /> Menunggu Pembayaran
           </span>
         );
       case 'EXPIRED':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-red-500/20 text-red-400 px-2.5 py-1 rounded-full border border-red-500/30">
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#FDE3E1] text-[#B42318] px-2.5 py-1 rounded-full">
             <AlertCircle className="w-3.5 h-3.5" /> Kadaluarsa
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-gray-500/20 text-gray-400 px-2.5 py-1 rounded-full border border-gray-500/30">
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#F8F7F4] text-[#6E6D7A] px-2.5 py-1 rounded-full">
             {status}
           </span>
         );
@@ -128,13 +128,13 @@ export default function BillingPage() {
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-black/10 pb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
-            <CreditCard className="h-8 w-8 text-blue-400" />
+          <h1 className="text-2xl sm:text-3xl font-black text-[#0D0C22] flex items-center gap-3">
+            <CreditCard className="h-8 w-8 text-[#EA4C89]" />
             <span>Langganan & Pembelian Kredit</span>
           </h1>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="text-sm text-[#6E6D7A] mt-1">
             Pilih paket langganan atau top-up kredit AI instan menggunakan QRIS, GoPay, Transfer Bank, atau Kartu Kredit.
           </p>
         </div>
@@ -142,7 +142,7 @@ export default function BillingPage() {
         <button
           onClick={fetchData}
           disabled={loading}
-          className="self-start md:self-auto flex items-center gap-2 bg-white/10 hover:bg-white/20 text-gray-300 px-4 py-2 rounded-xl text-xs font-semibold transition-all border border-white/10 disabled:opacity-50"
+          className="self-start md:self-auto flex items-center gap-2 bg-white hover:bg-[#F8F7F4] text-[#0D0C22] px-4 py-2 rounded-xl text-xs font-semibold transition-all border border-black/10 disabled:opacity-50"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh Data</span>
@@ -150,39 +150,39 @@ export default function BillingPage() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-3">
+        <div className="p-4 rounded-2xl bg-[#FDE3E1] border border-[#FDE3E1] text-[#B42318] text-sm flex items-center gap-3">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Credit Summary Card */}
-      <div className="relative rounded-3xl glass-card p-6 md:p-8 overflow-hidden border border-blue-500/30 bg-gradient-to-r from-blue-950/40 via-purple-950/20 to-black shadow-[0_0_50px_rgba(37,99,235,0.1)]">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+      <div className="relative rounded-3xl glass-card p-6 md:p-8 overflow-hidden border border-black/5 bg-white shadow-[0_12px_32px_-16px_rgba(13,12,34,0.12)]">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#EA4C89]/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#EA4C89] bg-[#FDE3E1]/60 px-3 py-1 rounded-full">
                 Status Paket Anda
               </span>
-              <span className="text-xs font-bold text-green-400 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">
+              <span className={`text-xs font-bold px-3 py-1 rounded-full ${(subscription?.plan || 'FREE').toUpperCase() === 'PRO' ? 'bg-[#EA4C89] text-white' : 'bg-[#F8F7F4] text-[#6E6D7A]'}`}>
                 {subscription?.plan || 'FREE'}
               </span>
             </div>
-            <p className="text-4xl sm:text-5xl font-black text-white mt-2">
-              {subscription?.credits ?? 5} <span className="text-lg font-bold text-gray-400">Kredit AI Tersisa</span>
+            <p className="text-4xl sm:text-5xl font-black text-[#0D0C22] mt-2">
+              {subscription?.credits ?? 5} <span className="text-lg font-bold text-[#6E6D7A]">Kredit AI Tersisa</span>
             </p>
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-[#6E6D7A] mt-2">
               1 Kredit = 1 Proyek (1 URL YouTube menghasilkan 3 klip viral).
             </p>
           </div>
 
-          <div className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10">
-            <ShieldCheck className="w-8 h-8 text-blue-400 flex-shrink-0" />
+          <div className="flex items-center gap-3 bg-[#F8F7F4] p-4 rounded-2xl border border-black/5">
+            <ShieldCheck className="w-8 h-8 text-[#EA4C89] flex-shrink-0" />
             <div className="text-xs">
-              <p className="font-bold text-white">Pembayaran Aman 100%</p>
-              <p className="text-gray-400">Didukung oleh iPaymu • QRIS, VA, e-Wallet</p>
+              <p className="font-bold text-[#0D0C22]">Pembayaran Aman 100%</p>
+              <p className="text-[#6E6D7A]">Didukung oleh iPaymu • QRIS, VA, e-Wallet</p>
             </div>
           </div>
         </div>
@@ -192,42 +192,42 @@ export default function BillingPage() {
       <div className="space-y-4">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-purple-400" />
+            <Sparkles className="w-5 h-5 text-[#7C3AED]" />
             <span>Paket Berlangganan Hemat</span>
           </h2>
-          <p className="text-xs text-gray-400">Dapatkan alokasi kredit AI lebih besar dengan harga lebih terjangkau.</p>
+          <p className="text-xs text-[#6E6D7A]">Dapatkan alokasi kredit AI lebih besar dengan harga lebih terjangkau.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Standar Plan */}
-          <div className="relative rounded-3xl glass-panel p-6 sm:p-8 border border-blue-500/40 bg-gradient-to-b from-blue-950/30 to-black flex flex-col justify-between hover:border-blue-400 transition-all shadow-[0_0_30px_rgba(37,99,235,0.15)] group">
-            <div className="absolute top-4 right-4 bg-gradient-to-r from-blue-400 to-purple-500 text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
+          <div className={`relative rounded-3xl glass-panel p-6 sm:p-8 flex flex-col justify-between transition-all group ${(subscription?.plan || '').toUpperCase() === 'STANDAR' ? 'border-2 border-[#EA4C89] shadow-[0_16px_40px_-16px_rgba(234,76,137,0.3)]' : 'border border-black/10 hover:border-[#EA4C89]/40 shadow-[0_8px_24px_-16px_rgba(13,12,34,0.12)]'}`}>
+            <div className="absolute top-4 right-4 bg-[#EA4C89] text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
               Paling Populer
             </div>
 
             <div>
-              <p className="text-lg font-bold text-blue-400">Paket Standar</p>
+              <p className="text-lg font-bold text-[#EA4C89]">Paket Standar</p>
               <div className="flex items-baseline gap-1 mt-2">
-                <span className="text-3xl sm:text-4xl font-black text-white">{formatRupiah(30000)}</span>
-                <span className="text-xs text-gray-400">/ bulan</span>
+                <span className="text-3xl sm:text-4xl font-black text-[#0D0C22]">{formatRupiah(30000)}</span>
+                <span className="text-xs text-[#6E6D7A]">/ bulan</span>
               </div>
-              <p className="text-xs text-gray-400 mt-2">Cocok untuk kreator konten harian TikTok & Shorts.</p>
+              <p className="text-xs text-[#6E6D7A] mt-2">Cocok untuk kreator konten harian TikTok & Shorts.</p>
 
-              <div className="my-6 border-t border-white/10 pt-6 space-y-3">
-                <div className="flex items-center gap-3 text-xs text-gray-200">
-                  <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+              <div className="my-6 border-t border-black/10 pt-6 space-y-3">
+                <div className="flex items-center gap-3 text-xs text-[#0D0C22]">
+                  <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-[#EA4C89] text-white"><Check className="w-3 h-3" /></span>
                   <span><strong>30 Kredit</strong> AI Video</span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-gray-200">
-                  <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                <div className="flex items-center gap-3 text-xs text-[#0D0C22]">
+                  <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-[#EA4C89] text-white"><Check className="w-3 h-3" /></span>
                   <span>Akses Semua Model AI (DeepSeek, Gemini, GPT-4o)</span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-gray-200">
-                  <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                <div className="flex items-center gap-3 text-xs text-[#0D0C22]">
+                  <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-[#EA4C89] text-white"><Check className="w-3 h-3" /></span>
                   <span>Export Video 1080p HD Tanpa Watermark</span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-gray-200">
-                  <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                <div className="flex items-center gap-3 text-xs text-[#0D0C22]">
+                  <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-[#EA4C89] text-white"><Check className="w-3 h-3" /></span>
                   <span>Auto Subtitle Bahasa Gaul & Animasi</span>
                 </div>
               </div>
@@ -236,7 +236,7 @@ export default function BillingPage() {
             <button
               onClick={() => handleBuyPlan('STANDAR')}
               disabled={checkoutLoading === 'STANDAR'}
-              className="w-full bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-300 hover:to-purple-400 text-black font-extrabold py-3.5 rounded-2xl text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(37,99,235,0.4)] disabled:opacity-50"
+              className={`w-full font-extrabold py-3.5 rounded-2xl text-xs sm:text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${(subscription?.plan || '').toUpperCase() === 'STANDAR' ? 'bg-[#EA4C89] hover:bg-[#C32361] text-white shadow-[0_8px_24px_-8px_rgba(234,76,137,0.5)]' : 'bg-[#0D0C22] hover:bg-[#EA4C89] text-white'}`}
             >
               {checkoutLoading === 'STANDAR' ? (
                 <span>Memproses...</span>
@@ -250,30 +250,30 @@ export default function BillingPage() {
           </div>
 
           {/* Pro Plan */}
-          <div className="relative rounded-3xl glass-panel p-6 sm:p-8 border border-white/10 bg-gradient-to-b from-purple-950/20 to-black flex flex-col justify-between hover:border-purple-500/50 transition-all group">
+          <div className={`relative rounded-3xl glass-panel p-6 sm:p-8 flex flex-col justify-between transition-all group ${(subscription?.plan || '').toUpperCase() === 'PRO' ? 'border-2 border-[#EA4C89] shadow-[0_16px_40px_-16px_rgba(234,76,137,0.3)]' : 'border border-black/10 hover:border-[#EA4C89]/40 shadow-[0_8px_24px_-16px_rgba(13,12,34,0.12)]'}`}>
             <div>
-              <p className="text-lg font-bold text-purple-400">Paket Pro</p>
+              <p className="text-lg font-bold text-[#7C3AED]">Paket Pro</p>
               <div className="flex items-baseline gap-1 mt-2">
-                <span className="text-3xl sm:text-4xl font-black text-white">{formatRupiah(50000)}</span>
-                <span className="text-xs text-gray-400">/ bulan</span>
+                <span className="text-3xl sm:text-4xl font-black text-[#0D0C22]">{formatRupiah(50000)}</span>
+                <span className="text-xs text-[#6E6D7A]">/ bulan</span>
               </div>
-              <p className="text-xs text-gray-400 mt-2">Untuk kreator konten yang lebih produktif & agensi kecil.</p>
+              <p className="text-xs text-[#6E6D7A] mt-2">Untuk kreator konten yang lebih produktif & agensi kecil.</p>
 
-              <div className="my-6 border-t border-white/10 pt-6 space-y-3">
-                <div className="flex items-center gap-3 text-xs text-gray-200">
-                  <Check className="w-4 h-4 text-purple-400 flex-shrink-0" />
+              <div className="my-6 border-t border-black/10 pt-6 space-y-3">
+                <div className="flex items-center gap-3 text-xs text-[#0D0C22]">
+                  <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-[#EA4C89] text-white"><Check className="w-3 h-3" /></span>
                   <span><strong>100 Kredit</strong> AI Video</span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-gray-200">
-                  <Check className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                <div className="flex items-center gap-3 text-xs text-[#0D0C22]">
+                  <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-[#EA4C89] text-white"><Check className="w-3 h-3" /></span>
                   <span>Prioritas Render Antrean Cepat</span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-gray-200">
-                  <Check className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                <div className="flex items-center gap-3 text-xs text-[#0D0C22]">
+                  <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-[#EA4C89] text-white"><Check className="w-3 h-3" /></span>
                   <span>Akses Semua Fitur Re-framing 9:16</span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-gray-200">
-                  <Check className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                <div className="flex items-center gap-3 text-xs text-[#0D0C22]">
+                  <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-[#EA4C89] text-white"><Check className="w-3 h-3" /></span>
                   <span>Dukungan Pelanggan VIP</span>
                 </div>
               </div>
@@ -282,7 +282,7 @@ export default function BillingPage() {
             <button
               onClick={() => handleBuyPlan('PRO')}
               disabled={checkoutLoading === 'PRO'}
-              className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3.5 rounded-2xl text-xs sm:text-sm transition-all border border-white/20 flex items-center justify-center gap-2 disabled:opacity-50"
+              className={`w-full font-bold py-3.5 rounded-2xl text-xs sm:text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${(subscription?.plan || '').toUpperCase() === 'PRO' ? 'bg-[#EA4C89] hover:bg-[#C32361] text-white shadow-[0_8px_24px_-8px_rgba(234,76,137,0.5)]' : 'bg-[#0D0C22] hover:bg-[#EA4C89] text-white'}`}
             >
               {checkoutLoading === 'PRO' ? (
                 <span>Memproses...</span>
@@ -298,41 +298,41 @@ export default function BillingPage() {
       </div>
 
       {/* Instant Top-Up Credit Packs */}
-      <div className="space-y-4 pt-4 border-t border-white/10">
+      <div className="space-y-4 pt-4 border-t border-black/10">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Zap className="w-5 h-5 text-yellow-400" />
+            <Zap className="w-5 h-5 text-[#F59E0B]" />
             <span>Top-Up Kredit Instan (Tanpa Langganan)</span>
           </h2>
-          <p className="text-xs text-gray-400">Butuh kredit tambahan tanpa berlangganan bulanan? Isi ulang kapan saja.</p>
+          <p className="text-xs text-[#6E6D7A]">Butuh kredit tambahan tanpa berlangganan bulanan? Isi ulang kapan saja.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="glass-card p-5 rounded-2xl border border-white/10 flex items-center justify-between hover:border-yellow-500/30 transition-all">
+          <div className="glass-card p-5 rounded-2xl border border-black/10 bg-white flex items-center justify-between hover:border-[#EA4C89] transition-all">
             <div>
-              <p className="text-sm font-bold text-white">Top-Up 30 Kredit</p>
-              <p className="text-xs text-gray-400 mt-0.5">Berlaku selamanya tanpa kadaluarsa</p>
-              <p className="text-lg font-black text-yellow-400 mt-2">{formatRupiah(29000)}</p>
+              <p className="text-sm font-bold text-[#0D0C22]">Top-Up 30 Kredit</p>
+              <p className="text-xs text-[#6E6D7A] mt-0.5">Berlaku selamanya tanpa kadaluarsa</p>
+              <p className="text-lg font-black text-[#F59E0B] mt-2">{formatRupiah(29000)}</p>
             </div>
             <button
               onClick={() => handleBuyPlan('TOPUP_30')}
               disabled={checkoutLoading === 'TOPUP_30'}
-              className="bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 font-bold px-4 py-2.5 rounded-xl text-xs border border-yellow-500/30 transition-all disabled:opacity-50"
+              className="bg-[#EA4C89] hover:bg-[#C32361] text-white font-bold px-4 py-2.5 rounded-full text-xs transition-all disabled:opacity-50"
             >
               {checkoutLoading === 'TOPUP_30' ? '...' : 'Beli Top-Up'}
             </button>
           </div>
 
-          <div className="glass-card p-5 rounded-2xl border border-white/10 flex items-center justify-between hover:border-yellow-500/30 transition-all">
+          <div className="glass-card p-5 rounded-2xl border border-black/10 bg-white flex items-center justify-between hover:border-[#EA4C89] transition-all">
             <div>
-              <p className="text-sm font-bold text-white">Top-Up 100 Kredit</p>
-              <p className="text-xs text-gray-400 mt-0.5">Hemat 20% dibanding eceran</p>
-              <p className="text-lg font-black text-yellow-400 mt-2">{formatRupiah(79000)}</p>
+              <p className="text-sm font-bold text-[#0D0C22]">Top-Up 100 Kredit</p>
+              <p className="text-xs text-[#6E6D7A] mt-0.5">Hemat 20% dibanding eceran</p>
+              <p className="text-lg font-black text-[#F59E0B] mt-2">{formatRupiah(79000)}</p>
             </div>
             <button
               onClick={() => handleBuyPlan('TOPUP_100')}
               disabled={checkoutLoading === 'TOPUP_100'}
-              className="bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 font-bold px-4 py-2.5 rounded-xl text-xs border border-yellow-500/30 transition-all disabled:opacity-50"
+              className="bg-[#EA4C89] hover:bg-[#C32361] text-white font-bold px-4 py-2.5 rounded-full text-xs transition-all disabled:opacity-50"
             >
               {checkoutLoading === 'TOPUP_100' ? '...' : 'Beli Top-Up'}
             </button>
@@ -341,17 +341,17 @@ export default function BillingPage() {
       </div>
 
       {/* Transaction History Table */}
-      <div className="space-y-4 pt-6 border-t border-white/10">
+      <div className="space-y-4 pt-6 border-t border-black/10">
         <h2 className="text-lg font-bold text-white">Riwayat Transaksi</h2>
 
         {transactions.length === 0 ? (
-          <div className="text-center py-10 rounded-2xl glass-card border border-white/10 text-gray-400 text-xs">
+          <div className="text-center py-10 rounded-2xl glass-card border border-black/10 text-[#6E6D7A] text-xs">
             Belum ada riwayat transaksi.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-white/10 glass-card">
-            <table className="w-full text-left text-xs text-gray-300">
-              <thead className="bg-white/5 text-gray-400 uppercase text-[10px] tracking-wider border-b border-white/10">
+          <div className="overflow-x-auto rounded-2xl border border-black/10 glass-card bg-white">
+            <table className="w-full text-left text-xs text-[#0D0C22]">
+              <thead className="bg-[#F8F7F4] text-[#6E6D7A] uppercase text-[10px] tracking-wider border-b border-black/10">
                 <tr>
                   <th className="p-4">Order ID</th>
                   <th className="p-4">Paket</th>
@@ -362,15 +362,15 @@ export default function BillingPage() {
                   <th className="p-4 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-black/5">
                 {transactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-white/5 transition-colors">
-                    <td className="p-4 font-mono font-bold text-white">{tx.orderId}</td>
-                    <td className="p-4 font-semibold text-gray-200">{tx.plan}</td>
-                    <td className="p-4 font-bold text-blue-400">{formatRupiah(tx.amount)}</td>
+                  <tr key={tx.id} className="hover:bg-[#F8F7F4] transition-colors">
+                    <td className="p-4 font-mono font-bold text-[#0D0C22]">{tx.orderId}</td>
+                    <td className="p-4 font-semibold text-[#0D0C22]">{tx.plan}</td>
+                    <td className="p-4 font-bold text-[#EA4C89]">{formatRupiah(tx.amount)}</td>
                     <td className="p-4">+{tx.creditsAdded} Kredit</td>
                     <td className="p-4">{getStatusBadge(tx.status)}</td>
-                    <td className="p-4 text-gray-400">{new Date(tx.createdAt).toLocaleDateString('id-ID')}</td>
+                    <td className="p-4 text-[#6E6D7A]">{new Date(tx.createdAt).toLocaleDateString('id-ID')}</td>
                     <td className="p-4 text-right">
                       {tx.status === 'PENDING' && (
                         <div className="flex items-center justify-end gap-2">
@@ -379,7 +379,7 @@ export default function BillingPage() {
                               href={tx.snapUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="px-2.5 py-1 bg-blue-500 hover:bg-blue-400 text-black rounded-lg text-[11px] font-bold transition-all"
+                              className="px-2.5 py-1 bg-[#EA4C89] hover:bg-[#C32361] text-white rounded-lg text-[11px] font-bold transition-all"
                             >
                               Bayar Sekarang
                             </a>
@@ -400,7 +400,7 @@ export default function BillingPage() {
                               // eslint-disable-next-line @typescript-eslint/no-unused-vars
                               } catch (e) {}
                             }}
-                            className="px-2.5 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/30 rounded-lg text-[11px] font-bold transition-all"
+                            className="px-2.5 py-1 bg-[#FDF3D8] hover:bg-[#F9EDC0] text-[#854D0E] rounded-lg text-[11px] font-bold transition-all"
                           >
                             Simulasi Bayar
                           </button>

@@ -15,25 +15,25 @@ export default function Marquee() {
   return (
     <section
       aria-hidden="true"
-      className="relative overflow-hidden border-y border-white/[0.06] bg-white/[0.015] py-5"
+      className="relative overflow-hidden bg-[#0D0C22] py-5"
     >
       <div
-        className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-[#05060B] to-transparent"
+        className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-[#0D0C22] to-transparent"
       />
       <div
-        className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-[#05060B] to-transparent"
+        className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-[#0D0C22] to-transparent"
       />
       <div className="cf-marquee-track flex w-max items-center gap-10">
         {row.map((w, i) => (
           <span key={i} className="flex items-center gap-10">
             <span
               className={`text-sm font-bold tracking-[0.25em] whitespace-nowrap ${
-                i % 2 === 0 ? "text-slate-500" : "text-gradient-blue"
+                i % 2 === 0 ? "text-white" : "text-[#EA4C89]"
               }`}
             >
               {w}
             </span>
-            <span className="h-1.5 w-1.5 rounded-full bg-purple-500/60" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#EA4C89]" />
           </span>
         ))}
       </div>

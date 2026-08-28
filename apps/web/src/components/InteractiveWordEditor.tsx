@@ -87,13 +87,13 @@ export function InteractiveWordEditor({
   };
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-4">
+    <div className="rounded-2xl border border-black/[0.08] bg-white p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h4 className="text-xs font-bold text-primary/80 uppercase tracking-wider flex items-center gap-1.5">
             <Edit3 className="h-3.5 w-3.5" /> Editor Kata Subtitle (Interactive Word-by-Word)
           </h4>
-          <p className="text-[11px] text-gray-400 mt-0.5">
+          <p className="text-[11px] text-[#6E6D7A] mt-0.5">
             Klik pada kata untuk mengubah ejaan kata ucapan atau memperbaiki typo.
           </p>
         </div>
@@ -102,7 +102,7 @@ export function InteractiveWordEditor({
           <button
             type="button"
             onClick={handleAddWord}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold bg-white hover:bg-[#F8F7F4] text-[#0D0C22] border border-black/10 rounded-full transition-colors"
           >
             <Plus className="h-3 w-3" /> Kata
           </button>
@@ -110,7 +110,7 @@ export function InteractiveWordEditor({
             type="button"
             disabled={isSaving}
             onClick={handleSaveAllToBackend}
-            className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-primary text-black hover:bg-primary/80 rounded-lg transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-[#EA4C89] text-white hover:bg-[#C32361] rounded-full transition-colors disabled:opacity-50"
           >
             {isSaving ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
             {isSaving ? "Menyimpan..." : "Simpan Kata"}
@@ -119,15 +119,15 @@ export function InteractiveWordEditor({
       </div>
 
       {successMessage && (
-        <div className="bg-green-500/20 border border-green-500/30 text-green-400 text-xs px-3 py-1.5 rounded-lg">
+        <div className="bg-[#DBF3E8] border border-[#DBF3E8] text-[#14532D] text-xs px-3 py-1.5 rounded-lg">
           {successMessage}
         </div>
       )}
 
       {/* Words Chips Grid */}
-      <div className="flex flex-wrap gap-2 max-h-56 overflow-y-auto p-2 bg-black/60 rounded-xl border border-white/10">
+      <div className="flex flex-wrap gap-2 max-h-56 overflow-y-auto p-2 bg-[#F8F7F4] rounded-xl border border-black/[0.08]">
         {words.length === 0 ? (
-          <p className="text-xs text-gray-500 p-2 italic">Belum ada kata transkripsi. Klik tombol &quot;Transkripsi Ulang (Whisper)&quot; untuk memuat kata.</p>
+          <p className="text-xs text-[#6E6D7A] p-2 italic">Belum ada kata transkripsi. Klik tombol &quot;Transkripsi Ulang (Whisper)&quot; untuk memuat kata.</p>
         ) : (
           words.map((w, idx) => {
             const isEditing = editingIndex === idx;
@@ -142,7 +142,7 @@ export function InteractiveWordEditor({
                     type="text"
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
-                    className="bg-black border border-white/20 rounded px-1.5 py-0.5 text-white font-bold text-xs w-24 focus:outline-none focus:border-primary"
+                    className="bg-white border border-black/10 rounded px-1.5 py-0.5 text-[#0D0C22] font-bold text-xs w-24 focus:outline-none focus:border-[#EA4C89]"
                     autoFocus
                   />
                   <input
@@ -150,27 +150,27 @@ export function InteractiveWordEditor({
                     step="0.1"
                     value={editStart}
                     onChange={(e) => setEditStart(parseFloat(e.target.value) || 0)}
-                    className="bg-black border border-white/20 rounded px-1 text-[10px] text-gray-300 w-12"
+                    className="bg-white border border-black/10 rounded px-1 text-[10px] text-[#6E6D7A] w-12"
                   />
-                  <span className="text-[10px] text-gray-500">-</span>
+                  <span className="text-[10px] text-[#6E6D7A]">-</span>
                   <input
                     type="number"
                     step="0.1"
                     value={editEnd}
                     onChange={(e) => setEditEnd(parseFloat(e.target.value) || 0)}
-                    className="bg-black border border-white/20 rounded px-1 text-[10px] text-gray-300 w-12"
+                    className="bg-white border border-black/10 rounded px-1 text-[10px] text-[#6E6D7A] w-12"
                   />
                   <button
                     type="button"
                     onClick={() => handleSaveWord(idx)}
-                    className="p-1 bg-green-500 text-black rounded hover:bg-green-400"
+                    className="p-1 bg-[#16A34A] text-white rounded hover:bg-[#15803D]"
                   >
                     <Check className="h-3 w-3" />
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDeleteWord(idx)}
-                    className="p-1 bg-red-500/80 text-white rounded hover:bg-red-500"
+                    className="p-1 bg-[#B42318] text-white rounded hover:bg-[#9A1F15]"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>
@@ -183,10 +183,10 @@ export function InteractiveWordEditor({
                 key={idx}
                 type="button"
                 onClick={() => handleStartEdit(idx)}
-                className="group relative flex items-center gap-1 bg-white/5 hover:bg-white/15 border border-white/10 hover:border-primary/50 px-2.5 py-1 rounded-lg text-xs transition-all hover:scale-105"
+                className="group relative flex items-center gap-1 bg-white hover:bg-[#F8F7F4] border border-black/[0.08] hover:border-[#EA4C89]/50 px-2.5 py-1 rounded-full text-xs transition-all hover:scale-105"
               >
-                <span className="font-bold text-white group-hover:text-primary">{w.text}</span>
-                <span className="text-[9px] text-gray-500 font-mono">({w.start.toFixed(1)}s)</span>
+                <span className="font-bold text-[#0D0C22] group-hover:text-[#EA4C89]">{w.text}</span>
+                <span className="text-[9px] text-[#6E6D7A] font-mono">({w.start.toFixed(1)}s)</span>
               </button>
             );
           })
