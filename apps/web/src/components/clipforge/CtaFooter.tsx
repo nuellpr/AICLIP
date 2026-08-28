@@ -39,9 +39,19 @@ export default function CtaFooter() {
             <ClipForgeLogo compact size="sm" />
             <span className="text-sm font-semibold text-[var(--ink)]">ClipForge AI</span>
           </div>
-          <p className="text-xs text-[var(--db-gray)]">
-            © 2026 ClipForge AI · Auto Viral Clipping. All rights reserved.
-          </p>
+          <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-4">
+            <p className="text-xs text-[var(--db-gray)]">
+              © 2026 ClipForge AI · Auto Viral Clipping. All rights reserved.
+            </p>
+            <div className="flex items-center gap-4 text-xs text-[var(--db-gray)]">
+              <Link href="/terms" className="transition-colors hover:text-[#EA4C89]">
+                Syarat Layanan
+              </Link>
+              <Link href="/privacy" className="transition-colors hover:text-[#EA4C89]">
+                Kebijakan Privasi
+              </Link>
+            </div>
+          </div>
         </div>
       </footer>
     </>
