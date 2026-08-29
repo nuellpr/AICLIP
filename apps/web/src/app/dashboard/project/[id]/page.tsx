@@ -346,7 +346,7 @@ export default function ProjectPage() {
                       
                       {isReady ? (
                         <a 
-                          href={clip.renderedFileKey?.startsWith('http') ? clip.renderedFileKey : getApiUrl(`/renders/${encodeURIComponent((clip.title || 'clip').replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id)}.mp4`)} 
+                          href={clip.renderedFileKey || getApiUrl(`/renders/${encodeURIComponent((clip.title || 'clip').replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id)}.mp4`)}
                           download={`${(clip.title || 'clip').replace(/[^a-zA-Z0-9_-]/g, '_')}.mp4`}
                           target="_blank"
                           rel="noreferrer"
