@@ -53,7 +53,9 @@ export async function generateAssFromVtt(
   startTime: number,
   endTime: number,
   outputPath: string,
-  styleOptions: any
+  styleOptions: any,
+  videoWidth: number = 1080,
+  videoHeight: number = 1920
 ) {
   let offset = styleOptions.offset !== undefined ? Number(styleOptions.offset) : 0; 
 
@@ -168,8 +170,8 @@ export async function generateAssFromVtt(
 
   let assContent = `[Script Info]
 ScriptType: v4.00+
-PlayResX: 1080
-PlayResY: 1920
+PlayResX: ${videoWidth}
+PlayResY: ${videoHeight}
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding

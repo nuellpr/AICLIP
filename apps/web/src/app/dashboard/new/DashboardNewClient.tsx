@@ -15,6 +15,7 @@ export default function NewProjectPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [layoutMode, setLayoutMode] = useState("crop_blur");
+  const [aspectRatio, setAspectRatio] = useState("9:16");
   const [clipCount, setClipCount] = useState(3);
   const [targetDuration, setTargetDuration] = useState("30-60");
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,6 +39,7 @@ export default function NewProjectPage() {
         title: activeTab === 'url' ? "Proyek dari URL" : "Proyek dari File",
         sourceType: activeTab === 'url' ? "URL" : "UPLOAD",
         layoutMode: layoutMode,
+        aspectRatio: aspectRatio,
         clipCount: clipCount,
         targetDuration: targetDuration,
         searchQuery: searchQuery,
@@ -298,6 +300,22 @@ export default function NewProjectPage() {
             </select>
           </div>
           
+          <div className="glass-card p-5 rounded-xl">
+            <label className="block text-sm font-bold text-[var(--ink)] mb-3 uppercase tracking-wider">Rasio Aspek</label>
+            <div className="grid grid-cols-3 gap-2">
+              {[['9:16', '9:16 Vertikal'], ['1:1', '1:1 Kotak'], ['4:5', '4:5 Feed']].map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setAspectRatio(v)}
+                  className={`p-3 rounded-xl text-sm font-semibold transition-all border ${aspectRatio === v ? 'border-[#EA4C89] bg-[#FDE3E1]/40 text-[#C32361]' : 'border-transparent bg-[var(--db-cream)] text-[var(--ink)] hover:border-[#EA4C89]/50'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="glass-card p-5 rounded-xl">
             <label className="block text-sm font-bold text-[var(--ink)] mb-3 uppercase tracking-wider">Target Durasi Klip</label>
             <select 

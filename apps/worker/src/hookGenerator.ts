@@ -17,6 +17,8 @@ export interface HookOptions {
   textColor?: string;
   bgColor1?: string;
   bgColor2?: string;
+  width?: number; // target output width, default 1080
+  height?: number; // target output height, default 1920
 }
 
 /**
@@ -132,11 +134,15 @@ export async function generateHookIntro(options: HookOptions): Promise<string | 
     textColor = 'white',
     bgColor1 = '#667eea',
     bgColor2 = '#764ba2',
+    width = 1080,
+    height = 1920,
   } = options;
 
   // Semua nilai yang diinterpolasi ke command ffmpeg dibersihkan dulu
   const safeDuration = Math.min(Math.max(Number(duration) || 4, 1), 15);
   const safeFontSize = Math.min(Math.max(Number(fontSize) || 56, 12), 200);
+  const safeW = Math.round(Math.min(Math.max(Number(width) || 1080, 240), 3840));
+  const safeH = Math.round(Math.min(Math.max(Number(height) || 1920, 240), 3840));
   const safeColor = (c: string) => String(c).replace(/[^a-zA-Z0-9#]/g, '') || 'white';
   const safeTextColor = safeColor(textColor);
   const safeBg1 = safeColor(bgColor1);
@@ -194,7 +200,7 @@ export async function generateHookIntro(options: HookOptions): Promise<string | 
     // Build drawtext filters for each line with fade-in animation
     const lineHeight = safeFontSize + 15;
     const totalTextHeight = lines.length * lineHeight;
-    const startY = (1920 - totalTextHeight) / 2;
+    const startY = (safeH - totalTextHeight) / 2;
 
     let drawtextFilters = escapedLines.map((line, idx) => {
       const y = Math.round(startY + idx * lineHeight);
@@ -204,8 +210,8 @@ export async function generateHookIntro(options: HookOptions): Promise<string | 
     }).join(',');
 
     // Create gradient background + text overlay
-    const bgFilter = `color=c=${safeBg1}:s=1080x1920:d=${videoDuration},format=yuv420p`;
-    const gradientOverlay = `gradients=s=1080x1920:c0=${safeBg1}:c1=${safeBg2}:type=linear:duration=${videoDuration}`;
+    const bgFilter = `color=c=${safeBg1}:s=${safeW}x${safeH}:d=${videoDuration},format=yuv420p`;
+    const gradientOverlay = `gradients=s=${safeW}x${safeH}:c0=${safeBg1}:c1=${safeBg2}:type=linear:duration=${videoDuration}`;
 
     // Background: frame dari klip utama (digelapkan) kalau ada, fallback warna gelap solid
     const framePath = path.join(hookDir, `hook_frame_${Date.now()}.jpg`);
@@ -214,11 +220,11 @@ export async function generateHookIntro(options: HookOptions): Promise<string | 
       : false;
 
     const bgPre = useBgImage
-      ? 'scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,eq=brightness=-0.12:saturation=1.05,fps=30,'
+      ? `scale=${safeW}:${safeH}:force_original_aspect_ratio=increase,crop=${safeW}:${safeH},eq=brightness=-0.12:saturation=1.05,fps=30,`
       : '';
     const bgInput = useBgImage
       ? `-loop 1 -t ${videoDuration} -i "${framePath.replace(/\\/g, '/')}"`
-      : `-f lavfi -i "color=c=0x1a1a2e:s=1080x1920:d=${videoDuration}"`;
+      : `-f lavfi -i "color=c=0x1a1a2e:s=${safeW}x${safeH}:d=${videoDuration}"`;
 
     // Simpler approach: solid color background with drawtext
     let ffmpegCmd: string;
@@ -279,22 +285,26 @@ async function hasAudioStream(filePath: string): Promise<boolean> {
 export async function concatHookAndClip(
   hookVideoPath: string,
   mainClipPath: string,
-  outputPath: string
+  outputPath: string,
+  width: number = 1080,
+  height: number = 1920
 ): Promise<boolean> {
   try {
     const cleanHook = hookVideoPath.replace(/\\/g, '/');
     const cleanMain = mainClipPath.replace(/\\/g, '/');
-    
+    const W = Math.round(Number(width) || 1080);
+    const H = Math.round(Number(height) || 1920);
+
     const mainHasAudio = await hasAudioStream(mainClipPath);
     let ffmpegCmd: string;
 
     if (mainHasAudio) {
       // Both videos have audio streams
-      const filterComplex = '[0:v]scale=1080:1920,setsar=1,format=yuv420p[v0];[0:a]aformat=sample_rates=44100:channel_layouts=stereo[a0];[1:v]scale=1080:1920,setsar=1,format=yuv420p[v1];[1:a]aformat=sample_rates=44100:channel_layouts=stereo[a1];[v0][a0][v1][a1]concat=n=2:v=1:a=1[v][a]';
+      const filterComplex = `[0:v]scale=${W}:${H},setsar=1,format=yuv420p[v0];[0:a]aformat=sample_rates=44100:channel_layouts=stereo[a0];[1:v]scale=${W}:${H},setsar=1,format=yuv420p[v1];[1:a]aformat=sample_rates=44100:channel_layouts=stereo[a1];[v0][a0][v1][a1]concat=n=2:v=1:a=1[v][a]`;
       ffmpegCmd = `"${getFfmpegPath()}" -y -i "${cleanHook}" -i "${cleanMain}" -filter_complex "${filterComplex}" -map "[v]" -map "[a]" -c:v libx264 -preset fast -crf 18 -c:a aac -ar 44100 -b:a 192k "${outputPath}"`;
     } else {
       // Main clip has NO audio stream, generate synthetic silent audio stream for input 1
-      const filterComplex = '[0:v]scale=1080:1920,setsar=1,format=yuv420p[v0];[0:a]aformat=sample_rates=44100:channel_layouts=stereo[a0];[1:v]scale=1080:1920,setsar=1,format=yuv420p[v1];[2:a]aformat=sample_rates=44100:channel_layouts=stereo[a1];[v0][a0][v1][a1]concat=n=2:v=1:a=1[v][a]';
+      const filterComplex = `[0:v]scale=${W}:${H},setsar=1,format=yuv420p[v0];[0:a]aformat=sample_rates=44100:channel_layouts=stereo[a0];[1:v]scale=${W}:${H},setsar=1,format=yuv420p[v1];[2:a]aformat=sample_rates=44100:channel_layouts=stereo[a1];[v0][a0][v1][a1]concat=n=2:v=1:a=1[v][a]`;
       ffmpegCmd = `"${getFfmpegPath()}" -y -i "${cleanHook}" -i "${cleanMain}" -f lavfi -i "anullsrc=r=44100:cl=stereo" -filter_complex "${filterComplex}" -map "[v]" -map "[a]" -c:v libx264 -preset fast -crf 18 -c:a aac -ar 44100 -b:a 192k "${outputPath}"`;
     }
 

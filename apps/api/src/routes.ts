@@ -92,7 +92,7 @@ export default async function routes(server: FastifyInstance) {
   });
 
   server.post('/projects', { preHandler: [authenticate] }, async (request, reply) => {
-    const { title, sourceUrl, sourceType, sourceFileKey, layoutMode, clipCount, targetDuration, searchQuery, aiProvider, aiModel } = request.body as any;
+    const { title, sourceUrl, sourceType, sourceFileKey, layoutMode, aspectRatio, clipCount, targetDuration, searchQuery, aiProvider, aiModel } = request.body as any;
 
     const targetUserId = getUserId(request);
 
@@ -132,6 +132,7 @@ export default async function routes(server: FastifyInstance) {
           sourceUrl: sourceUrl,
           sourceFileKey: validatedFileKey,
           layoutMode: layoutMode || 'crop_blur',
+          aspectRatio: ['9:16', '1:1', '4:5'].includes(aspectRatio) ? aspectRatio : '9:16',
           clipCount: parseInt(clipCount) || 3,
           targetDuration: targetDuration || '30-60',
           searchQuery: searchQuery || null,

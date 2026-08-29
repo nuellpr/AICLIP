@@ -43,6 +43,7 @@ model Project {
   clipCount     Int       @default(5)
   targetDuration String   @default("30-60")
   layoutMode    String    @default("crop_blur")
+  aspectRatio   String    @default("9:16") // 9:16, 1:1, 4:5
   searchQuery   String?   // Natural language query for golden moments
   aiProvider    String?   // Overrides global AI provider for this project
   aiModel       String?   // Overrides global AI model for this project

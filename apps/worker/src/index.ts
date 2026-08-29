@@ -611,8 +611,22 @@ async function startConsumers() {
           }
 
           const assPath = path.join(__dirname, `../temp_${clip.id}.ass`);
+
+          // Target render size dari rasio project (9:16 default; 1:1 & 4:5 didukung)
+          const AR_SIZES: Record<string, [number, number]> = {
+            '9:16': [1080, 1920],
+            '1:1': [1080, 1080],
+            '4:5': [1080, 1350],
+          };
+          const aspectKey = (clip.project as any).aspectRatio && AR_SIZES[(clip.project as any).aspectRatio] ? (clip.project as any).aspectRatio : '9:16';
+          const [W, H] = AR_SIZES[aspectKey];
+          const SQ = Math.min(W, H);
+          const splitHalf = Math.round(H / 2);
+          const gameH = Math.round(H * 0.625);
+          const faceH = H - gameH;
+
           if (clip.caption) styleObj.caption = clip.caption;
-          await generateAssFromVtt(vttContent, clipStartSec, clipEndSec, assPath, styleObj);
+          await generateAssFromVtt(vttContent, clipStartSec, clipEndSec, assPath, styleObj, W, H);
           
           const relativeAssPath = path.relative(process.cwd(), assPath).replace(/\\/g, '/');
           const formattedAssPath = relativeAssPath;
@@ -646,7 +660,7 @@ async function startConsumers() {
               if (mediapipeTrackerPy) {
                 try {
                   console.log('Attempting MediaPipe active speaker tracking...');
-                  await execAsync(`"${pythonBin}" "${mediapipeTrackerPy}" "${tempPath.replace(/\\/g, '/')}" "${faceCmdPath.replace(/\\/g, '/')}" 608 1080 0.15`, { timeout: 180000 });
+                  await execAsync(`"${pythonBin}" "${mediapipeTrackerPy}" "${tempPath.replace(/\\/g, '/')}" "${faceCmdPath.replace(/\\/g, '/')}" ${Math.round(W * 9 / 16)} ${W} 0.15`, { timeout: 180000 });
                   trackingSuccess = fs.existsSync(faceCmdPath) && fs.statSync(faceCmdPath).size > 10;
                   if (trackingSuccess) console.log('MediaPipe tracking succeeded');
                 } catch (mpErr: any) {
@@ -657,7 +671,7 @@ async function startConsumers() {
               // Fallback to OpenCV
               if (!trackingSuccess) {
                 console.log('Using OpenCV face tracking...');
-                await execAsync(`"${pythonBin}" "${faceTrackerPy}" "${tempPath.replace(/\\/g, '/')}" "${faceCmdPath.replace(/\\/g, '/')}" 608 1080 0.1`, { timeout: 120000 });
+                await execAsync(`"${pythonBin}" "${faceTrackerPy}" "${tempPath.replace(/\\/g, '/')}" "${faceCmdPath.replace(/\\/g, '/')}" ${Math.round(W * 9 / 16)} ${W} 0.1`, { timeout: 120000 });
               }
             } catch (err) {
               console.error('Face tracking failed, falling back to center crop', err);
@@ -682,10 +696,10 @@ async function startConsumers() {
                   { filter: 'scale', options: '270:480:force_original_aspect_ratio=increase', inputs: 'copy', outputs: 'copy_scaled' },
                   { filter: 'crop', options: '270:480', inputs: 'copy_scaled', outputs: 'copy_cropped' },
                   { filter: 'boxblur', options: '5:1', inputs: 'copy_cropped', outputs: 'blurred_small' },
-                  { filter: 'scale', options: '1080:1920', inputs: 'blurred_small', outputs: 'blurred' },
+                  { filter: 'scale', options: `${W}:${H}`, inputs: 'blurred_small', outputs: 'blurred' },
                   { filter: 'crop', options: 'min(iw,ih):min(iw,ih):iw/2-min(iw,ih)/2:0', inputs: 'original', outputs: 'sq_crop' },
-                  { filter: 'scale', options: '1080:1080', inputs: 'sq_crop', outputs: 'sq_scaled' },
-                  { filter: 'overlay', options: '0:(1920-1080)/2', inputs: ['blurred', 'sq_scaled'], outputs: 'with_overlay' },
+                  { filter: 'scale', options: `${SQ}:${SQ}`, inputs: 'sq_crop', outputs: 'sq_scaled' },
+                  { filter: 'overlay', options: `0:(${H}-${SQ})/2`, inputs: ['blurred', 'sq_scaled'], outputs: 'with_overlay' },
                   { filter: 'subtitles', options: formattedAssPath, inputs: 'with_overlay', outputs: 'final' }
                 ];
                 break;
@@ -693,11 +707,11 @@ async function startConsumers() {
                 filterComplex = [
                   { filter: 'split', options: '2', inputs: '0:v', outputs: ['top', 'bottom'] },
                   { filter: 'crop', options: 'min(iw,ih):min(iw,ih):0:0', inputs: 'top', outputs: 'top_crop' },
-                  { filter: 'scale', options: '1080:960:force_original_aspect_ratio=increase', inputs: 'top_crop', outputs: 'top_scaled' },
-                  { filter: 'crop', options: '1080:960', inputs: 'top_scaled', outputs: 'top_final' },
+                  { filter: 'scale', options: `${W}:${splitHalf}:force_original_aspect_ratio=increase`, inputs: 'top_crop', outputs: 'top_scaled' },
+                  { filter: 'crop', options: `${W}:${splitHalf}`, inputs: 'top_scaled', outputs: 'top_final' },
                   { filter: 'crop', options: 'min(iw,ih):min(iw,ih):iw-min(iw,ih):0', inputs: 'bottom', outputs: 'bot_crop' },
-                  { filter: 'scale', options: '1080:960:force_original_aspect_ratio=increase', inputs: 'bot_crop', outputs: 'bot_scaled' },
-                  { filter: 'crop', options: '1080:960', inputs: 'bot_scaled', outputs: 'bot_final' },
+                  { filter: 'scale', options: `${W}:${splitHalf}:force_original_aspect_ratio=increase`, inputs: 'bot_crop', outputs: 'bot_scaled' },
+                  { filter: 'crop', options: `${W}:${splitHalf}`, inputs: 'bot_scaled', outputs: 'bot_final' },
                   { filter: 'vstack', options: '', inputs: ['top_final', 'bot_final'], outputs: 'stacked' },
                   { filter: 'subtitles', options: formattedAssPath, inputs: 'stacked', outputs: 'final' }
                 ];
@@ -705,11 +719,11 @@ async function startConsumers() {
               case 'gameplay':
                 filterComplex = [
                   { filter: 'split', options: '2', inputs: '0:v', outputs: ['game', 'face'] },
-                  { filter: 'scale', options: '1080:1200:force_original_aspect_ratio=increase', inputs: 'game', outputs: 'game_scaled' },
-                  { filter: 'crop', options: '1080:1200', inputs: 'game_scaled', outputs: 'game_final' },
+                  { filter: 'scale', options: `${W}:${gameH}:force_original_aspect_ratio=increase`, inputs: 'game', outputs: 'game_scaled' },
+                  { filter: 'crop', options: `${W}:${gameH}`, inputs: 'game_scaled', outputs: 'game_final' },
                   { filter: 'crop', options: 'min(iw,ih):min(iw,ih):iw/2-min(iw,ih)/2:0', inputs: 'face', outputs: 'face_crop' },
-                  { filter: 'scale', options: '1080:720:force_original_aspect_ratio=increase', inputs: 'face_crop', outputs: 'face_scaled' },
-                  { filter: 'crop', options: '1080:720', inputs: 'face_scaled', outputs: 'face_final' },
+                  { filter: 'scale', options: `${W}:${faceH}:force_original_aspect_ratio=increase`, inputs: 'face_crop', outputs: 'face_scaled' },
+                  { filter: 'crop', options: `${W}:${faceH}`, inputs: 'face_scaled', outputs: 'face_final' },
                   { filter: 'vstack', options: '', inputs: ['game_final', 'face_final'], outputs: 'stacked' },
                   { filter: 'subtitles', options: formattedAssPath, inputs: 'stacked', outputs: 'final' }
                 ];
@@ -720,13 +734,13 @@ async function startConsumers() {
                   filterComplex = [
                     { filter: 'sendcmd', options: `f=${relativeCmd}`, inputs: '0:v', outputs: 'cmd_out' },
                     { filter: 'crop', options: 'ih*9/16:ih:x=(in_w-ih*9/16)/2:y=0', inputs: 'cmd_out', outputs: 'cropped' },
-                    { filter: 'scale', options: '1080:1920', inputs: 'cropped', outputs: 'scaled' },
+                    { filter: 'scale', options: `${W}:${H}`, inputs: 'cropped', outputs: 'scaled' },
                     { filter: 'subtitles', options: formattedAssPath, inputs: 'scaled', outputs: 'final' }
                   ];
                 } else {
                   filterComplex = [
                     { filter: 'crop', options: 'ih*9/16:ih:iw/2-ih*9/32:0', inputs: '0:v', outputs: 'cropped' },
-                    { filter: 'scale', options: '1080:1920', inputs: 'cropped', outputs: 'scaled' },
+                    { filter: 'scale', options: `${W}:${H}`, inputs: 'cropped', outputs: 'scaled' },
                     { filter: 'subtitles', options: formattedAssPath, inputs: 'scaled', outputs: 'final' }
                   ];
                 }
@@ -738,8 +752,8 @@ async function startConsumers() {
                   { filter: 'scale', options: '270:480:force_original_aspect_ratio=increase', inputs: 'copy', outputs: 'copy_scaled' },
                   { filter: 'crop', options: '270:480', inputs: 'copy_scaled', outputs: 'copy_cropped' },
                   { filter: 'boxblur', options: '5:1', inputs: 'copy_cropped', outputs: 'blurred_small' },
-                  { filter: 'scale', options: '1080:1920', inputs: 'blurred_small', outputs: 'blurred' },
-                  { filter: 'scale', options: '1080:1920:force_original_aspect_ratio=decrease', inputs: 'original', outputs: 'scaled' },
+                  { filter: 'scale', options: `${W}:${H}`, inputs: 'blurred_small', outputs: 'blurred' },
+                  { filter: 'scale', options: `${W}:${H}:force_original_aspect_ratio=decrease`, inputs: 'original', outputs: 'scaled' },
                   { filter: 'overlay', options: '(W-w)/2:(H-h)/2', inputs: ['blurred', 'scaled'], outputs: 'with_overlay' },
                   { filter: 'subtitles', options: formattedAssPath, inputs: 'with_overlay', outputs: 'final' }
                 ];
@@ -778,6 +792,8 @@ async function startConsumers() {
                 hookText: clip.hook,
                 outputPath: path.join(path.dirname(outputPath), `hook_${clip.id}.mp4`),
                 backgroundClipPath: fs.existsSync(outputPath) ? outputPath : undefined,
+                width: W,
+                height: H,
               });
               
               if (hookVideoPath) {
@@ -791,7 +807,7 @@ async function startConsumers() {
                   console.log(`Hook intro duration: ${hookDuration.toFixed(2)}s`);
                 } catch (e) {}
                 const tempWithHook = outputPath.replace('.mp4', '_with_hook.mp4');
-                const concatSuccess = await concatHookAndClip(hookVideoPath, outputPath, tempWithHook);
+                const concatSuccess = await concatHookAndClip(hookVideoPath, outputPath, tempWithHook, W, H);
                 if (concatSuccess && fs.existsSync(tempWithHook)) {
                   fs.unlinkSync(outputPath);
                   fs.renameSync(tempWithHook, outputPath);
