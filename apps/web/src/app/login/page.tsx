@@ -409,11 +409,11 @@ function LoginContent() {
 
               <p className="mt-6 text-center text-[10px] leading-normal text-[var(--db-gray)]">
                 Dengan masuk, kamu setuju dengan{' '}
-                <Link href="#" className="text-[var(--ink)] underline">
+                <Link href="/terms" className="text-[var(--ink)] underline">
                   Syarat Layanan
                 </Link>{' '}
                 dan{' '}
-                <Link href="#" className="text-[var(--ink)] underline">
+                <Link href="/privacy" className="text-[var(--ink)] underline">
                   Kebijakan Privasi
                 </Link>
                 .

@@ -43,6 +43,9 @@ export default function ProjectPage() {
           if (data.status === 'READY' || data.status === 'FAILED') {
             return true;
           }
+        } else if (res.status === 404 || res.status === 403) {
+          setError('Proyek tidak ditemukan atau sudah dihapus');
+          return true;
         }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (e: any) {
