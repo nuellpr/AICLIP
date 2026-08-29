@@ -128,6 +128,44 @@ async function processProject(projectId: string) {
     if (!isUpload && !projectData.sourceUrl) throw new Error('No source URL');
     if (isUpload && (!uploadPath || !fs.existsSync(uploadPath))) throw new Error('Uploaded file tidak ditemukan');
 
+    // Fase D: batas durasi sumber per paket — STANDAR/FREE 60 menit, PRO 180 menit.
+    // Lewat batas → project FAILED + refund 1 kredit, tanpa memproses apa pun.
+    {
+      const ffprobePath = getFfmpegPath().replace(/ffmpeg(\.exe)?$/i, 'ffprobe$1');
+      let durationSec = 0;
+      try {
+        if (isUpload && uploadPath) {
+          const { stdout: durJson } = await execAsync(`"${ffprobePath}" -v quiet -print_format json -show_format "${uploadPath}"`, { timeout: 15000, encoding: 'utf-8' });
+          durationSec = parseFloat(JSON.parse(durJson)?.format?.duration || '0');
+        } else {
+          const info: any = await Promise.race([
+            throttledYtdl(projectData.sourceUrl as string, { dumpSingleJson: true, noPlaylist: true, skipDownload: true }),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout info')), 60000)),
+          ]);
+          durationSec = parseFloat(info?.duration || '0');
+        }
+      } catch (e) { durationSec = 0; } // gagal probe → lanjut proses (jangan blokir karena error probing)
+      if (durationSec > 0) {
+        const sub = await prisma.subscription.findFirst({ where: { userId: projectData.userId } });
+        const maxSec = (sub?.plan === 'PRO' ? 180 : 60) * 60;
+        if (durationSec > maxSec) {
+          await prisma.project.update({
+            where: { id: projectId },
+            data: {
+              status: 'FAILED',
+              errorCode: 'DURATION_LIMIT',
+              errorMessage: `Durasi video ${(durationSec / 60).toFixed(0)} menit melebihi batas paket ${maxSec / 60} menit. Kredit dikembalikan.`,
+              lockedAt: null,
+            },
+          });
+          await prisma.subscription.updateMany({ where: { userId: projectData.userId }, data: { credits: { increment: 1 } } });
+          console.log(`Project ${projectId} FAILED: duration ${durationSec}s > limit ${maxSec}s (refund issued)`);
+          return;
+        }
+        await prisma.project.update({ where: { id: projectId }, data: { duration: Math.round(durationSec) } });
+      }
+    }
+
     let vttContent = '';
 
     if (isUpload) {
