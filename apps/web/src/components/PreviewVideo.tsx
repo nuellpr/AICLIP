@@ -17,7 +17,8 @@ export function PreviewVideo({ videoSrc, previewWords, captionSettings, startTim
   
   useEffect(() => {
     let animationFrameId: number;
-    
+    let lastChunkIndex = -2;
+
     const updateCaptions = () => {
       if (!videoRef.current || captionSettings.id === 'no-caption') {
         animationFrameId = requestAnimationFrame(updateCaptions);
@@ -38,17 +39,22 @@ export function PreviewVideo({ videoSrc, previewWords, captionSettings, startTim
         // Find chunk boundaries
         const wordsPerCaption = captionSettings.wordsPerCaption || 4;
         const chunkStartIndex = Math.floor(activeWordIndex / wordsPerCaption) * wordsPerCaption;
-        const chunkWords = previewWords.slice(chunkStartIndex, chunkStartIndex + wordsPerCaption);
         
-        const displayWords = chunkWords.map((w, idx) => ({
-          word: w,
-          isActive: (chunkStartIndex + idx) === activeWordIndex,
-          isSpoken: (chunkStartIndex + idx) < activeWordIndex
-        }));
-        
-        setActiveWords(displayWords);
-      } else {
-        // If between words, maybe show the last chunk if within 0.5s
+        // Only re-render when the active chunk changes, not every animation frame
+        if (chunkStartIndex !== lastChunkIndex) {
+          lastChunkIndex = chunkStartIndex;
+          const chunkWords = previewWords.slice(chunkStartIndex, chunkStartIndex + wordsPerCaption);
+          
+          const displayWords = chunkWords.map((w, idx) => ({
+            word: w,
+            isActive: (chunkStartIndex + idx) === activeWordIndex,
+            isSpoken: (chunkStartIndex + idx) < activeWordIndex
+          }));
+          
+          setActiveWords(displayWords);
+        }
+      } else if (lastChunkIndex !== -1) {
+        lastChunkIndex = -1;
         setActiveWords([]);
       }
       
