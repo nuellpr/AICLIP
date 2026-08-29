@@ -6,7 +6,7 @@ import Redis from 'ioredis';
 import path from 'path';
 import fs from 'fs';
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { authenticate, sseAuthenticate, getUserId, loadOwnedClip } from './guards';
+import { authenticate, sseAuthenticate, getUserId, loadOwnedClip, requireAdmin } from './guards';
 
 const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
@@ -441,7 +441,7 @@ export default async function routes(server: FastifyInstance) {
     };
   });
 
-  server.post('/settings/ai', { preHandler: [authenticate] }, async (request, reply) => {
+  server.post('/settings/ai', { preHandler: [authenticate, requireAdmin] }, async (request, reply) => {
     const { provider, baseUrl, model, systemMessage } = request.body as any;
     const userId = getUserId(request);
 

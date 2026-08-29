@@ -9,6 +9,7 @@ import Faq from "@/components/clipforge/Faq";
 import CtaFooter from "@/components/clipforge/CtaFooter";
 import ScrollProgress from "@/components/clipforge/ScrollProgress";
 import Marquee from "@/components/clipforge/Marquee";
+import SocialProof from "@/components/clipforge/SocialProof";
 
 export const metadata: Metadata = {
   title: "ClipForge AI · Auto Viral Clipping",
@@ -26,6 +27,7 @@ export default function Home() {
         <HowItWorks />
         <Features />
         <Marquee />
+        <SocialProof />
         <Pricing />
         <Faq />
         <CtaFooter />
