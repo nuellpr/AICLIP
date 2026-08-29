@@ -153,6 +153,10 @@ async function generateWithOpenAI(config: any, systemMsg: string, vttContent: st
   const MAX_ATTEMPTS = 3;
   const RETRY_DELAY_MS = 2000;
   const attemptErrors: string[] = [];
+  // ponytail: max_tokens 32K — reasoning model (deepseek/qwen) makan budget
+  // sebelum JSON keluar; 8000 terbukti menyebabkan empty/truncated content.
+  // Distributor yang menolak 32K turun otomatis ke 8K di attempt berikutnya.
+  let maxTokens = 32000;
 
   // Use a very compact system message to minimize token usage
   const systemMsgWithJson = `Analyze VTT subtitles. Extract EXACTLY ${clipCount} viral clip moments.
@@ -182,7 +186,7 @@ Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTi
           { role: "user", content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 8000,
+        max_tokens: maxTokens,
       });
 
       let text = completion.choices[0].message.content || '';
@@ -219,6 +223,7 @@ Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTi
       const errMsg = error?.error?.message || error?.message || String(error);
       attemptErrors.push(`Attempt ${attempt}: ${errMsg}`);
       console.error('OpenAI/Compatible error:', errMsg);
+      if (errMsg.includes('max_tokens') || errMsg.includes('maximum context')) maxTokens = 8000;
       await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
     }
   }
