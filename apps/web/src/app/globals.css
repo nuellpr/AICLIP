@@ -319,3 +319,8 @@ p {
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* Logo: teks abu gelap pada aset PNG tak terbaca di dark mode — cerahkan, ikon biru tetap berwarna */
+.dark img[alt="ClipForge AI"] {
+  filter: brightness(1.75) saturate(1.1);
+}

@@ -9,19 +9,19 @@ const highlights = [
     icon: Wand2,
     title: "AI Frame Intelligence",
     desc: "Pemotongan otomatis mengikuti wajah & momen dalam frame, subjek tetap di tengah viewport 9:16.",
-    iconBg: "bg-[#E7E4F9]",
+    iconBg: "bg-[var(--db-lavender)]",
   },
   {
     icon: BadgeCheck,
     title: "Karaoke Subtitle Akurat",
     desc: "Subtitle word-by-word dengan preset Hormozi, karaoke & neon highlight, bikin video makin scroll-stopping.",
-    iconBg: "bg-[#DBF3E8]",
+    iconBg: "bg-[var(--db-mint)]",
   },
   {
     icon: ShieldCheck,
     title: "Render Full HD 1080p",
     desc: "Hasil render vertikal berkualitas tinggi, siap langsung diupload tanpa edit manual.",
-    iconBg: "bg-[#FDF3D8]",
+    iconBg: "bg-[var(--db-butter)]",
   },
 ];
 

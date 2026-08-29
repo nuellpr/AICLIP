@@ -137,7 +137,7 @@ export function CaptionCarousel({ selectedId, onSelect }: CaptionCarouselProps) 
               className={`snap-start shrink-0 rounded-xl border-2 transition-all duration-200 
                 ${preset.isLocked ? 'cursor-not-allowed opacity-90' : 'cursor-pointer'} 
                 ${isSelected && !preset.isLocked ? 'border-[#EA4C89] ring-2 ring-[#EA4C89]/20' : 'border-black/[0.08] hover:border-black/20'} 
-                [&:nth-child(4n+1)]:bg-[#E7E4F9] [&:nth-child(4n+2)]:bg-[#DBF3E8] [&:nth-child(4n+3)]:bg-[#FDF3D8] [&:nth-child(4n+4)]:bg-[#FDE3E1]`}
+                [&:nth-child(4n+1)]:bg-[var(--db-lavender)] [&:nth-child(4n+2)]:bg-[var(--db-mint)] [&:nth-child(4n+3)]:bg-[var(--db-butter)] [&:nth-child(4n+4)]:bg-[var(--db-peach)]`}
               style={{ width: '160px' }}
             >
               <div className="h-28 w-full flex items-center justify-center rounded-t-lg overflow-hidden p-2 relative bg-black">

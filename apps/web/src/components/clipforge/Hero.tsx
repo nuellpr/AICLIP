@@ -59,9 +59,9 @@ const stats: {
     raw: "10x",
     note: "Render paralel",
     icon: Zap,
-    chip: "bg-[#E7E4F9]",
+    chip: "bg-[var(--db-lavender)]",
     delta: "+38% minggu ini",
-    deltaBg: "bg-[#DBF3E8]",
+    deltaBg: "bg-[var(--db-mint)]",
   },
   {
     label: "Akurasi Subtitle",
@@ -70,9 +70,9 @@ const stats: {
     suffix: "%",
     note: "Word-by-word",
     icon: Target,
-    chip: "bg-[#DBF3E8]",
+    chip: "bg-[var(--db-mint)]",
     delta: "Akurat",
-    deltaBg: "bg-[#E7E4F9]",
+    deltaBg: "bg-[var(--db-lavender)]",
   },
   {
     label: "Preset Subtitle",
@@ -80,18 +80,18 @@ const stats: {
     suffix: "+",
     note: "Hormozi, karaoke",
     icon: Captions,
-    chip: "bg-[#FDF3D8]",
+    chip: "bg-[var(--db-butter)]",
     delta: "Auto",
-    deltaBg: "bg-[#FDF3D8]",
+    deltaBg: "bg-[var(--db-butter)]",
   },
   {
     label: "Auto Reframe",
     raw: "9:16",
     note: "Face tracking",
     icon: Crop,
-    chip: "bg-[#FDE3E1]",
+    chip: "bg-[var(--db-peach)]",
     delta: "9:16",
-    deltaBg: "bg-[#FDE3E1]",
+    deltaBg: "bg-[var(--db-peach)]",
   },
 ];
 
@@ -164,7 +164,7 @@ export default function Hero() {
           <motion.div variants={stagger} initial="hidden" animate="show">
             <motion.div
               variants={fadeUp}
-              className="mb-6 inline-flex items-center gap-2 rounded-full bg-[#FDE3E1] px-4 py-1.5 text-xs font-semibold text-[var(--ink)]"
+              className="mb-6 inline-flex items-center gap-2 rounded-full bg-[var(--db-peach)] px-4 py-1.5 text-xs font-semibold text-[var(--ink)]"
             >
               <Sparkles size={14} className="text-[#EA4C89]" />
               Teknologi Auto-Clipping AI Gen-Z v2.0
@@ -208,7 +208,7 @@ export default function Hero() {
               </Link>
               <a
                 href="#demo"
-                className="inline-flex items-center gap-2 rounded-full border-2 border-[#0D0C22] px-6 py-3.5 text-base font-medium text-[var(--ink)] transition-all duration-300 hover:bg-[#0D0C22] hover:text-white"
+                className="inline-flex items-center gap-2 rounded-full border-2 border-[var(--ink)] px-6 py-3.5 text-base font-medium text-[var(--ink)] transition-all duration-300 hover:bg-[var(--ink)] hover:text-[var(--db-panel)]"
               >
                 <Play size={16} />
                 Lihat Demo
@@ -289,9 +289,9 @@ export default function Hero() {
                 </div>
                 <div className="flex w-3/5 flex-col gap-3">
                   {[
-                    { label: "Momen 1", score: 92, bg: "bg-[#E7E4F9]" },
-                    { label: "Momen 2", score: 87, bg: "bg-[#DBF3E8]" },
-                    { label: "Momen 3", score: 84, bg: "bg-[#FDF3D8]" },
+                    { label: "Momen 1", score: 92, bg: "bg-[var(--db-lavender)]" },
+                    { label: "Momen 2", score: 87, bg: "bg-[var(--db-mint)]" },
+                    { label: "Momen 3", score: 84, bg: "bg-[var(--db-butter)]" },
                   ].map((m) => (
                     <div
                       key={m.label}

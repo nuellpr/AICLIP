@@ -18,7 +18,7 @@ const features = [
     title: "AI Auto-Clipping",
     desc: "Otomatis memotong video panjang menjadi puluhan klip pendek, bagian paling menarik hingga hook, tanpa perlu riset manual menit per menit.",
     span: "lg:col-span-2",
-    iconBg: "bg-[#E7E4F9]",
+    iconBg: "bg-[var(--db-lavender)]",
     extra: (
       <div className="mt-6 flex items-end gap-1.5" aria-hidden="true">
         {[35, 60, 45, 80, 50, 90, 65, 40, 75, 55, 85, 62, 45, 70].map((h, i) => (
@@ -37,7 +37,7 @@ const features = [
     icon: Flame,
     title: "Skor Momen Viral",
     desc: "Setiap momen dinilai 0-100 dari pembicaraan, energi & hook, AI pilih yang paling berpotensi viral.",
-    iconBg: "bg-[#DBF3E8]",
+    iconBg: "bg-[var(--db-mint)]",
     extra: (
       <div className="mt-5 text-center">
         <div className="mx-auto inline-flex items-center gap-1.5 rounded-full bg-[#FDE3E1] px-3.5 py-1.5 text-sm font-extrabold text-[#C32361]">
@@ -50,19 +50,19 @@ const features = [
     icon: Zap,
     title: "Karaoke Subtitle Animasi",
     desc: "Subtitle word-by-word mengikuti suara, lengkap dengan preset Hormozi dan efek karaoke neon.",
-    iconBg: "bg-[#FDF3D8]",
+    iconBg: "bg-[var(--db-butter)]",
   },
   {
     icon: LayoutGrid,
     title: "Beragam Mode Layout 9:16",
     desc: "Auto-reframe mengikuti wajah, plus mode teks dan split-screen, hasil tetap sharp di semua rasio 9:16.",
-    iconBg: "bg-[#FDE3E1]",
+    iconBg: "bg-[var(--db-peach)]",
   },
   {
     icon: Languages,
     title: "Dukungan Bahasa Indonesia",
     desc: "Transcribe & subtitle akurat untuk konten Bahasa Indonesia, 99.4% akurasi word-level.",
-    iconBg: "bg-[#E7E4F9]",
+    iconBg: "bg-[var(--db-lavender)]",
   },
   {
     icon: Cpu,

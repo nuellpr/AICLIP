@@ -63,7 +63,7 @@ const steps = [
       <div className="rounded-xl bg-[var(--db-cream)] p-3">
         <div className="flex items-center justify-between gap-2 rounded-lg bg-[var(--db-panel)] px-3 py-2.5 shadow-sm">
           <div className="flex min-w-0 items-center gap-2">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#DBF3E8] text-[var(--ink)]">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--db-mint)] text-[var(--ink)]">
               <Download size={13} />
             </div>
             <div className="min-w-0">
@@ -125,7 +125,7 @@ export default function HowItWorks() {
                 <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#EA4C89] text-lg font-extrabold text-white">
                   {s.n}
                 </span>
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E7E4F9] text-[var(--ink)]">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--db-lavender)] text-[var(--ink)]">
                   <s.icon size={21} />
                 </div>
               </div>
