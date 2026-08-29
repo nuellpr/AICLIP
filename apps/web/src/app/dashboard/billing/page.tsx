@@ -67,13 +67,14 @@ export default function BillingPage() {
   // Polling status pembayaran: cek tiap 5s maksimal 3 menit sampai ada settlement
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const startPaymentPolling = () => {
+  const startPaymentPolling = (orderId: string) => {
     if (pollRef.current) clearInterval(pollRef.current);
     let ticks = 0;
     pollRef.current = setInterval(async () => {
       ticks++;
       const txs = await fetchData(true);
-      if (txs?.some(t => t.status === 'SETTLEMENT') || ticks >= 36) {
+      // Stop hanya jika transaksi YANG DIBELI sekarang sudah settlement
+      if (txs?.some(t => t.orderId === orderId && t.status === 'SETTLEMENT') || ticks >= 36) {
         if (pollRef.current) clearInterval(pollRef.current);
         pollRef.current = null;
       }
@@ -108,7 +109,7 @@ export default function BillingPage() {
         } else {
           window.open(data.paymentUrl, '_blank');
         }
-        startPaymentPolling();
+        startPaymentPolling(data.orderId);
       } else {
         payWindow?.close();
         throw new Error('Metode pembayaran tidak tersedia');

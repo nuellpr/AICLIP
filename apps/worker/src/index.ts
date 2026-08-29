@@ -146,7 +146,7 @@ async function processProject(projectId: string) {
         }
       } catch (e) { durationSec = 0; } // gagal probe → lanjut proses (jangan blokir karena error probing)
       if (durationSec > 0) {
-        const sub = await prisma.subscription.findFirst({ where: { userId: projectData.userId } });
+        const sub = await prisma.subscription.findFirst({ where: { userId: projectData.userId, status: 'ACTIVE' } });
         const maxSec = (sub?.plan === 'PRO' ? 180 : 60) * 60;
         if (durationSec > maxSec) {
           await prisma.project.update({
@@ -673,6 +673,9 @@ async function startConsumers() {
           const splitHalf = Math.round(H / 2);
           const gameH = Math.round(H * 0.625);
           const faceH = H - gameH;
+          // Face layout: crop rasio W:H dari sumber (bukan hardcode 9:16)
+          const faceRatio = (W / H).toFixed(4);
+          const faceCropSrc = Math.round(1080 * W / H); // crop_w sumber (asumsi 1080p) utk tracker
 
           if (clip.caption) styleObj.caption = clip.caption;
           await generateAssFromVtt(vttContent, clipStartSec, clipEndSec, assPath, styleObj, W, H);
@@ -709,7 +712,7 @@ async function startConsumers() {
               if (mediapipeTrackerPy) {
                 try {
                   console.log('Attempting MediaPipe active speaker tracking...');
-                  await execAsync(`"${pythonBin}" "${mediapipeTrackerPy}" "${tempPath.replace(/\\/g, '/')}" "${faceCmdPath.replace(/\\/g, '/')}" ${Math.round(W * 9 / 16)} ${W} 0.15`, { timeout: 180000 });
+                  await execAsync(`"${pythonBin}" "${mediapipeTrackerPy}" "${tempPath.replace(/\\/g, '/')}" "${faceCmdPath.replace(/\\/g, '/')}" ${faceCropSrc} ${W} 0.15`, { timeout: 180000 });
                   trackingSuccess = fs.existsSync(faceCmdPath) && fs.statSync(faceCmdPath).size > 10;
                   if (trackingSuccess) console.log('MediaPipe tracking succeeded');
                 } catch (mpErr: any) {
@@ -720,7 +723,7 @@ async function startConsumers() {
               // Fallback to OpenCV
               if (!trackingSuccess) {
                 console.log('Using OpenCV face tracking...');
-                await execAsync(`"${pythonBin}" "${faceTrackerPy}" "${tempPath.replace(/\\/g, '/')}" "${faceCmdPath.replace(/\\/g, '/')}" ${Math.round(W * 9 / 16)} ${W} 0.1`, { timeout: 120000 });
+                await execAsync(`"${pythonBin}" "${faceTrackerPy}" "${tempPath.replace(/\\/g, '/')}" "${faceCmdPath.replace(/\\/g, '/')}" ${faceCropSrc} ${W} 0.1`, { timeout: 120000 });
               }
             } catch (err) {
               console.error('Face tracking failed, falling back to center crop', err);
@@ -782,13 +785,13 @@ async function startConsumers() {
                   const relativeCmd = path.relative(process.cwd(), faceCmdPath).replace(/\\/g, '/');
                   filterComplex = [
                     { filter: 'sendcmd', options: `f=${relativeCmd}`, inputs: '0:v', outputs: 'cmd_out' },
-                    { filter: 'crop', options: 'ih*9/16:ih:x=(in_w-ih*9/16)/2:y=0', inputs: 'cmd_out', outputs: 'cropped' },
+                    { filter: 'crop', options: `ih*${faceRatio}:ih:x=(in_w-ih*${faceRatio})/2:y=0`, inputs: 'cmd_out', outputs: 'cropped' },
                     { filter: 'scale', options: `${W}:${H}`, inputs: 'cropped', outputs: 'scaled' },
                     { filter: 'subtitles', options: formattedAssPath, inputs: 'scaled', outputs: 'final' }
                   ];
                 } else {
                   filterComplex = [
-                    { filter: 'crop', options: 'ih*9/16:ih:iw/2-ih*9/32:0', inputs: '0:v', outputs: 'cropped' },
+                    { filter: 'crop', options: `ih*${faceRatio}:ih:iw/2-ih*${faceRatio}/2:0`, inputs: '0:v', outputs: 'cropped' },
                     { filter: 'scale', options: `${W}:${H}`, inputs: 'cropped', outputs: 'scaled' },
                     { filter: 'subtitles', options: formattedAssPath, inputs: 'scaled', outputs: 'final' }
                   ];

@@ -14,6 +14,7 @@ export default function NewProjectPage() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [rights, setRights] = useState(false);
   const [layoutMode, setLayoutMode] = useState("crop_blur");
   const [aspectRatio, setAspectRatio] = useState("9:16");
   const [clipCount, setClipCount] = useState(3);
@@ -24,6 +25,10 @@ export default function NewProjectPage() {
   const handleSubmit = async () => {
     if (activeTab === 'url' && !url) {
       setError("Masukkan URL video terlebih dahulu");
+      return;
+    }
+    if (activeTab === 'url' && !rights) {
+      setError("Centang pernyataan hak/izin video terlebih dahulu");
       return;
     }
     if (activeTab === 'upload' && !file) {
@@ -134,7 +139,7 @@ export default function NewProjectPage() {
             </div>
             
             <div className="flex items-center gap-3">
-              <input type="checkbox" id="rights" className="w-5 h-5 rounded border-black/20 bg-[var(--db-panel)] text-[#EA4C89] focus:ring-[#EA4C89] cursor-pointer accent-[#EA4C89]" />
+              <input type="checkbox" id="rights" checked={rights} onChange={(e) => setRights(e.target.checked)} className="w-5 h-5 rounded border-black/20 bg-[var(--db-panel)] text-[#EA4C89] focus:ring-[#EA4C89] cursor-pointer accent-[#EA4C89]" />
               <label htmlFor="rights" className="text-sm text-[var(--db-gray)] cursor-pointer hover:text-[var(--ink)] transition-colors">Saya menyatakan memiliki hak atau izin untuk memproses video ini.</label>
             </div>
           </div>

@@ -14,6 +14,7 @@ export function TimelineSlider({ min, max, startTime, endTime, onChange }: Timel
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState<'start' | 'end' | 'range' | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
+  const dragOffsetRef = useRef(0);
 
   const duration = max - min;
   // Handle edge case where max is not loaded yet
@@ -31,6 +32,8 @@ export function TimelineSlider({ min, max, startTime, endTime, onChange }: Timel
         const rect = containerRef.current.getBoundingClientRect();
         const clientX = e.clientX;
         const clickTime = min + ((clientX - rect.left) / rect.width) * safeDuration;
+        // Ref (bukan state) agar closure handlePointerMove selalu baca offset terbaru
+        dragOffsetRef.current = clickTime - startTime;
         setDragOffset(clickTime - startTime);
       }
     }
@@ -56,7 +59,7 @@ export function TimelineSlider({ min, max, startTime, endTime, onChange }: Timel
         const currentDuration = endTime - startTime;
         // The new start time is based on cursor position minus the offset where they clicked
         const clickTime = min + ((moveEvent.clientX - rect.left) / rect.width) * safeDuration;
-        let newStart = clickTime - dragOffset;
+        let newStart = clickTime - dragOffsetRef.current;
         
         // Clamp to boundaries
         if (newStart < min) newStart = min;

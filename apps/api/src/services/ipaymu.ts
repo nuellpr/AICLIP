@@ -147,7 +147,11 @@ function ksort(obj: Record<string, any>): Record<string, any> {
 
 export function verifyIpaymuCallbackSignature(rawBody: Record<string, any>, receivedSignature: string | undefined): boolean {
   const va = process.env.IPAYMU_VA || '';
-  if (!va) return true; // no VA configured -> skip verification (dev)
+  if (!va) {
+    // Prod tanpa VA = tidak ada verifikasi → jangan pernah lolos.
+    if (process.env.NODE_ENV === 'production') return false;
+    return true; // dev/testing (mock mode)
+  }
   if (!receivedSignature) return false;
   const normalized = normalizeData(rawBody);
   const sorted = ksort(normalized);

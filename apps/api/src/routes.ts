@@ -117,8 +117,15 @@ export default async function routes(server: FastifyInstance) {
     // Atomic: potong kredit + buat project dalam satu transaksi DB —
     // jika create gagal, kredit tidak hilang.
     const txResult = await prisma.$transaction(async (tx) => {
-      const deducted = await tx.subscription.updateMany({
+      // Pilih SATU baris subscription (yang bercredits) — Subscription.userId
+      // tidak unique, jangan updateMany (baris duplikat ikut terpotong).
+      const sub = await tx.subscription.findFirst({
         where: { userId: targetUserId, credits: { gte: 1 } },
+        orderBy: { credits: 'desc' },
+      });
+      if (!sub) return { noCredit: true as const };
+      const deducted = await tx.subscription.updateMany({
+        where: { id: sub.id, credits: { gte: 1 } },
         data: { credits: { decrement: 1 } }
       });
 
@@ -426,9 +433,9 @@ export default async function routes(server: FastifyInstance) {
     for (const k of ['textColor', 'activeWordColor', 'strokeColor'] as const) {
       if (typeof body[k] === 'string') preset[k] = body[k].slice(0, 20);
     }
-    if (body.strokeWidth !== undefined) preset.strokeWidth = Math.min(Math.max(Number(body.strokeWidth) || 4, 0), 12);
+    if (body.strokeWidth !== undefined) { const sw = Number(body.strokeWidth); preset.strokeWidth = Math.min(Math.max(Number.isFinite(sw) ? sw : 4, 0), 12); }
     if (['top', 'center', 'bottom'].includes(body.position)) preset.position = body.position;
-    if (body.marginBottom !== undefined) preset.marginBottom = Math.min(Math.max(Number(body.marginBottom) || 150, 0), 600);
+    if (body.marginBottom !== undefined) { const mb = Number(body.marginBottom); preset.marginBottom = Math.min(Math.max(Number.isFinite(mb) ? mb : 150, 0), 600); }
     if (typeof body.backgroundColor === 'string') preset.backgroundColor = body.backgroundColor.slice(0, 40);
     await prisma.user.update({ where: { id: userId }, data: { defaultCaptionStyle: JSON.stringify(preset) } });
     return { success: true, preset };

@@ -221,8 +221,11 @@ export default async function paymentRoutes(server: FastifyInstance) {
       const sigOk = verifyIpaymuCallbackSignature(payload, sig);
       if (!sigOk) {
         server.log.warn(`iPaymu callback invalid signature for ref=${payload.reference_id || payload.referenceId}, sig=${sig}`);
-        // tetap balas 200 agar tidak retry terus, tapi jangan proses jika VA diset
-        if (process.env.IPAYMU_VA) return reply.status(400).send({ error: 'Invalid signature' });
+        // Tolak jika VA diset; di production tanpa VA pun tolak (tidak ada cara verifikasi).
+        if (process.env.IPAYMU_VA || process.env.NODE_ENV === 'production') {
+          return reply.status(400).send({ error: 'Invalid signature' });
+        }
+        // dev/testing tanpa VA (mock mode): lanjut proses
       }
       const { orderId, paid, amount } = parseIpaymuCallback(payload);
       server.log.info(`Received iPaymu callback reference_id=${orderId}, paid=${paid}, status=${payload.status}, status_code=${payload.status_code}`);

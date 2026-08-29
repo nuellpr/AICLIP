@@ -142,7 +142,11 @@ export async function verifyMayarInvoicePaid(
   invoiceId: string
 ): Promise<{ outcome: 'skipped' | 'paid' | 'unpaid' | 'error'; amount?: number | null }> {
   const apiKey = process.env.MAYAR_API_KEY || '';
-  if (!apiKey) return { outcome: 'skipped' };
+  if (!apiKey) {
+    // Prod tanpa API key = verifikasi pull tidak mungkin → jangan percaya payload unsigned.
+    if (process.env.NODE_ENV === 'production') return { outcome: 'error' };
+    return { outcome: 'skipped' }; // dev/testing mode
+  }
 
   const isProduction = process.env.MAYAR_IS_PRODUCTION === 'true';
   const baseUrl = isProduction ? 'https://api.mayar.id' : 'https://api.mayar.io';
