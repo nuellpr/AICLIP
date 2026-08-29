@@ -763,7 +763,7 @@ async function startConsumers() {
                   { filter: 'crop', options: '270:480', inputs: 'copy_scaled', outputs: 'copy_cropped' },
                   { filter: 'boxblur', options: '5:1', inputs: 'copy_cropped', outputs: 'blurred_small' },
                   { filter: 'scale', options: `${W}:${H}`, inputs: 'blurred_small', outputs: 'blurred' },
-                  { filter: 'crop', options: 'min(iw,ih):min(iw,ih):iw/2-min(iw,ih)/2:0', inputs: 'original', outputs: 'sq_crop' },
+                  { filter: 'crop', options: "'min(iw,ih):min(iw,ih):iw/2-min(iw,ih)/2:0'", inputs: 'original', outputs: 'sq_crop' },
                   { filter: 'scale', options: `${SQ}:${SQ}`, inputs: 'sq_crop', outputs: 'sq_scaled' },
                   { filter: 'overlay', options: `0:(${H}-${SQ})/2`, inputs: ['blurred', 'sq_scaled'], outputs: 'with_overlay' },
                   { filter: 'subtitles', options: formattedAssPath, inputs: 'with_overlay', outputs: 'final' }
@@ -772,10 +772,10 @@ async function startConsumers() {
               case 'split':
                 filterComplex = [
                   { filter: 'split', options: '2', inputs: '0:v', outputs: ['top', 'bottom'] },
-                  { filter: 'crop', options: 'min(iw,ih):min(iw,ih):0:0', inputs: 'top', outputs: 'top_crop' },
+                  { filter: 'crop', options: "'min(iw,ih):min(iw,ih):0:0'", inputs: 'top', outputs: 'top_crop' },
                   { filter: 'scale', options: `${W}:${splitHalf}:force_original_aspect_ratio=increase`, inputs: 'top_crop', outputs: 'top_scaled' },
                   { filter: 'crop', options: `${W}:${splitHalf}`, inputs: 'top_scaled', outputs: 'top_final' },
-                  { filter: 'crop', options: 'min(iw,ih):min(iw,ih):iw-min(iw,ih):0', inputs: 'bottom', outputs: 'bot_crop' },
+                  { filter: 'crop', options: "'min(iw,ih):min(iw,ih):iw-min(iw,ih):0'", inputs: 'bottom', outputs: 'bot_crop' },
                   { filter: 'scale', options: `${W}:${splitHalf}:force_original_aspect_ratio=increase`, inputs: 'bot_crop', outputs: 'bot_scaled' },
                   { filter: 'crop', options: `${W}:${splitHalf}`, inputs: 'bot_scaled', outputs: 'bot_final' },
                   { filter: 'vstack', options: '', inputs: ['top_final', 'bot_final'], outputs: 'stacked' },
@@ -787,7 +787,7 @@ async function startConsumers() {
                   { filter: 'split', options: '2', inputs: '0:v', outputs: ['game', 'face'] },
                   { filter: 'scale', options: `${W}:${gameH}:force_original_aspect_ratio=increase`, inputs: 'game', outputs: 'game_scaled' },
                   { filter: 'crop', options: `${W}:${gameH}`, inputs: 'game_scaled', outputs: 'game_final' },
-                  { filter: 'crop', options: 'min(iw,ih):min(iw,ih):iw/2-min(iw,ih)/2:0', inputs: 'face', outputs: 'face_crop' },
+                  { filter: 'crop', options: "'min(iw,ih):min(iw,ih):iw/2-min(iw,ih)/2:0'", inputs: 'face', outputs: 'face_crop' },
                   { filter: 'scale', options: `${W}:${faceH}:force_original_aspect_ratio=increase`, inputs: 'face_crop', outputs: 'face_scaled' },
                   { filter: 'crop', options: `${W}:${faceH}`, inputs: 'face_scaled', outputs: 'face_final' },
                   { filter: 'vstack', options: '', inputs: ['game_final', 'face_final'], outputs: 'stacked' },
