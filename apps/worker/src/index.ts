@@ -138,8 +138,22 @@ async function processProject(projectId: string) {
           const { stdout: durJson } = await execAsync(`"${ffprobePath}" -v quiet -print_format json -show_format "${uploadPath}"`, { timeout: 15000, encoding: 'utf-8' });
           durationSec = parseFloat(JSON.parse(durJson)?.format?.duration || '0');
         } else {
+          // ponytail: opsi EJS wajib — tanpa solver n-challenge, dump-single-json HANG (terbukti di VPS)
+          // dan memacetkan throttle serial; semua proyek berikutnya ikut timeout.
+          const probeOptions: any = {
+            dumpSingleJson: true,
+            noPlaylist: true,
+            skipDownload: true,
+            forceIpv4: true,
+            jsRuntimes: 'bun,node',
+            extractorArgs: 'youtube:player_client=web_embedded,android',
+            impersonate: 'chrome',
+            extractorRetries: 3,
+            remoteComponents: 'ejs:github',
+            noWarnings: true
+          };
           const info: any = await Promise.race([
-            throttledYtdl(projectData.sourceUrl as string, { dumpSingleJson: true, noPlaylist: true, skipDownload: true }),
+            throttledYtdl(projectData.sourceUrl as string, probeOptions),
             new Promise((_, rej) => setTimeout(() => rej(new Error('timeout info')), 60000)),
           ]);
           durationSec = parseFloat(info?.duration || '0');
@@ -446,7 +460,7 @@ async function startConsumers() {
                 output: tempPath,
                 format: 'bestvideo[height>=1080]+bestaudio/bestvideo[height>=720]+bestaudio/bestvideo+bestaudio/best',
                 ffmpegLocation: getFfmpegPath(),
-                jsRuntimes: 'bun,node',
+              jsRuntimes: 'bun,node' as any,
                 noCheckCertificates: true,
                 forceIpv4: true,
                 // ponytail: web_embedded = 1080p DASH w/o PO token (verified 137+140); android fallback = 360p if not embeddable
