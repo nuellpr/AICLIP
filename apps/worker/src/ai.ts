@@ -6,7 +6,7 @@ import { ClipRecommendationSchema } from '@clipforge/shared';
 
 // Validasi per-clip: satu item buruk dari LLM tidak membunuh seluruh hasil.
 // Field opsional diberi default; item tanpa title/waktu valid tetap dibuang.
-function sanitizeClips(rawClips: any[]): any[] {
+export function sanitizeClips(rawClips: any[]): any[] {
   const kept: any[] = [];
   for (const item of rawClips) {
     const patched = {

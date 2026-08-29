@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { limitVttContent, getVttWindow, MAX_VTT_CHARS } from '../src/ai';
+import { limitVttContent, getVttWindow, MAX_VTT_CHARS, sanitizeClips } from '../src/ai';
+
+const validClip = {
+  title: 'Judul klip viral',
+  hook: 'Hook menarik',
+  startTime: 10,
+  endTime: 40,
+  viralScore: 88,
+  reason: 'Momen emosional',
+  caption: 'Caption #viral',
+  hashtags: ['viral'],
+  contentCategory: 'entertainment',
+};
 
 const longVtt = Array.from({ length: 500 }, (_, i) =>
   `00:0${Math.floor(i / 60)}:${String(i % 60).padStart(2, '0')}.000 --> 00:0${Math.floor(i / 60)}:${String(i % 60 + 1).padStart(2, '0')}.000\nKalimat ke-${i + 1} dari subtitle yang cukup panjang\n`
@@ -54,5 +66,49 @@ describe('getVttWindow', () => {
     const last = getVttWindow(longVtt, 1000);
     expect(last.length).toBeGreaterThan(0);
     expect(last.length).toBeLessThanOrEqual(MAX_VTT_CHARS);
+  });
+});
+
+describe('sanitizeClips', () => {
+  it('keeps a valid clip intact', () => {
+    const kept = sanitizeClips([validClip]);
+    expect(kept).toHaveLength(1);
+    expect(kept[0].title).toBe('Judul klip viral');
+    expect(kept[0].viralScore).toBe(88);
+  });
+
+  it('drops clips missing required fields instead of failing everything', () => {
+    const { title, ...noTitle } = validClip;
+    const kept = sanitizeClips([{ ...noTitle, title: '' }, validClip]);
+    expect(kept).toHaveLength(1);
+    expect(kept[0].title).toBe('Judul klip viral');
+  });
+
+  it('drops clips with endTime <= startTime', () => {
+    const kept = sanitizeClips([{ ...validClip, endTime: 10 }]);
+    expect(kept).toHaveLength(0);
+  });
+
+  it('fills defaults for optional fields the LLM omitted', () => {
+    const kept = sanitizeClips([{ title: 't', hook: 'h', startTime: 1, endTime: 5, reason: 'r', caption: 'c' }]);
+    expect(kept).toHaveLength(1);
+    expect(kept[0].hashtags).toEqual([]);
+    expect(kept[0].keywords).toEqual([]);
+    expect(kept[0].contentCategory).toBe('umum');
+    expect(kept[0].viralScore).toBe(85);
+  });
+
+  it('clamps viralScore into 0-100 and rounds it', () => {
+    const kept = sanitizeClips([
+      { ...validClip, title: 'a', viralScore: 150 },
+      { ...validClip, title: 'b', viralScore: -5 },
+      { ...validClip, title: 'c', viralScore: 87.6 },
+    ]);
+    expect(kept.map((c) => c.viralScore)).toEqual([100, 0, 88]);
+  });
+
+  it('returns an empty array for no usable clips', () => {
+    expect(sanitizeClips([])).toEqual([]);
+    expect(sanitizeClips([null, undefined, {}])).toEqual([]);
   });
 });
