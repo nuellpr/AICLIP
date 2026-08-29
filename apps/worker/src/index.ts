@@ -963,6 +963,22 @@ async function recoverStuckJobs() {
       });
     }
 
+    // Recover orphan QUEUED projects (mis. enqueue gagal / job hilang dari Redis).
+    // ponytail: jobId dedup BullMQ membuat re-add no-op jika job masih ada di queue.
+    const queuedProjects = await prisma.project.findMany({
+      where: { status: 'QUEUED' },
+      take: 100
+    });
+
+    for (const p of queuedProjects) {
+      console.log(`Re-enqueueing QUEUED project ${p.id}...`);
+      await projectQueue.add('processProject', { projectId: p.id }, {
+        jobId: `processProject-${p.id}`,
+        removeOnComplete: true,
+        removeOnFail: true
+      });
+    }
+
     // Recover stuck Clips
     const stuckClips = await prisma.clip.findMany({
       where: {

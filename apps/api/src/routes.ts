@@ -518,7 +518,7 @@ export default async function routes(server: FastifyInstance) {
 
     // b-ai pakai daftar model gratis server — tanpa key dari client
     if (provider === 'b-ai') {
-      return { models: ['mimo-v2.5', 'deepseek-v4-flash', 'hy3', 'vision-exp'] };
+      return { models: ['deepseek-v4-flash', 'qwen3.8-flash', 'hy3', 'glm-5.3-flash'] };
     }
 
     // Untuk provider lain, pakai server key dari env
