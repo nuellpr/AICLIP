@@ -18,6 +18,7 @@ model User {
   birthDate     DateTime?
   phone         String?
   bio           String?
+  defaultCaptionStyle String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   projects      Project[]

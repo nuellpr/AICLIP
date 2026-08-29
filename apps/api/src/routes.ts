@@ -408,6 +408,32 @@ export default async function routes(server: FastifyInstance) {
     }
   });
 
+  // Preset Caption per-user (brand preset) — dipakai worker sebagai layer default
+  server.get('/settings/caption', { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = getUserId(request);
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { defaultCaptionStyle: true } });
+    let preset: any = null;
+    try { preset = user?.defaultCaptionStyle ? JSON.parse(user.defaultCaptionStyle) : null; } catch (e) { preset = null; }
+    return { preset };
+  });
+
+  server.put('/settings/caption', { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = getUserId(request);
+    const body = (request.body || {}) as Record<string, any>;
+    const preset: Record<string, any> = {};
+    if (typeof body.fontName === 'string') preset.fontName = body.fontName.slice(0, 60);
+    if (body.fontSize !== undefined) preset.fontSize = Math.min(Math.max(Number(body.fontSize) || 48, 12), 120);
+    for (const k of ['textColor', 'activeWordColor', 'strokeColor'] as const) {
+      if (typeof body[k] === 'string') preset[k] = body[k].slice(0, 20);
+    }
+    if (body.strokeWidth !== undefined) preset.strokeWidth = Math.min(Math.max(Number(body.strokeWidth) || 4, 0), 12);
+    if (['top', 'center', 'bottom'].includes(body.position)) preset.position = body.position;
+    if (body.marginBottom !== undefined) preset.marginBottom = Math.min(Math.max(Number(body.marginBottom) || 150, 0), 600);
+    if (typeof body.backgroundColor === 'string') preset.backgroundColor = body.backgroundColor.slice(0, 40);
+    await prisma.user.update({ where: { id: userId }, data: { defaultCaptionStyle: JSON.stringify(preset) } });
+    return { success: true, preset };
+  });
+
   server.get('/settings/ai', { preHandler: [authenticate] }, async (request, reply) => {
     const userId = getUserId(request);
     const fs = require('fs');

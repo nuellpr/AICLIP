@@ -583,6 +583,17 @@ async function startConsumers() {
             backgroundColor: 'rgba(0,0,0,0.85)' // Tambahkan background gelap untuk menutupi teks bawaan video
           };
           try {
+            // Brand preset user — layer default, di-timpa captionSettings per-klip
+            const owner = await prisma.user.findUnique({
+              where: { id: (clip.project as any).userId },
+              select: { defaultCaptionStyle: true },
+            });
+            if (owner?.defaultCaptionStyle) {
+              const brandPreset = JSON.parse(owner.defaultCaptionStyle);
+              styleObj = { ...styleObj, ...brandPreset };
+            }
+          } catch (e) {}
+          try {
             if (clip.captionSettings) {
               const userStyles = JSON.parse(clip.captionSettings as string);
               styleObj = { ...styleObj, ...userStyles };

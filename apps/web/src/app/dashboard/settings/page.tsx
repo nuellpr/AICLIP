@@ -1,6 +1,6 @@
 "use client";
 
-import { Save, User, Key, Settings as SettingsIcon, CheckCircle2, Loader2, LogOut, Camera, Lock } from "lucide-react";
+import { Save, User, Key, Settings as SettingsIcon, CheckCircle2, Loader2, LogOut, Camera, Lock, Type } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9,7 +9,17 @@ import { getStoredUser, AuthUser, clearAuthSession, setAuthSession, getStoredTok
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'profile' | 'ai' | 'billing'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'caption' | 'ai' | 'billing'>('profile');
+  const [captionForm, setCaptionForm] = useState<any>({ fontName: 'Impact', fontSize: 48, textColor: '#FFFFFF', activeWordColor: '#FFFF00', strokeColor: '#000000', position: 'bottom', marginBottom: 150 });
+  const [captionSaved, setCaptionSaved] = useState(false);
+  const [captionLoading, setCaptionLoading] = useState(false);
+
+  useEffect(() => {
+    apiFetch('/api/settings/caption')
+      .then((res: any) => res.json())
+      .then((data: any) => { if (data?.preset) setCaptionForm((f: any) => ({ ...f, ...data.preset })); })
+      .catch(() => {});
+  }, []);
   const [user, setUser] = useState<AuthUser | null>(null);
 
   const [provider, setProvider] = useState("b-ai");
@@ -210,7 +220,14 @@ export default function SettingsPage() {
           >
             <User className={`h-5 w-5 ${activeTab === 'profile' ? 'text-[#EA4C89]' : ''}`} /> Profil Akun
           </button>
-          
+
+          <button
+            onClick={() => setActiveTab('caption')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'caption' ? 'bg-[var(--db-panel)] shadow-sm text-[var(--ink)]' : 'hover:bg-[var(--db-panel)] text-[var(--db-gray)] hover:text-[var(--ink)]'}`}
+          >
+            <Type className={`h-5 w-5 ${activeTab === 'caption' ? 'text-[#EA4C89]' : ''}`} /> Preset Caption
+          </button>
+
           {user?.role === 'ADMIN' && (
             <button
               onClick={() => setActiveTab('ai')}
@@ -347,6 +364,55 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </>
+            )}
+
+            {activeTab === 'caption' && (
+              <div className="bg-[var(--db-panel)] border border-[var(--db-line)] rounded-xl p-6 space-y-4">
+                <div>
+                  <h3 className="text-lg font-bold text-[var(--ink)]">Preset Caption</h3>
+                  <p className="text-sm text-[var(--db-gray)]">Gaya default untuk semua klip baru. Bisa ditimpa per-klip di halaman edit.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <label className="text-sm text-[var(--db-gray)]">Font
+                    <input value={captionForm.fontName || ''} onChange={(e) => setCaptionForm({ ...captionForm, fontName: e.target.value })} className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--db-line)] bg-[var(--db-bg)] text-[var(--ink)]" />
+                  </label>
+                  <label className="text-sm text-[var(--db-gray)]">Ukuran Font
+                    <input type="number" min={12} max={120} value={captionForm.fontSize ?? 48} onChange={(e) => setCaptionForm({ ...captionForm, fontSize: Number(e.target.value) })} className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--db-line)] bg-[var(--db-bg)] text-[var(--ink)]" />
+                  </label>
+                  <label className="text-sm text-[var(--db-gray)]">Warna Teks
+                    <input type="color" value={captionForm.textColor || '#FFFFFF'} onChange={(e) => setCaptionForm({ ...captionForm, textColor: e.target.value })} className="mt-1 w-full h-10 rounded-lg border border-[var(--db-line)] bg-[var(--db-bg)]" />
+                  </label>
+                  <label className="text-sm text-[var(--db-gray)]">Warna Sorotan (karaoke)
+                    <input type="color" value={captionForm.activeWordColor || '#FFFF00'} onChange={(e) => setCaptionForm({ ...captionForm, activeWordColor: e.target.value })} className="mt-1 w-full h-10 rounded-lg border border-[var(--db-line)] bg-[var(--db-bg)]" />
+                  </label>
+                  <label className="text-sm text-[var(--db-gray)]">Posisi
+                    <select value={captionForm.position || 'bottom'} onChange={(e) => setCaptionForm({ ...captionForm, position: e.target.value })} className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--db-line)] bg-[var(--db-bg)] text-[var(--ink)]">
+                      <option value="bottom">Bawah</option>
+                      <option value="center">Tengah</option>
+                      <option value="top">Atas</option>
+                    </select>
+                  </label>
+                  <label className="text-sm text-[var(--db-gray)]">Margin Bawah (px)
+                    <input type="number" min={0} max={600} value={captionForm.marginBottom ?? 150} onChange={(e) => setCaptionForm({ ...captionForm, marginBottom: Number(e.target.value) })} className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--db-line)] bg-[var(--db-bg)] text-[var(--ink)]" />
+                  </label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={async () => {
+                      setCaptionLoading(true); setCaptionSaved(false);
+                      try {
+                        const res = await apiFetch('/api/settings/caption', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(captionForm) });
+                        if (res.ok) setCaptionSaved(true);
+                      } finally { setCaptionLoading(false); }
+                    }}
+                    disabled={captionLoading}
+                    className="px-4 py-2 rounded-lg bg-[#EA4C89] text-white font-medium hover:opacity-90 disabled:opacity-50"
+                  >
+                    {captionLoading ? 'Menyimpan...' : 'Simpan Preset'}
+                  </button>
+                  {captionSaved && <span className="text-sm text-green-500">Tersimpan!</span>}
+                </div>
+              </div>
             )}
 
             {activeTab === 'ai' && (
