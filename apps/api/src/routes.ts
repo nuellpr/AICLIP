@@ -162,7 +162,7 @@ export default async function routes(server: FastifyInstance) {
 
     // Add job to BullMQ queue (jobId dedup: job sama tidak ditambahkan dua kali)
     await projectQueue.add('processProject', { projectId: project.id }, {
-      jobId: `processProject:${project.id}`,
+      jobId: `processProject-${project.id}`,
       removeOnComplete: true,
       removeOnFail: true
     });
@@ -347,7 +347,7 @@ export default async function routes(server: FastifyInstance) {
     });
 
     await renderQueue.add('renderClip', { clipId: clip.id }, {
-      jobId: `renderClip:${clip.id}`,
+      jobId: `renderClip-${clip.id}`,
       removeOnComplete: true,
       removeOnFail: true
     });

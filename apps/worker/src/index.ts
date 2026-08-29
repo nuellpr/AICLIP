@@ -943,7 +943,7 @@ async function recoverStuckJobs() {
         data: { status: 'QUEUED', currentStage: null, lockedAt: null }
       });
       await projectQueue.add('processProject', { projectId: p.id }, {
-        jobId: `processProject:${p.id}`,
+        jobId: `processProject-${p.id}`,
         removeOnComplete: true,
         removeOnFail: true
       });
@@ -964,7 +964,7 @@ async function recoverStuckJobs() {
         data: { renderStatus: 'QUEUED', lockedAt: null }
       });
       await renderQueue.add('renderClip', { clipId: c.id }, {
-        jobId: `renderClip:${c.id}`,
+        jobId: `renderClip-${c.id}`,
         removeOnComplete: true,
         removeOnFail: true
       });
@@ -999,7 +999,7 @@ Promise.all([
   for (const p of queuedProjects) {
     // jobId dedup: job dengan id sama yang masih ada di Redis tidak ditambahkan ulang
     await projectQueue.add('processProject', { projectId: p.id }, {
-      jobId: `processProject:${p.id}`,
+      jobId: `processProject-${p.id}`,
       removeOnComplete: true,
       removeOnFail: true
     });
@@ -1013,7 +1013,7 @@ Promise.all([
   });
   for (const c of queuedClips) {
     await renderQueue.add('renderClip', { clipId: c.id }, {
-      jobId: `renderClip:${c.id}`,
+      jobId: `renderClip-${c.id}`,
       removeOnComplete: true,
       removeOnFail: true
     });
