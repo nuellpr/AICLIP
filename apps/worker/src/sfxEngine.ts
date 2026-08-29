@@ -140,7 +140,7 @@ export async function mixSfxIntoVideo(
     // Build FFmpeg inputs and filter_complex for audio mixing
     const inputArgs: string[] = [`-i "${cleanVideo}"`];
     const filterParts: string[] = [];
-    const mixLabels: string[] = ['0:a'];
+    const mixLabels: string[] = ['[0:a]'];
 
     sfxEvents.forEach((evt, idx) => {
       const assetPath = assets[evt.type] || assets.pop;
