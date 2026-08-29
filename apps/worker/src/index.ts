@@ -449,30 +449,23 @@ async function startConsumers() {
           const allWords = vttContent ? parseYouTubeVttWords(vttContent) : [];
           const clipWords = allWords.filter(w => w.end >= clipStartSec - 0.5 && w.start <= clipEndSec + 0.5);
 
-          // Probe actual segment start to detect keyframe drift from yt-dlp
+          // Probe actual segment start via ffprobe (Windows-safe: tanpa pipe head)
           let segmentDrift = 0;
           try {
-            const { stdout: probeOut } = await execAsync(
-              `"${getFfmpegPath()}" -i "${tempPath}" -f null - 2>&1 | head -20`,
+            const ffprobePath = getFfmpegPath().replace(/ffmpeg(\.exe)?$/i, 'ffprobe$1');
+            const { stdout: probeJson } = await execAsync(
+              `"${ffprobePath}" -v quiet -print_format json -show_format "${tempPath}"`,
               { timeout: 10000, encoding: 'utf-8' }
             );
-            // Try ffprobe for more reliable start_time
-            try {
-              const ffprobePath = getFfmpegPath().replace(/ffmpeg(\.exe)?$/i, 'ffprobe$1');
-              const { stdout: probeJson } = await execAsync(
-                `"${ffprobePath}" -v quiet -print_format json -show_format "${tempPath}"`,
-                { timeout: 10000, encoding: 'utf-8' }
-              );
-              const probeData = JSON.parse(probeJson);
-              const actualStart = parseFloat(probeData?.format?.start_time || '0');
-              if (actualStart > 0.05) {
-                segmentDrift = actualStart;
-                console.log(`Detected segment start drift: ${segmentDrift.toFixed(3)}s`);
-              }
-            } catch (probeErr) {
-              // ffprobe not available, ignore
+            const probeData = JSON.parse(probeJson);
+            const actualStart = parseFloat(probeData?.format?.start_time || '0');
+            if (actualStart > 0.05) {
+              segmentDrift = actualStart;
+              console.log(`Detected segment start drift: ${segmentDrift.toFixed(3)}s`);
             }
-          } catch (e) {}
+          } catch (e) {
+            // ffprobe tidak tersedia, abaikan
+          }
 
           // Use VTT for fallback
           const wordsPath = path.join(apiRenderDir, `whisper_${clip.id}.json`);
@@ -690,7 +683,7 @@ async function startConsumers() {
                   { filter: 'crop', options: '270:480', inputs: 'copy_scaled', outputs: 'copy_cropped' },
                   { filter: 'boxblur', options: '5:1', inputs: 'copy_cropped', outputs: 'blurred_small' },
                   { filter: 'scale', options: '1080:1920', inputs: 'blurred_small', outputs: 'blurred' },
-                  { filter: 'crop', options: 'ih:ih:iw/2-ih/2:0', inputs: 'original', outputs: 'sq_crop' },
+                  { filter: 'crop', options: 'min(iw,ih):min(iw,ih):iw/2-min(iw,ih)/2:0', inputs: 'original', outputs: 'sq_crop' },
                   { filter: 'scale', options: '1080:1080', inputs: 'sq_crop', outputs: 'sq_scaled' },
                   { filter: 'overlay', options: '0:(1920-1080)/2', inputs: ['blurred', 'sq_scaled'], outputs: 'with_overlay' },
                   { filter: 'subtitles', options: formattedAssPath, inputs: 'with_overlay', outputs: 'final' }
@@ -699,10 +692,10 @@ async function startConsumers() {
               case 'split':
                 filterComplex = [
                   { filter: 'split', options: '2', inputs: '0:v', outputs: ['top', 'bottom'] },
-                  { filter: 'crop', options: 'ih:ih:0:0', inputs: 'top', outputs: 'top_crop' },
+                  { filter: 'crop', options: 'min(iw,ih):min(iw,ih):0:0', inputs: 'top', outputs: 'top_crop' },
                   { filter: 'scale', options: '1080:960:force_original_aspect_ratio=increase', inputs: 'top_crop', outputs: 'top_scaled' },
                   { filter: 'crop', options: '1080:960', inputs: 'top_scaled', outputs: 'top_final' },
-                  { filter: 'crop', options: 'ih:ih:iw-ih:0', inputs: 'bottom', outputs: 'bot_crop' }, 
+                  { filter: 'crop', options: 'min(iw,ih):min(iw,ih):iw-min(iw,ih):0', inputs: 'bottom', outputs: 'bot_crop' },
                   { filter: 'scale', options: '1080:960:force_original_aspect_ratio=increase', inputs: 'bot_crop', outputs: 'bot_scaled' },
                   { filter: 'crop', options: '1080:960', inputs: 'bot_scaled', outputs: 'bot_final' },
                   { filter: 'vstack', options: '', inputs: ['top_final', 'bot_final'], outputs: 'stacked' },
@@ -714,7 +707,7 @@ async function startConsumers() {
                   { filter: 'split', options: '2', inputs: '0:v', outputs: ['game', 'face'] },
                   { filter: 'scale', options: '1080:1200:force_original_aspect_ratio=increase', inputs: 'game', outputs: 'game_scaled' },
                   { filter: 'crop', options: '1080:1200', inputs: 'game_scaled', outputs: 'game_final' },
-                  { filter: 'crop', options: 'ih:ih:iw/2-ih/2:0', inputs: 'face', outputs: 'face_crop' },
+                  { filter: 'crop', options: 'min(iw,ih):min(iw,ih):iw/2-min(iw,ih)/2:0', inputs: 'face', outputs: 'face_crop' },
                   { filter: 'scale', options: '1080:720:force_original_aspect_ratio=increase', inputs: 'face_crop', outputs: 'face_scaled' },
                   { filter: 'crop', options: '1080:720', inputs: 'face_scaled', outputs: 'face_final' },
                   { filter: 'vstack', options: '', inputs: ['game_final', 'face_final'], outputs: 'stacked' },

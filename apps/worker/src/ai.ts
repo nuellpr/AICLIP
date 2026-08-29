@@ -2,7 +2,28 @@ import { GoogleGenAI, Type } from '@google/genai';
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
-import { LLMAnalysisResponseSchema } from '@clipforge/shared';
+import { ClipRecommendationSchema } from '@clipforge/shared';
+
+// Validasi per-clip: satu item buruk dari LLM tidak membunuh seluruh hasil.
+// Field opsional diberi default; item tanpa title/waktu valid tetap dibuang.
+function sanitizeClips(rawClips: any[]): any[] {
+  const kept: any[] = [];
+  for (const item of rawClips) {
+    const patched = {
+      hashtags: [],
+      keywords: [],
+      contentCategory: 'umum',
+      viralScore: 85,
+      ...item,
+    };
+    if (typeof patched.viralScore === 'number') {
+      patched.viralScore = Math.min(100, Math.max(0, Math.round(patched.viralScore)));
+    }
+    const v = ClipRecommendationSchema.safeParse(patched);
+    if (v.success) kept.push({ ...patched, ...v.data });
+  }
+  return kept;
+}
 
 export const MAX_VTT_CHARS = 4000;
 
@@ -184,11 +205,11 @@ Reply with ONLY JSON: {"clips":[{"title":"...","hook":"...","startTime":0,"endTi
       const parsed = JSON.parse(text);
       
       if (parsed.clips && Array.isArray(parsed.clips) && parsed.clips.length > 0) {
-        const valid = LLMAnalysisResponseSchema.safeParse({ clips: parsed.clips });
-        if (valid.success) {
-          return { clips: valid.data.clips.slice(0, clipCount) };
+        const kept = sanitizeClips(parsed.clips);
+        if (kept.length > 0) {
+          return { clips: kept.slice(0, clipCount) };
         }
-        attemptErrors.push(`Attempt ${attempt}: clips gagal validasi: ${valid.error.issues[0]?.message || 'invalid'}`);
+        attemptErrors.push(`Attempt ${attempt}: semua clip gagal validasi Zod`);
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
         continue;
       }
@@ -287,9 +308,9 @@ async function generateWithGemini(config: any, systemMsg: string, prompt: string
       let parsed = JSON.parse(text);
       
       if (Array.isArray(parsed)) {
-        const valid = LLMAnalysisResponseSchema.safeParse({ clips: parsed });
-        if (valid.success) return { clips: valid.data.clips.slice(0, clipCount) };
-        lastError = `clips gagal validasi: ${valid.error.issues[0]?.message || 'invalid'}`;
+        const kept = sanitizeClips(parsed);
+        if (kept.length > 0) return { clips: kept.slice(0, clipCount) };
+        lastError = 'semua clip gagal validasi Zod';
         console.warn(`Gemini clips invalid (Attempt ${attempt}/${MAX_ATTEMPTS}):`, lastError);
         if (attempt < MAX_ATTEMPTS) {
           await new Promise(r => setTimeout(r, 5000));

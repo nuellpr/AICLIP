@@ -166,7 +166,7 @@ export async function mixSfxIntoVideo(
 
     // Mix original audio stream with all SFX streams
     const mixCount = mixLabels.length;
-    filterParts.push(`${mixLabels.join('')}amix=inputs=${mixCount}:duration=first:dropout_transition=2[a_mixed]`);
+    filterParts.push(`${mixLabels.join('')}amix=inputs=${mixCount}:duration=first:dropout_transition=2:normalize=0[a_mixed]`);
 
     const filterComplexStr = filterParts.join(';');
     const cmd = `"${ffmpeg}" -y ${inputArgs.join(' ')} -filter_complex "${filterComplexStr}" -map 0:v -map "[a_mixed]" -c:v copy -c:a aac -b:a 192k "${outputPath}"`;

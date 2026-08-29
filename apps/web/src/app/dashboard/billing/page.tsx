@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CreditCard, Check, Zap, Sparkles, Clock, ArrowRight, ShieldCheck, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 
@@ -34,8 +34,8 @@ export default function BillingPage() {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent: boolean = false): Promise<Transaction[] | null> => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const [subRes, txRes] = await Promise.all([
@@ -51,19 +51,44 @@ export default function BillingPage() {
       if (txRes.ok) {
         const txData = await txRes.json();
         setTransactions(txData.transactions || []);
+        return txData.transactions as Transaction[];
       }
+      return null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Error fetching billing data:', err);
       setError('Gagal memuat data billing');
+      return null;
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  // Polling status pembayaran: cek tiap 5s maksimal 3 menit sampai ada settlement
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startPaymentPolling = () => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    let ticks = 0;
+    pollRef.current = setInterval(async () => {
+      ticks++;
+      const txs = await fetchData(true);
+      if (txs?.some(t => t.status === 'SETTLEMENT') || ticks >= 36) {
+        if (pollRef.current) clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    }, 5000);
+  };
+
+  useEffect(() => () => {
+    if (pollRef.current) clearInterval(pollRef.current);
+  }, []);
 
   const handleBuyPlan = async (planId: string) => {
     setCheckoutLoading(planId);
     setError(null);
+    // Buka tab sebelum await agar tidak kena popup blocker (user activation hangus setelah await)
+    const payWindow = typeof window !== 'undefined' ? window.open('', '_blank') : null;
     try {
       const res = await apiFetch('/api/payment/checkout', {
         method: 'POST',
@@ -78,14 +103,20 @@ export default function BillingPage() {
 
       // Open iPaymu/Mayar payment page (QRIS, VA, e-wallet, Alfamart, dll)
       if (data.paymentUrl) {
-        window.open(data.paymentUrl, '_blank');
-        setTimeout(fetchData, 5000);
+        if (payWindow) {
+          payWindow.location.href = data.paymentUrl;
+        } else {
+          window.open(data.paymentUrl, '_blank');
+        }
+        startPaymentPolling();
       } else {
+        payWindow?.close();
         throw new Error('Metode pembayaran tidak tersedia');
       }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Checkout error:', err);
+      payWindow?.close();
       setError(err.message || 'Terjadi kesalahan saat memproses checkout');
     } finally {
       setCheckoutLoading(null);
@@ -140,7 +171,7 @@ export default function BillingPage() {
         </div>
 
         <button
-          onClick={fetchData}
+          onClick={() => fetchData()}
           disabled={loading}
           className="self-start md:self-auto flex items-center gap-2 bg-[var(--db-panel)] hover:bg-[var(--db-cream)] text-[var(--ink)] px-4 py-2 rounded-xl text-xs font-semibold transition-all border border-[var(--db-line)] disabled:opacity-50"
         >

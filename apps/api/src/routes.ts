@@ -114,34 +114,43 @@ export default async function routes(server: FastifyInstance) {
       return reply.code(400).send({ error: 'Upload diperlukan untuk sourceType UPLOAD' });
     }
 
-    // 1 kredit = 1 proyek (1 URL YouTube). Potong atomik, tolak jika kredit habis.
-    const deducted = await prisma.subscription.updateMany({
-      where: { userId: targetUserId, credits: { gte: 1 } },
-      data: { credits: { decrement: 1 } }
+    // Atomic: potong kredit + buat project dalam satu transaksi DB —
+    // jika create gagal, kredit tidak hilang.
+    const txResult = await prisma.$transaction(async (tx) => {
+      const deducted = await tx.subscription.updateMany({
+        where: { userId: targetUserId, credits: { gte: 1 } },
+        data: { credits: { decrement: 1 } }
+      });
+
+      if (deducted.count === 0) return { noCredit: true as const };
+
+      const project = await tx.project.create({
+        data: {
+          userId: targetUserId,
+          title: title || 'New Video Project',
+          sourceType: sourceType || 'URL',
+          sourceUrl: sourceUrl,
+          sourceFileKey: validatedFileKey,
+          layoutMode: layoutMode || 'crop_blur',
+          clipCount: parseInt(clipCount) || 3,
+          targetDuration: targetDuration || '30-60',
+          searchQuery: searchQuery || null,
+          aiProvider: aiProvider || null,
+          aiModel: aiModel || null,
+          status: 'QUEUED',
+        }
+      });
+
+      return { noCredit: false as const, project };
     });
 
-    if (deducted.count === 0) {
+    if (txResult.noCredit) {
       return reply.code(402).send({
         error: 'Kredit Anda telah habis (0 Kredit). Silakan lakukan Top-Up atau beli paket di menu Langganan & Tagihan.'
       });
     }
 
-    const project = await prisma.project.create({
-      data: {
-        userId: targetUserId,
-        title: title || 'New Video Project',
-        sourceType: sourceType || 'URL',
-        sourceUrl: sourceUrl,
-        sourceFileKey: validatedFileKey,
-        layoutMode: layoutMode || 'crop_blur',
-        clipCount: parseInt(clipCount) || 3,
-        targetDuration: targetDuration || '30-60',
-        searchQuery: searchQuery || null,
-        aiProvider: aiProvider || null,
-        aiModel: aiModel || null,
-        status: 'QUEUED',
-      }
-    });
+    const project = txResult.project;
 
     // Add job to BullMQ queue (jobId dedup: job sama tidak ditambahkan dua kali)
     await projectQueue.add('processProject', { projectId: project.id }, {
