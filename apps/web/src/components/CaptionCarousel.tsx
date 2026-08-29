@@ -1,6 +1,33 @@
 import React, { useRef } from 'react';
+import { Inter, Montserrat, Poppins } from 'next/font/google';
 import { CaptionPreset, CAPTION_PRESETS } from '@clipforge/shared';
-import { ChevronLeft, ChevronRight, Lock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, Check } from 'lucide-react';
+
+const inter = Inter({ subsets: ['latin'], display: 'swap' });
+const montserrat = Montserrat({ subsets: ['latin'], display: 'swap' });
+const poppins = Poppins({ subsets: ['latin'], weight: ['700', '800', '900'], display: 'swap' });
+
+const PRESET_FONT: Record<string, string> = {
+  Inter: inter.style.fontFamily,
+  Montserrat: montserrat.style.fontFamily,
+  Poppins: poppins.style.fontFamily,
+  Impact: "Impact, 'Arial Black', sans-serif",
+  Arial: 'Arial, Helvetica, sans-serif',
+  Georgia: "Georgia, 'Times New Roman', serif",
+};
+
+const ANIM_LABEL: Record<string, string> = {
+  none: 'Statis',
+  pop: 'Pop',
+  grow: 'Grow',
+  bounce: 'Bounce',
+  karaoke: 'Karaoke',
+  glow: 'Glow',
+  underline: 'Underline',
+  boxHighlight: 'Box',
+  typewriter: 'Typewriter',
+  wordFocus: 'Word Focus',
+};
 
 interface CaptionCarouselProps {
   selectedId: string;
@@ -18,10 +45,14 @@ function AnimatedPresetPreview({ preset }: { preset: CaptionPreset }) {
     return () => clearInterval(interval);
   }, [words.length]);
 
+  const posClass =
+    preset.position === 'top' ? 'top-3' : preset.position === 'center' ? 'top-1/2 -translate-y-1/2' : 'bottom-4';
+  const wordSize = Math.max(14, Math.min(26, Math.round((preset.fontSize || 60) / 3)));
+
   return (
-    <div className="flex items-center justify-center gap-1.5 w-full h-full p-2 text-center select-none"
+    <div className={`absolute inset-x-0 flex items-center justify-center gap-1.5 px-2 text-center select-none ${posClass}`}
          style={{
-           fontFamily: preset.fontFamily || 'Montserrat',
+           fontFamily: PRESET_FONT[preset.fontFamily] || preset.fontFamily,
            fontWeight: preset.fontWeight || 800,
            fontStyle: preset.fontStyle || 'normal',
            lineHeight: 1.2,
@@ -72,7 +103,7 @@ function AnimatedPresetPreview({ preset }: { preset: CaptionPreset }) {
               textDecoration,
               borderRadius,
               padding,
-              fontSize: '16px',
+              fontSize: `${wordSize}px`,
               WebkitTextStroke: preset.strokeWidth && preset.strokeWidth > 0 ? `${preset.strokeWidth / 3.5}px ${preset.strokeColor}` : 'none',
               textShadow: glowShadow !== 'none' ? glowShadow : (preset.strokeColor && preset.strokeColor !== 'transparent' ? `0 0 4px ${preset.strokeColor}` : 'none')
             }}
@@ -134,21 +165,41 @@ export function CaptionCarousel({ selectedId, onSelect }: CaptionCarouselProps) 
                   onSelect(preset);
                 }
               }}
-              className={`snap-start shrink-0 rounded-xl border-2 transition-all duration-200 
-                ${preset.isLocked ? 'cursor-not-allowed opacity-90' : 'cursor-pointer'} 
-                ${isSelected && !preset.isLocked ? 'border-[#EA4C89] ring-2 ring-[#EA4C89]/20' : 'border-black/[0.08] hover:border-black/20'} 
+              className={`snap-start shrink-0 rounded-2xl border-2 overflow-hidden transition-all duration-200
+                ${preset.isLocked ? 'cursor-not-allowed opacity-90' : 'cursor-pointer hover:-translate-y-1 hover:shadow-lg'}
+                ${isSelected && !preset.isLocked ? 'border-[#EA4C89] ring-2 ring-[#EA4C89]/30 scale-[1.02] shadow-lg shadow-[#EA4C89]/20' : 'border-black/[0.08] hover:border-black/20'}
                 [&:nth-child(4n+1)]:bg-[var(--db-lavender)] [&:nth-child(4n+2)]:bg-[var(--db-mint)] [&:nth-child(4n+3)]:bg-[var(--db-butter)] [&:nth-child(4n+4)]:bg-[var(--db-peach)]`}
-              style={{ width: '160px' }}
+              style={{ width: '170px' }}
             >
-              <div className="h-28 w-full flex items-center justify-center rounded-t-lg overflow-hidden p-2 relative bg-black">
+              <div
+                className="h-32 w-full rounded-t-2xl overflow-hidden relative bg-black"
+                style={{
+                  background:
+                    'radial-gradient(circle at 30% 15%, rgba(255,255,255,0.12), transparent 55%), linear-gradient(150deg, #2a2f3f 0%, #151823 55%, #0c0e15 100%)',
+                }}
+              >
                 {preset.id === 'no-caption' ? (
-                  <div className="w-12 h-12 rounded-full border-4 border-gray-500 relative flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full border-4 border-gray-500 relative flex items-center justify-center absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                     <div className="w-14 h-1 bg-gray-500 rotate-45 absolute" />
                   </div>
                 ) : (
-                  <AnimatedPresetPreview preset={preset} />
+                  <>
+                    <div
+                      className="absolute inset-0 opacity-40 pointer-events-none"
+                      style={{
+                        background: `radial-gradient(circle at 50% ${preset.position === 'top' ? '18%' : preset.position === 'center' ? '50%' : '82%'}, ${preset.activeWordColor}33, transparent 62%)`,
+                      }}
+                    />
+                    <AnimatedPresetPreview preset={preset} />
+                  </>
                 )}
-                
+
+                {isSelected && !preset.isLocked && (
+                  <div className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-[#EA4C89] flex items-center justify-center shadow">
+                    <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                  </div>
+                )}
+
                 {preset.isLocked && (
                   <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 p-2">
                     <Lock className="w-6 h-6 text-yellow-500 mb-1" />
@@ -156,9 +207,12 @@ export function CaptionCarousel({ selectedId, onSelect }: CaptionCarouselProps) 
                   </div>
                 )}
               </div>
-              <div className="p-3 text-center border-t border-black/[0.08]">
-                <p className={`text-sm font-semibold ${isSelected ? 'text-[#EA4C89]' : 'text-[var(--ink)]'}`}>
+              <div className="p-2.5 text-center border-t border-black/[0.08]">
+                <p className={`text-xs font-bold leading-tight line-clamp-2 min-h-[2rem] flex items-center justify-center ${isSelected ? 'text-[#EA4C89]' : 'text-[var(--ink)]'}`}>
                   {preset.name}
+                </p>
+                <p className="mt-1 text-[10px] uppercase tracking-wider font-semibold" style={{ color: preset.activeWordColor }}>
+                  {ANIM_LABEL[preset.animation] || preset.animation}
                 </p>
               </div>
             </div>
