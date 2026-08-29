@@ -211,12 +211,14 @@ export default function SettingsPage() {
             <User className={`h-5 w-5 ${activeTab === 'profile' ? 'text-[#EA4C89]' : ''}`} /> Profil Akun
           </button>
           
-          <button 
-            onClick={() => setActiveTab('ai')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'ai' ? 'bg-[var(--db-panel)] shadow-sm text-[var(--ink)]' : 'hover:bg-[var(--db-panel)] text-[var(--db-gray)] hover:text-[var(--ink)]'}`}
-          >
-            <SettingsIcon className={`h-5 w-5 ${activeTab === 'ai' ? 'text-[#EA4C89]' : ''}`} /> AI Models
-          </button>
+          {user?.role === 'ADMIN' && (
+            <button
+              onClick={() => setActiveTab('ai')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'ai' ? 'bg-[var(--db-panel)] shadow-sm text-[var(--ink)]' : 'hover:bg-[var(--db-panel)] text-[var(--db-gray)] hover:text-[var(--ink)]'}`}
+            >
+              <SettingsIcon className={`h-5 w-5 ${activeTab === 'ai' ? 'text-[#EA4C89]' : ''}`} /> AI Models
+            </button>
+          )}
           
           <button 
             onClick={() => setActiveTab('billing')}
