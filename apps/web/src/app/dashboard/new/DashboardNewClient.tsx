@@ -313,7 +313,7 @@ export default function NewProjectPage() {
                   key={v}
                   type="button"
                   onClick={() => setAspectRatio(v)}
-                  className={`p-3 rounded-xl text-sm font-semibold transition-all border ${aspectRatio === v ? 'border-[#EA4C89] bg-[#FDE3E1]/40 text-[#C32361]' : 'border-transparent bg-[var(--db-cream)] text-[var(--ink)] hover:border-[#EA4C89]/50'}`}
+                  className={`p-3 rounded-xl text-sm font-semibold transition-all border ${aspectRatio === v ? 'border-[#EA4C89] bg-[#EA4C89] text-white' : 'border-transparent bg-[var(--db-cream)] text-[var(--ink)] hover:border-[#EA4C89]/50'}`}
                 >
                   {label}
                 </button>
