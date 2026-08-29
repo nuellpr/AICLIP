@@ -1,10 +1,11 @@
 import fs from 'fs';
 import path from 'path';
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import { getFfmpegPath, getPythonPath, getFontPath } from './paths';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export interface HookOptions {
   hookText: string;
@@ -22,14 +23,17 @@ export interface HookOptions {
  * Generate a TTS audio file from hook text using edge-tts (Python)
  */
 async function generateTTS(text: string, outputAudioPath: string, voice: string = 'id-ID-ArdiNeural'): Promise<boolean> {
-  const cleanAudioPath = outputAudioPath.replace(/\\/g, '/');
-  const cleanText = text.replace(/"/g, '\\"').replace(/\n/g, ' ');
+  // SECURITY: hookText berasal dari LLM (rawan prompt injection) — teks TIDAK
+  // PERNAH diinterpolasi ke string shell. Semua call pakai execFile (argv
+  // array, tanpa shell) dengan teks sebagai argumen/file sementara.
+  const textArg = text.replace(/\n/g, ' ');
 
   // Method 1: Try edge-tts CLI tool directly
   try {
-    await execAsync(
-      `edge-tts --voice "${voice}" --text "${cleanText}" --write-media "${cleanAudioPath}"`,
-      { timeout: 30000, encoding: 'utf-8' }
+    await execFileAsync(
+      'edge-tts',
+      ['--voice', voice, '--text', textArg, '--write-media', outputAudioPath],
+      { timeout: 30000, windowsHide: true }
     );
     if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 100) {
       console.log('Edge-TTS CLI generated audio successfully');
@@ -39,17 +43,29 @@ async function generateTTS(text: string, outputAudioPath: string, voice: string 
     // CLI tool not in PATH, fallback to Python module
   }
 
-  // Method 2: Python edge_tts module with valid asyncio.run syntax
+  // Method 2: Python edge_tts module — teks dibaca dari file sementara
   try {
     const pythonBin = getPythonPath();
-    const safeText = cleanText.replace(/'/g, "\\'");
-    await execAsync(
-      `"${pythonBin}" -c "import asyncio, edge_tts; asyncio.run(edge_tts.Communicate('${safeText}', '${voice}').save('${cleanAudioPath}'))"`,
-      { timeout: 30000, encoding: 'utf-8' }
-    );
-    if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 100) {
-      console.log('Edge-TTS Python module generated audio successfully');
-      return true;
+    const textFile = `${outputAudioPath}.txt`;
+    fs.writeFileSync(textFile, textArg, 'utf-8');
+    try {
+      await execFileAsync(
+        pythonBin,
+        [
+          '-c',
+          "import asyncio,sys,edge_tts; asyncio.run(edge_tts.Communicate(open(sys.argv[1],encoding='utf-8').read(), sys.argv[2]).save(sys.argv[3]))",
+          textFile,
+          voice,
+          outputAudioPath,
+        ],
+        { timeout: 30000, windowsHide: true }
+      );
+      if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 100) {
+        console.log('Edge-TTS Python module generated audio successfully');
+        return true;
+      }
+    } finally {
+      try { fs.unlinkSync(textFile); } catch (e) {}
     }
   } catch (err: any) {
     console.warn('Edge-TTS Python failed:', err.message);
@@ -58,14 +74,25 @@ async function generateTTS(text: string, outputAudioPath: string, voice: string 
   // Method 3: Fallback to gTTS
   try {
     const pythonBin = getPythonPath();
-    const safeText = cleanText.replace(/'/g, "\\'");
-    await execAsync(
-      `"${pythonBin}" -c "from gtts import gTTS; tts = gTTS('${safeText}', lang='id'); tts.save('${cleanAudioPath}')"`,
-      { timeout: 30000, encoding: 'utf-8' }
-    );
-    if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 100) {
-      console.log('gTTS generated audio successfully');
-      return true;
+    const textFile = `${outputAudioPath}.txt`;
+    fs.writeFileSync(textFile, textArg, 'utf-8');
+    try {
+      await execFileAsync(
+        pythonBin,
+        [
+          '-c',
+          "import sys; from gtts import gTTS; gTTS(open(sys.argv[1],encoding='utf-8').read(), lang='id').save(sys.argv[2])",
+          textFile,
+          outputAudioPath,
+        ],
+        { timeout: 30000, windowsHide: true }
+      );
+      if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 100) {
+        console.log('gTTS generated audio successfully');
+        return true;
+      }
+    } finally {
+      try { fs.unlinkSync(textFile); } catch (e) {}
     }
   } catch (e: any) {
     console.warn('gTTS failed:', e.message);
@@ -107,6 +134,14 @@ export async function generateHookIntro(options: HookOptions): Promise<string | 
     bgColor2 = '#764ba2',
   } = options;
 
+  // Semua nilai yang diinterpolasi ke command ffmpeg dibersihkan dulu
+  const safeDuration = Math.min(Math.max(Number(duration) || 4, 1), 15);
+  const safeFontSize = Math.min(Math.max(Number(fontSize) || 56, 12), 200);
+  const safeColor = (c: string) => String(c).replace(/[^a-zA-Z0-9#]/g, '') || 'white';
+  const safeTextColor = safeColor(textColor);
+  const safeBg1 = safeColor(bgColor1);
+  const safeBg2 = safeColor(bgColor2);
+
   const hookDir = path.dirname(outputPath);
   const ttsAudioPath = path.join(hookDir, `hook_tts_${Date.now()}.mp3`);
   const hookVideoPath = path.join(hookDir, `hook_video_${Date.now()}.mp4`);
@@ -116,7 +151,7 @@ export async function generateHookIntro(options: HookOptions): Promise<string | 
     const hasTTS = await generateTTS(hookText, ttsAudioPath, voice);
     
     // 2. Get TTS duration if available (to match video length)
-    let videoDuration = duration;
+    let videoDuration = safeDuration;
     if (hasTTS) {
       try {
         const { stdout } = await execAsync(
@@ -146,23 +181,31 @@ export async function generateHookIntro(options: HookOptions): Promise<string | 
     }
     if (currentLine.trim()) lines.push(currentLine.trim());
     
-    const escapedLines = lines.map(l => l.replace(/'/g, '\u2019').replace(/:/g, '\\:').replace(/\\/g, '/'));
-    
+    // Escape urutan benar: backslash → slash dulu, lalu escape `:` (urutan
+    // lama terbalik sehingga `\:` jadi `/:`). Quote & `"` diganti curly quote
+    // agar tidak memutus quoting shell/filter; `%` dihapus (drawtext %{...}
+    // expansion).
+    const escapedLines = lines.map(l => l
+      .replace(/\\/g, '/')
+      .replace(/['"]/g, '\u2019')
+      .replace(/%/g, '')
+      .replace(/:/g, '\\:'));
+
     // Build drawtext filters for each line with fade-in animation
-    const lineHeight = fontSize + 15;
+    const lineHeight = safeFontSize + 15;
     const totalTextHeight = lines.length * lineHeight;
     const startY = (1920 - totalTextHeight) / 2;
-    
+
     let drawtextFilters = escapedLines.map((line, idx) => {
       const y = Math.round(startY + idx * lineHeight);
       const fadeDelay = 0.3 * idx; // Stagger each line
       const escapedFont = getFontPath().replace(/:/g, '\\:');
-      return `drawtext=text='${line}':fontfile=${escapedFont}:fontsize=${fontSize}:fontcolor=${textColor}:x=(w-text_w)/2:y=${y}:alpha='if(lt(t,${fadeDelay}),0,if(lt(t,${fadeDelay + 0.4}),(t-${fadeDelay})/0.4,1))'`;
+      return `drawtext=text='${line}':fontfile=${escapedFont}:fontsize=${safeFontSize}:fontcolor=${safeTextColor}:x=(w-text_w)/2:y=${y}:alpha='if(lt(t,${fadeDelay}),0,if(lt(t,${fadeDelay + 0.4}),(t-${fadeDelay})/0.4,1))'`;
     }).join(',');
-    
+
     // Create gradient background + text overlay
-    const bgFilter = `color=c=${bgColor1}:s=1080x1920:d=${videoDuration},format=yuv420p`;
-    const gradientOverlay = `gradients=s=1080x1920:c0=${bgColor1}:c1=${bgColor2}:type=linear:duration=${videoDuration}`;
+    const bgFilter = `color=c=${safeBg1}:s=1080x1920:d=${videoDuration},format=yuv420p`;
+    const gradientOverlay = `gradients=s=1080x1920:c0=${safeBg1}:c1=${safeBg2}:type=linear:duration=${videoDuration}`;
 
     // Background: frame dari klip utama (digelapkan) kalau ada, fallback warna gelap solid
     const framePath = path.join(hookDir, `hook_frame_${Date.now()}.jpg`);

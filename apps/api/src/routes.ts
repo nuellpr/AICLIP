@@ -96,6 +96,24 @@ export default async function routes(server: FastifyInstance) {
 
     const targetUserId = getUserId(request);
 
+    // Validasi sourceFileKey (fail-fast sebelum potong kredit): hanya nama file
+    // yang dibuat endpoint /upload (server-generated), tanpa path/traversal.
+    let validatedFileKey: string | null = null;
+    if (sourceFileKey) {
+      const key = String(sourceFileKey);
+      const isSafeKey = /^[\w][\w.-]{0,120}\.(mp4|mov|mkv|webm|avi|m4v)$/i.test(key) && path.basename(key) === key;
+      const uploadsDir = path.resolve(__dirname, '../uploads');
+      const fileExists = isSafeKey && fs.existsSync(path.join(uploadsDir, key));
+      if (!fileExists) {
+        return reply.code(400).send({ error: 'sourceFileKey tidak valid atau file upload tidak ditemukan' });
+      }
+      validatedFileKey = key;
+    }
+
+    if (sourceType === 'UPLOAD' && !validatedFileKey) {
+      return reply.code(400).send({ error: 'Upload diperlukan untuk sourceType UPLOAD' });
+    }
+
     // 1 kredit = 1 proyek (1 URL YouTube). Potong atomik, tolak jika kredit habis.
     const deducted = await prisma.subscription.updateMany({
       where: { userId: targetUserId, credits: { gte: 1 } },
@@ -114,7 +132,7 @@ export default async function routes(server: FastifyInstance) {
         title: title || 'New Video Project',
         sourceType: sourceType || 'URL',
         sourceUrl: sourceUrl,
-        sourceFileKey: sourceFileKey || null,
+        sourceFileKey: validatedFileKey,
         layoutMode: layoutMode || 'crop_blur',
         clipCount: parseInt(clipCount) || 3,
         targetDuration: targetDuration || '30-60',
@@ -125,8 +143,12 @@ export default async function routes(server: FastifyInstance) {
       }
     });
 
-    // Add job to BullMQ queue
-    await projectQueue.add('processProject', { projectId: project.id });
+    // Add job to BullMQ queue (jobId dedup: job sama tidak ditambahkan dua kali)
+    await projectQueue.add('processProject', { projectId: project.id }, {
+      jobId: `processProject:${project.id}`,
+      removeOnComplete: true,
+      removeOnFail: true
+    });
 
     return { projectId: project.id };
   });
@@ -136,7 +158,7 @@ export default async function routes(server: FastifyInstance) {
     const userId = getUserId(request);
     const project = await prisma.project.findUnique({
       where: { id },
-      select: { userId: true, status: true, progress: true, currentStage: true, errorMessage: true, clips: true }
+      select: { userId: true, status: true, progress: true, currentStage: true, errorMessage: true, sourceUrl: true, clips: true }
     });
 
     if (!project) {
@@ -176,7 +198,7 @@ export default async function routes(server: FastifyInstance) {
       try {
         const project = await prisma.project.findUnique({
           where: { id },
-          select: { status: true, progress: true, currentStage: true, errorMessage: true, clips: true }
+          select: { status: true, progress: true, currentStage: true, errorMessage: true, sourceUrl: true, clips: true }
         });
         if (project) {
           reply.raw.write(`data: ${JSON.stringify(project)}\n\n`);
@@ -307,7 +329,11 @@ export default async function routes(server: FastifyInstance) {
       data: { renderStatus: 'QUEUED' }
     });
 
-    await renderQueue.add('renderClip', { clipId: clip.id });
+    await renderQueue.add('renderClip', { clipId: clip.id }, {
+      jobId: `renderClip:${clip.id}`,
+      removeOnComplete: true,
+      removeOnFail: true
+    });
 
     return clip;
   });
@@ -396,7 +422,9 @@ export default async function routes(server: FastifyInstance) {
 
     return {
       provider: config?.provider || 'b-ai',
-      baseUrl: process.env.B_AI_BASE_URL || config?.baseUrl || '',
+      // baseUrl HANYA dari env — baseUrl dari user tidak pernah dipakai server
+      // (mencegah SSRF/kebocoran API key server ke URL arbitrer).
+      baseUrl: process.env.B_AI_BASE_URL || '',
       apiKey: '',
       apiKeySet: serverKey,
       model: process.env.B_AI_MODEL || config?.model || '',
@@ -421,9 +449,9 @@ export default async function routes(server: FastifyInstance) {
     }
 
     // apiKey TIDAK diterima dari client — key selalu dari env server (B_AI_*)
+    // baseUrl TIDAK disimpan — server selalu pakai env (anti SSRF/key exfil)
     const config = {
       provider: provider || existing.provider || 'b-ai',
-      baseUrl: baseUrl !== undefined ? baseUrl : (existing.baseUrl || ''),
       model: model || existing.model || '',
       systemMessage: systemMessage !== undefined ? systemMessage : (existing.systemMessage || '')
     };
@@ -440,7 +468,10 @@ export default async function routes(server: FastifyInstance) {
   });
 
   server.post('/settings/ai/models', { preHandler: [authenticate] }, async (request, reply) => {
-    const { provider, baseUrl } = request.body as any;
+    const { provider } = request.body as any;
+    // baseUrl dari body diabaikan sepenuhnya (anti SSRF) — server key/base
+    // selalu dari env.
+    const envBase = process.env.B_AI_BASE_URL || undefined;
 
     // b-ai pakai daftar model gratis server — tanpa key dari client
     if (provider === 'b-ai') {
@@ -456,7 +487,7 @@ export default async function routes(server: FastifyInstance) {
     if (provider === 'openai' || provider === 'groq' || provider === 'custom') {
       try {
         const { OpenAI } = require('openai');
-        const openai = new OpenAI({ apiKey: apiKey, baseURL: baseUrl || undefined });
+        const openai = new OpenAI({ apiKey: apiKey, baseURL: envBase });
         const res = await openai.models.list();
         return { models: res.data.map((m: any) => m.id) };
       } catch (e: any) {
@@ -493,8 +524,12 @@ export default async function routes(server: FastifyInstance) {
       }
 
       // Find the rendered file to extract audio from
+      // Format baru `<clipId>-<title>.mp4` (worker), fallback `<title>.mp4` (render lama)
       const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id;
-      const renderedPath = path.join(rendersDir, `${safeTitle}.mp4`);
+      const newRenderedPath = path.join(rendersDir, `${clip.id}-${safeTitle}.mp4`);
+      const renderedPath = fs.existsSync(newRenderedPath)
+        ? newRenderedPath
+        : path.join(rendersDir, `${safeTitle}.mp4`);
       const audioPath = path.join(__dirname, `../temp_whisper_${id}.wav`);
       const whisperOutDir = path.join(__dirname, '../temp_whisper_out');
 

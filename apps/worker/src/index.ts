@@ -55,7 +55,15 @@ function ensureWhisperDaemon(): ChildProcess {
     }
   });
   whisperProc.stderr?.on('data', (d: Buffer) => { console.log('[whisper]', d.toString().trim()); });
-  whisperProc.on('exit', () => { whisperReady = false; whisperProc = null; });
+  whisperProc.on('exit', () => {
+    whisperReady = false;
+    whisperProc = null;
+    // Jangan tinggalkan waiter menggantung — respons berikutnya (dari proses
+    // baru) tidak boleh dikonsumsi waiter lama (FIFO mismatch → caption clip salah).
+    const dead = whisperQueue;
+    whisperQueue = [];
+    dead.forEach(w => { try { w.reject(new Error('Whisper daemon exited')); } catch {} });
+  });
   return whisperProc!;
 }
 
@@ -65,8 +73,19 @@ async function transcribeWithDaemon(audioPath: string, timeoutMs = 300000): Prom
   for (let i = 0; i < 90 && !whisperReady; i++) await new Promise(r => setTimeout(r, 1000));
   if (!whisperReady) throw new Error('Whisper daemon not ready');
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Whisper daemon timeout')), timeoutMs);
-    whisperQueue.push({ resolve: (v) => { clearTimeout(timer); resolve(v); }, reject: (e) => { clearTimeout(timer); reject(e); } });
+    const waiter = {
+      resolve: (v: any) => { clearTimeout(timer); resolve(v); },
+      reject: (e: any) => { clearTimeout(timer); reject(e); },
+    };
+    const timer = setTimeout(() => {
+      // Lepas waiter dari queue supaya tidak mengonsumsi respons request lain,
+      // lalu matikan daemon (state-nya stale; respawn di pemanggilan berikutnya).
+      const i = whisperQueue.indexOf(waiter);
+      if (i !== -1) whisperQueue.splice(i, 1);
+      try { proc.kill(); } catch {}
+      reject(new Error('Whisper daemon timeout'));
+    }, timeoutMs);
+    whisperQueue.push(waiter);
     proc.stdin!.write(audioPath.replace(/\\/g, '/') + '\n');
   });
 }
@@ -87,9 +106,11 @@ async function processProject(projectId: string) {
 
   
   const updateProgress = async (stage: string, progress: number) => {
+    // Heartbeat: refresh lockedAt di setiap progress supaya recoverStuckJobs
+    // (cron 15 menit) tidak me-requeue job yang masih berjalan (double processing).
     await prisma.project.update({
       where: { id: projectId },
-      data: { currentStage: stage, progress }
+      data: { currentStage: stage, progress, lockedAt: new Date() }
     });
     console.log(`Project ${projectId} - Stage: ${stage} (${progress}%)`);
   };
@@ -199,7 +220,10 @@ async function processProject(projectId: string) {
     
     // 5. GENERATING_CLIPS
     await updateProgress('GENERATING_CLIPS', 70);
-    
+
+    // Reprocess guard: hapus clip lama agar restart/requeue tidak menduplikasi baris
+    await prisma.clip.deleteMany({ where: { projectId } });
+
     if (aiClips && aiClips.length > 0) {
       for (const clipData of aiClips) {
         await prisma.clip.create({
@@ -290,14 +314,34 @@ async function startConsumers() {
   const projectWorker = new Worker('projectQueue', async job => {
     if (job.name === 'processProject') {
       const { projectId } = job.data;
-      
-      // Update DB status to DOWNLOADING
-      await prisma.project.update({
-        where: { id: projectId },
+
+      // Atomic claim: hanya job pertama boleh mengklaim project (lockedAt null
+      // + status QUEUED). Job duplikat dari recovery/startup akan skip.
+      const claimed = await prisma.project.updateMany({
+        where: { id: projectId, lockedAt: null, status: 'QUEUED' },
         data: { status: 'DOWNLOADING', lockedAt: new Date() }
       });
-      
-      await processProject(projectId);
+      if (claimed.count === 0) {
+        console.log(`Project ${projectId} already claimed or not queued, skipping duplicate job`);
+        return;
+      }
+
+      // Heartbeat: refresh lockedAt selama pipeline berjalan (AI call bisa >15 menit),
+      // berhenti sendiri saat project READY/FAILED/di-requeue.
+      const heartbeat = setInterval(async () => {
+        const p = await prisma.project.findUnique({ where: { id: projectId }, select: { status: true } }).catch(() => null);
+        if (!p || p.status === 'READY' || p.status === 'FAILED' || p.status === 'QUEUED') {
+          clearInterval(heartbeat);
+        } else {
+          await prisma.project.update({ where: { id: projectId }, data: { lockedAt: new Date() } }).catch(() => {});
+        }
+      }, 4 * 60 * 1000);
+
+      try {
+        await processProject(projectId);
+      } finally {
+        clearInterval(heartbeat);
+      }
     }
   }, { connection, concurrency: 1, lockDuration: 300000 });
 
@@ -310,13 +354,29 @@ async function startConsumers() {
       });
       if (clip && (clip.project.sourceUrl || (clip.project.sourceType === 'UPLOAD' && clip.project.sourceFileKey))) {
         console.log(`Started rendering clip ${clip.id} from ${clip.project.sourceUrl || clip.project.sourceFileKey}`);
-        await prisma.clip.update({
-          where: { id: clip.id },
+        // Atomic claim: cegah render ganda saat job duplikat dari recovery/startup
+        const claimed = await prisma.clip.updateMany({
+          where: { id: clip.id, lockedAt: null, renderStatus: { in: ['QUEUED', 'IDLE', 'PENDING'] } },
           data: { renderStatus: 'RENDERING', lockedAt: new Date() }
         });
+        if (claimed.count === 0) {
+          console.log(`Clip ${clip.id} already claimed or not queued, skipping duplicate job`);
+          return;
+        }
 
+        // Heartbeat render (render CPU bisa >15 menit), berhenti saat tidak lagi RENDERING
+        const renderHeartbeat = setInterval(async () => {
+          const c = await prisma.clip.findUnique({ where: { id: clip.id }, select: { renderStatus: true } }).catch(() => null);
+          if (!c || c.renderStatus !== 'RENDERING') {
+            clearInterval(renderHeartbeat);
+          } else {
+            await prisma.clip.update({ where: { id: clip.id }, data: { lockedAt: new Date() } }).catch(() => {});
+          }
+        }, 4 * 60 * 1000);
+
+        // Nama file unik per clip: dua clip berjudul sama tidak saling menimpa
         const safeTitle = clip.title.replace(/[^a-zA-Z0-9 ]/g, "").trim() || clip.id;
-        const filename = `${safeTitle}.mp4`;
+        const filename = `${clip.id}-${safeTitle}.mp4`;
         
         if (!fs.existsSync(webRenderDir)) fs.mkdirSync(webRenderDir, { recursive: true });
         if (!fs.existsSync(apiRenderDir)) fs.mkdirSync(apiRenderDir, { recursive: true });
@@ -821,7 +881,11 @@ async function recoverStuckJobs() {
         where: { id: p.id },
         data: { status: 'QUEUED', currentStage: null, lockedAt: null }
       });
-      await projectQueue.add('processProject', { projectId: p.id });
+      await projectQueue.add('processProject', { projectId: p.id }, {
+        jobId: `processProject:${p.id}`,
+        removeOnComplete: true,
+        removeOnFail: true
+      });
     }
 
     // Recover stuck Clips
@@ -838,7 +902,11 @@ async function recoverStuckJobs() {
         where: { id: c.id },
         data: { renderStatus: 'QUEUED', lockedAt: null }
       });
-      await renderQueue.add('renderClip', { clipId: c.id });
+      await renderQueue.add('renderClip', { clipId: c.id }, {
+        jobId: `renderClip:${c.id}`,
+        removeOnComplete: true,
+        removeOnFail: true
+      });
     }
   } catch (err) {
     console.error('Recover stuck jobs error:', err);
@@ -868,7 +936,12 @@ Promise.all([
     take: 100
   });
   for (const p of queuedProjects) {
-    await projectQueue.add('processProject', { projectId: p.id });
+    // jobId dedup: job dengan id sama yang masih ada di Redis tidak ditambahkan ulang
+    await projectQueue.add('processProject', { projectId: p.id }, {
+      jobId: `processProject:${p.id}`,
+      removeOnComplete: true,
+      removeOnFail: true
+    });
   }
 
   // Re-enqueue clips reset to QUEUED
@@ -878,7 +951,11 @@ Promise.all([
     take: 200
   });
   for (const c of queuedClips) {
-    await renderQueue.add('renderClip', { clipId: c.id });
+    await renderQueue.add('renderClip', { clipId: c.id }, {
+      jobId: `renderClip:${c.id}`,
+      removeOnComplete: true,
+      removeOnFail: true
+    });
   }
 
   startConsumers();

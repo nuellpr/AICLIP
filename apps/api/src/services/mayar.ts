@@ -106,7 +106,8 @@ export interface MayarWebhookPayload {
 }
 
 // Mayar webhooks are NOT signed (no HMAC). We verify by:
-// 1. event name is payment.received, 2. data.status truthy, 3. amount matches.
+// 1. event name is payment.received, 2. data.status truthy, 3. amount matches,
+// 4. pull verification via the Mayar API (see verifyMayarInvoicePaid).
 export function parseMayarWebhook(payload: MayarWebhookPayload): {
   orderId: string | null;
   paid: boolean;
@@ -131,4 +132,38 @@ export function parseMayarWebhook(payload: MayarWebhookPayload): {
     paid,
     amount: typeof d.amount === 'number' ? d.amount : null,
   };
+}
+
+// Pull verification: karena webhook Mayar tidak signed, status invoice
+// dikonfirmasi langsung ke API Mayar sebelum kredit diberikan.
+// 'skipped' = testing mode (MAYAR_API_KEY tidak diset), 'error' = gagal fetch
+// (webhook harus di-retry oleh Mayar, jangan credit berdasarkan payload).
+export async function verifyMayarInvoicePaid(
+  invoiceId: string
+): Promise<{ outcome: 'skipped' | 'paid' | 'unpaid' | 'error'; amount?: number | null }> {
+  const apiKey = process.env.MAYAR_API_KEY || '';
+  if (!apiKey) return { outcome: 'skipped' };
+
+  const isProduction = process.env.MAYAR_IS_PRODUCTION === 'true';
+  const baseUrl = isProduction ? 'https://api.mayar.id' : 'https://api.mayar.io';
+  try {
+    const res = await fetch(`${baseUrl}/hl/v2/invoices/${encodeURIComponent(invoiceId)}`, {
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+    });
+    if (!res.ok) {
+      console.warn(`Mayar verify invoice ${invoiceId}: HTTP ${res.status}`);
+      return { outcome: 'error' };
+    }
+    const json = await res.json();
+    const status = String(json?.data?.status || '').toLowerCase();
+    if (status !== 'paid') return { outcome: 'unpaid' };
+    const amount = typeof json?.data?.amount === 'number' ? json.data.amount : null;
+    return { outcome: 'paid', amount };
+  } catch (e) {
+    console.warn(`Mayar verify invoice ${invoiceId} failed:`, e);
+    return { outcome: 'error' };
+  }
 }

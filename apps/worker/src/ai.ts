@@ -80,6 +80,11 @@ export async function generateGoldenMoments(vttContent: string, clipCount: numbe
     return { clips: [], error: 'AI key server belum dikonfigurasi (B_AI_API_KEY). Hubungi admin.' };
   }
 
+  // SECURITY: baseUrl hanya dari env (atau default forgeapi) — nilai dari
+  // config user diabaikan agar API key server tidak bisa diarahkan ke URL
+  // arbitrer (SSRF / key exfiltration).
+  config.baseUrl = envBase || (config.provider === 'forgeapi' ? 'https://www.forgeapi.org/v1' : undefined);
+
   console.log(`AI provider: ${config.provider}, model: ${config.model || '(default)'}, baseUrl: ${config.baseUrl || '(default)'} (config: ${configFileName})`);
 
   const defaultSystemMsg = `Anda adalah seorang ahli strategi konten viral TikTok & Reels tingkat dunia.

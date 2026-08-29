@@ -12,7 +12,7 @@ export const getApiUrl = (path: string): string => {
   return `${serverBase}${cleanPath}`;
 };
 
-export const apiFetch = (path: string, options: RequestInit = {}): Promise<Response> => {
+export const apiFetch = async (path: string, options: RequestInit = {}): Promise<Response> => {
   const headers = new Headers(options.headers);
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('clipforge_token');
@@ -21,5 +21,20 @@ export const apiFetch = (path: string, options: RequestInit = {}): Promise<Respo
   if (options.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
-  return fetch(getApiUrl(path), { ...options, headers });
+  const res = await fetch(getApiUrl(path), { ...options, headers });
+
+  // Token expired/invalid di seluruh app: bersihkan session lalu redirect ke
+  // login, jangan biarkan UI diam (spinner/empty state selamanya).
+  // Endpoint auth/login/callback dikecualikan (401-nya memang alur normal).
+  if (
+    res.status === 401 &&
+    typeof window !== 'undefined' &&
+    !path.startsWith('/auth/')
+  ) {
+    const { clearAuthSession } = await import('./auth');
+    clearAuthSession();
+    window.location.href = '/login';
+  }
+
+  return res;
 };

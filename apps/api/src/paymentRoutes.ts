@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '@clipforge/database';
-import { createMayarInvoice, parseMayarWebhook } from './services/mayar';
+import { createMayarInvoice, parseMayarWebhook, verifyMayarInvoicePaid } from './services/mayar';
 import { createIpaymuRedirectInvoice, parseIpaymuCallback, verifyIpaymuCallbackSignature } from './services/ipaymu';
 import { authenticate, getUserId } from './guards';
 
@@ -45,32 +45,42 @@ export const PLANS: Record<string, PlanConfig> = {
 };
 
 async function settleAndCredit(orderId: string, paymentType: string, server: FastifyInstance) {
-  const transaction = await (prisma as any).transaction.findUnique({ where: { orderId } });
-  if (!transaction) return { ok: false as const, code: 404 as const, error: 'Transaksi tidak ditemukan' };
-  // Atomic CAS: hanya proses transaksi berstatus PENDING sekali; webhook/callback/simulate
-  // yang datang paralel tidak akan double-credit.
-  const settled = await (prisma as any).transaction.updateMany({
-    where: { orderId, status: 'PENDING' },
-    data: { status: 'SETTLEMENT', paymentType }
+  // Atomic: CAS PENDING→SETTLEMENT dan penambahan kredit dalam satu
+  // transaksi DB, agar tidak ada settlement yang kehilangan kredit dan
+  // settlement paralel untuk order berbeda tidak saling menimpa kredit
+  // (increment, bukan read-then-write).
+  const result = await prisma.$transaction(async (tx) => {
+    const txAny = tx as any;
+    const transaction = await txAny.transaction.findUnique({ where: { orderId } });
+    if (!transaction) return { ok: false as const, code: 404 as const, error: 'Transaksi tidak ditemukan' };
+    // Atomic CAS: hanya proses transaksi berstatus PENDING sekali; webhook/callback/simulate
+    // yang datang paralel tidak akan double-credit.
+    const settled = await txAny.transaction.updateMany({
+      where: { orderId, status: 'PENDING' },
+      data: { status: 'SETTLEMENT', paymentType }
+    });
+    if (settled.count === 0) return { ok: true as const, transaction, already: true as const };
+    let subscription = await txAny.subscription.findFirst({ where: { userId: transaction.userId } });
+    if (!subscription) {
+      subscription = await txAny.subscription.create({
+        data: { userId: transaction.userId, plan: transaction.plan.startsWith('TOPUP') ? 'FREE' : transaction.plan, status: 'ACTIVE', credits: transaction.creditsAdded },
+      });
+    } else {
+      await txAny.subscription.update({
+        where: { id: subscription.id },
+        data: {
+          credits: { increment: transaction.creditsAdded },
+          plan: transaction.plan.startsWith('TOPUP') ? subscription.plan : transaction.plan,
+          status: 'ACTIVE',
+        },
+      });
+    }
+    return { ok: true as const, transaction, already: false as const };
   });
-  if (settled.count === 0) return { ok: true as const, transaction, already: true as const };
-  let subscription = await prisma.subscription.findFirst({ where: { userId: transaction.userId } });
-  if (!subscription) {
-    subscription = await prisma.subscription.create({
-      data: { userId: transaction.userId, plan: transaction.plan.startsWith('TOPUP') ? 'FREE' : transaction.plan, status: 'ACTIVE', credits: transaction.creditsAdded },
-    });
-  } else {
-    await prisma.subscription.update({
-      where: { id: subscription.id },
-      data: {
-        credits: subscription.credits + transaction.creditsAdded,
-        plan: transaction.plan.startsWith('TOPUP') ? subscription.plan : transaction.plan,
-        status: 'ACTIVE',
-      },
-    });
+  if (result.ok && !result.already) {
+    server.log.info(`Added ${result.transaction.creditsAdded} credits to user ${result.transaction.userId} via ${paymentType}`);
   }
-  server.log.info(`Added ${transaction.creditsAdded} credits to user ${transaction.userId} via ${paymentType}`);
-  return { ok: true as const, transaction, already: false as const };
+  return result;
 }
 
 export default async function paymentRoutes(server: FastifyInstance) {
@@ -176,6 +186,21 @@ export default async function paymentRoutes(server: FastifyInstance) {
       if (!transaction) return reply.status(404).send({ error: 'Transaksi tidak ditemukan' });
       if (amount !== null && amount !== transaction.amount) {
         server.log.warn(`Amount mismatch for order ${orderId}: expected ${transaction.amount}, got ${amount}`);
+        return reply.status(400).send({ error: 'Amount tidak cocok' });
+      }
+      // Pull verification: webhook Mayar tidak signed — konfirmasi status
+      // invoice langsung ke API Mayar (pakai id invoice yang kita simpan)
+      // sebelum memberi kredit.
+      const verification = await verifyMayarInvoicePaid(transaction.snapToken || '');
+      if (verification.outcome === 'error') {
+        return reply.status(503).send({ error: 'Gagal verifikasi invoice, webhook akan di-retry' });
+      }
+      if (verification.outcome === 'unpaid') {
+        server.log.warn(`Mayar webhook ignored: invoice ${orderId} is not paid yet`);
+        return reply.status(400).send({ error: 'Invoice belum lunas' });
+      }
+      if (verification.outcome === 'paid' && verification.amount != null && verification.amount !== transaction.amount) {
+        server.log.warn(`Mayar verified amount mismatch for order ${orderId}: expected ${transaction.amount}, got ${verification.amount}`);
         return reply.status(400).send({ error: 'Amount tidak cocok' });
       }
       const res = await settleAndCredit(orderId, 'mayar', server);
