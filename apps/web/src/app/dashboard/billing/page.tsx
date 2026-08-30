@@ -30,6 +30,28 @@ export default function BillingPage() {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [promoCode, setPromoCode] = useState<string>('');
+  const [promoStatus, setPromoStatus] = useState<{ valid: boolean; message: string } | null>(null);
+  const [checkingPromo, setCheckingPromo] = useState<boolean>(false);
+
+  const checkPromo = async () => {
+    const code = promoCode.trim();
+    if (!code) return;
+    setCheckingPromo(true);
+    setPromoStatus(null);
+    try {
+      const res = await apiFetch(`/api/payment/promo/${encodeURIComponent(code)}`);
+      const data = await res.json();
+      setPromoStatus(
+        data.valid
+          ? { valid: true, message: `Kode aktif — diskon ${Math.round((data.discount || 0) * 100)}%` }
+          : { valid: false, message: data.reason || 'Kode tidak berlaku' },
+      );
+    } catch {
+      setPromoStatus({ valid: false, message: 'Gagal memeriksa kode, coba lagi' });
+    } finally {
+      setCheckingPromo(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -235,15 +257,31 @@ export default function BillingPage() {
             <label htmlFor="promo-code" className="block text-[10px] font-bold uppercase tracking-wider text-[var(--db-gray)] mb-1.5">
               Kode Referal (opsional)
             </label>
-            <input
-              id="promo-code"
-              type="text"
-              value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-              placeholder="Mis. FORGE1"
-              maxLength={20}
-              className="w-full sm:w-48 bg-[var(--db-panel)] border border-[var(--db-line)] focus:border-[#EA4C89] outline-none rounded-xl px-3 py-2 text-sm font-bold tracking-wider text-[var(--ink)] placeholder:font-normal placeholder:tracking-normal placeholder:text-[var(--db-gray)]"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                id="promo-code"
+                type="text"
+                value={promoCode}
+                onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoStatus(null); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); checkPromo(); } }}
+                placeholder="Mis. FORGE1"
+                maxLength={20}
+                className="w-full sm:w-48 bg-[var(--db-panel)] border border-[var(--db-line)] focus:border-[#EA4C89] outline-none rounded-xl px-3 py-2 text-sm font-bold tracking-wider text-[var(--ink)] placeholder:font-normal placeholder:tracking-normal placeholder:text-[var(--db-gray)]"
+              />
+              <button
+                type="button"
+                onClick={checkPromo}
+                disabled={!promoCode.trim() || checkingPromo}
+                className="shrink-0 text-xs font-bold px-3 py-2 rounded-xl border border-[var(--db-line)] text-[var(--ink)] hover:border-[#EA4C89] disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {checkingPromo ? '...' : 'Cek'}
+              </button>
+            </div>
+            {promoStatus && (
+              <p className={`mt-1.5 text-xs font-semibold ${promoStatus.valid ? 'text-[#166534]' : 'text-[#B42318]'}`}>
+                {promoStatus.message}
+              </p>
+            )}
           </div>
         </div>
 

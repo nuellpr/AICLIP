@@ -13,8 +13,7 @@ export interface PlanConfig {
 }
 
 // Satu sumber kebenaran harga — disamakan dengan landing page (/home).
-export const PLANS: Record<string, PlanConfig> = {
-  STANDAR: {
+export const PLANS: Record<string, PlanConfig> = {  STANDAR: {
     id: 'STANDAR',
     name: 'Paket Standar (30 Kredit)',
     price: 30000,
@@ -43,6 +42,24 @@ export const PLANS: Record<string, PlanConfig> = {
     type: 'TOPUP',
   },
 };
+
+// Kode promo: { KODE: { discount, emails?, expiresAt? } }. emails = whitelist
+// email pemakai; expiresAt = ISO date, lewat itu kode dianggap kadaluarsa.
+export const PROMO_CODES: Record<string, { discount: number; emails?: string[]; expiresAt?: string }> = {
+  FORGE1: {
+    discount: 0.99,
+    emails: ['nuellpr@gmail.com'],
+  },
+};
+
+function promoError(promo: { emails?: string[]; expiresAt?: string } | undefined, email?: string): string | null {
+  if (!promo) return 'Kode tidak ditemukan atau sudah kadaluarsa';
+  if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) return 'Kode sudah kadaluarsa';
+  if (promo.emails && !promo.emails.some((e) => e.toLowerCase() === (email || '').toLowerCase())) {
+    return 'Kode tidak berlaku untuk akun ini';
+  }
+  return null;
+}
 
 async function settleAndCredit(orderId: string, paymentType: string, server: FastifyInstance) {
   // Atomic: CAS PENDING→SETTLEMENT dan penambahan kredit dalam satu
@@ -105,27 +122,18 @@ export default async function paymentRoutes(server: FastifyInstance) {
         return reply.status(400).send({ error: 'Paket tidak valid' });
       }
 
-      // Kode promo: { KODE: { discount, emails? } }. emails ada = hanya email tsb yang boleh pakai.
-      const PROMO_CODES: Record<string, { discount: number; emails?: string[] }> = {
-        FORGE1: {
-          discount: 0.99,
-          emails: ['nuellpr@gmail.com'],
-        },
-      };
+      // Kode promo: lihat PROMO_CODES di module scope.
       const promoCode = (body?.promoCode || '').trim().toUpperCase();
       let discount = 0;
       if (promoCode) {
-        const promo = PROMO_CODES[promoCode];
-        if (!promo) {
-          return reply.status(400).send({ error: 'Kode referal tidak valid atau sudah kadaluarsa' });
-        }
         const email = (
           await prisma.user.findUnique({ where: { id: getUserId(request) }, select: { email: true } })
-        )?.email?.toLowerCase();
-        if (promo.emails && !promo.emails.some((e) => e.toLowerCase() === email)) {
-          return reply.status(400).send({ error: 'Kode referal tidak valid atau sudah kadaluarsa' });
+        )?.email;
+        const invalid = promoError(PROMO_CODES[promoCode], email);
+        if (invalid) {
+          return reply.status(400).send({ error: invalid === 'Kode tidak ditemukan atau sudah kadaluarsa' ? 'Kode referal tidak valid atau sudah kadaluarsa' : invalid });
         }
-        discount = promo.discount;
+        discount = PROMO_CODES[promoCode].discount;
         const used = await (prisma as any).transaction.findFirst({
           where: { userId: getUserId(request), promoCode, status: 'SETTLEMENT' },
         });
@@ -290,6 +298,28 @@ export default async function paymentRoutes(server: FastifyInstance) {
   server.post('/ipaymu/notify', handleIpaymuCallback); // alias for legacy notifyUrl
   server.post('/callback/ipaymu', handleIpaymuCallback);
 
+  // 3. Cek kode promo (dipakai UI billing): aktif / kadaluarsa / tidak berlaku / sudah dipakai.
+  server.get('/promo/:code', { preHandler: [authenticate] }, async (request, reply) => {
+    try {
+      const code = ((request.params as { code: string }).code || '').trim().toUpperCase();
+      const userId = getUserId(request);
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+      const invalid = promoError(PROMO_CODES[code], user?.email);
+      if (invalid) {
+        return reply.send({ valid: false, reason: invalid });
+      }
+      const used = await (prisma as any).transaction.findFirst({
+        where: { userId, promoCode: code, status: 'SETTLEMENT' },
+      });
+      if (used) {
+        return reply.send({ valid: false, reason: 'Kode sudah pernah kamu pakai (satu kali per akun)' });
+      }
+      return reply.send({ valid: true, discount: PROMO_CODES[code].discount });
+    } catch (err: any) {
+      return reply.status(500).send({ error: err.message || 'Gagal memeriksa kode' });
+    }
+  });
+
   // 3. Transaction History
   server.get('/history', { preHandler: [authenticate] }, async (request, reply) => {
     try {
@@ -307,8 +337,7 @@ export default async function paymentRoutes(server: FastifyInstance) {
   });
 
   // 4. Current Subscription Info
-  server.get('/subscription', { preHandler: [authenticate] }, async (request, reply) => {
-    try {
+  server.get('/subscription', { preHandler: [authenticate] }, async (request, reply) => {    try {
       const userId = getUserId(request);
 
       const subscription = await prisma.subscription.findFirst({
