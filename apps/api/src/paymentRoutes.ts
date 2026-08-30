@@ -105,15 +105,27 @@ export default async function paymentRoutes(server: FastifyInstance) {
         return reply.status(400).send({ error: 'Paket tidak valid' });
       }
 
-      // Kode promo: { KODE: diskon 0..1 }. FORGE1 = 99% untuk satu kali percobaan per user.
-      const PROMO_CODES: Record<string, number> = { FORGE1: 0.99 };
+      // Kode promo: { KODE: { discount, emails? } }. emails ada = hanya email tsb yang boleh pakai.
+      const PROMO_CODES: Record<string, { discount: number; emails?: string[] }> = {
+        FORGE1: {
+          discount: 0.99,
+          emails: ['nuellpr@gmail.com'],
+        },
+      };
       const promoCode = (body?.promoCode || '').trim().toUpperCase();
       let discount = 0;
       if (promoCode) {
-        discount = PROMO_CODES[promoCode] ?? -1;
-        if (discount < 0) {
+        const promo = PROMO_CODES[promoCode];
+        if (!promo) {
           return reply.status(400).send({ error: 'Kode referal tidak valid atau sudah kadaluarsa' });
         }
+        const email = (
+          await prisma.user.findUnique({ where: { id: getUserId(request) }, select: { email: true } })
+        )?.email?.toLowerCase();
+        if (promo.emails && !promo.emails.some((e) => e.toLowerCase() === email)) {
+          return reply.status(400).send({ error: 'Kode referal tidak valid atau sudah kadaluarsa' });
+        }
+        discount = promo.discount;
         const used = await (prisma as any).transaction.findFirst({
           where: { userId: getUserId(request), promoCode, status: 'SETTLEMENT' },
         });
