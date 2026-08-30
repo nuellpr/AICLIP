@@ -219,6 +219,8 @@ export default async function paymentRoutes(server: FastifyInstance) {
   server.post('/webhook', async (request, reply) => {
     try {
       const payload = request.body as any;
+      // Log payload mentah (dipotong) — struktur webhook Mayar nyata perlu dipelajari
+      server.log.info(`Mayar webhook raw: ${JSON.stringify(payload).slice(0, 600)}`);
       const { orderId, paid, amount } = parseMayarWebhook(payload);
       server.log.info(`Received Mayar webhook. event=${payload?.event?.received || payload?.eventType}, orderId=${orderId}, paid=${paid}`);
       if (!paid || !orderId) return reply.send({ status: 'ignored' });
@@ -250,6 +252,25 @@ export default async function paymentRoutes(server: FastifyInstance) {
       server.log.error('Webhook error:', err);
       return reply.status(500).send({ error: err.message || 'Gagal memproses webhook' });
     }
+  });
+
+  // 2a. Pull-verify fallback: billing polling menanyakan status invoice langsung ke
+  //     API Mayar — pembayaran tetap settle walau webhook parsing gagal.
+  server.get('/verify/:orderId', { preHandler: [authenticate] }, async (request, reply) => {
+    const { orderId } = request.params as { orderId: string };
+    const userId = getUserId(request);
+    const tx = await (prisma as any).transaction.findUnique({ where: { orderId } });
+    if (!tx || tx.userId !== userId) return reply.status(404).send({ error: 'Transaksi tidak ditemukan' });
+    if (tx.status === 'SETTLEMENT') return reply.send({ settled: true });
+    const verification = await verifyMayarInvoicePaid(tx.snapToken || '');
+    if (verification.outcome !== 'paid') return reply.send({ settled: false });
+    if (verification.amount != null && verification.amount !== tx.amount) {
+      server.log.warn(`Mayar verified amount mismatch for order ${orderId}: expected ${tx.amount}, got ${verification.amount}`);
+      return reply.send({ settled: false });
+    }
+    const res = await settleAndCredit(orderId, 'mayar', server);
+    if (!res.ok) return reply.status((res as any).code).send({ error: (res as any).error });
+    return reply.send({ settled: true });
   });
 
   // 2b. iPaymu Callback (notifyUrl) — supports json & x-www-form-urlencoded, X-Signature validation

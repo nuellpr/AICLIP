@@ -95,6 +95,10 @@ export default function BillingPage() {
     let ticks = 0;
     pollRef.current = setInterval(async () => {
       ticks++;
+      // Fallback pull-verify: cek & settle order ini langsung via API (webhook bisa gagal parsing)
+      try {
+        await apiFetch(`/api/payment/verify/${encodeURIComponent(orderId)}`);
+      } catch { /* abaikan — cek berikutnya */ }
       const txs = await fetchData(true);
       // Stop hanya jika transaksi YANG DIBELI sekarang sudah settlement
       if (txs?.some(t => t.orderId === orderId && t.status === 'SETTLEMENT') || ticks >= 36) {
