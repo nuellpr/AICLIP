@@ -29,6 +29,7 @@ export default function BillingPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [promoCode, setPromoCode] = useState<string>('');
 
   useEffect(() => {
     fetchData();
@@ -94,7 +95,7 @@ export default function BillingPage() {
       const res = await apiFetch('/api/payment/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify({ planId, promoCode: promoCode.trim() || undefined }),
       });
 
       const data = await res.json();
@@ -222,12 +223,28 @@ export default function BillingPage() {
 
       {/* Subscription Plans */}
       <div className="space-y-4">
-        <div>
-          <h2 className="text-xl font-bold text-[var(--ink)] flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#7C3AED]" />
-            <span>Paket Berlangganan Hemat</span>
-          </h2>
-          <p className="text-xs text-[var(--db-gray)]">Dapatkan alokasi kredit AI lebih besar dengan harga lebih terjangkau.</p>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-[var(--ink)] flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#7C3AED]" />
+              <span>Paket Berlangganan Hemat</span>
+            </h2>
+            <p className="text-xs text-[var(--db-gray)]">Dapatkan alokasi kredit AI lebih besar dengan harga lebih terjangkau.</p>
+          </div>
+          <div>
+            <label htmlFor="promo-code" className="block text-[10px] font-bold uppercase tracking-wider text-[var(--db-gray)] mb-1.5">
+              Kode Referal (opsional)
+            </label>
+            <input
+              id="promo-code"
+              type="text"
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+              placeholder="Mis. FORGE1"
+              maxLength={20}
+              className="w-full sm:w-48 bg-[var(--db-panel)] border border-[var(--db-line)] focus:border-[#EA4C89] outline-none rounded-xl px-3 py-2 text-sm font-bold tracking-wider text-[var(--ink)] placeholder:font-normal placeholder:tracking-normal placeholder:text-[var(--db-gray)]"
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

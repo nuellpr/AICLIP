@@ -113,6 +113,7 @@ model Transaction {
   creditsAdded  Int       // Minutes to add
   status        String    @default("PENDING") // PENDING, SETTLEMENT, EXPIRED, FAILED, CANCELLED
   paymentType   String?   // qris, gopay, bank_transfer, etc.
+  promoCode     String?   // kode referal/promo yang dipakai (mis. FORGE1)
   snapToken     String?
   snapUrl       String?
   createdAt     DateTime  @default(now())

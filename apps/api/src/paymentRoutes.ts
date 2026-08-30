@@ -97,13 +97,31 @@ export default async function paymentRoutes(server: FastifyInstance) {
   // 1. Create Checkout Session (iPaymu or Mayar)
   server.post('/checkout', { preHandler: [authenticate] }, async (request, reply) => {
     try {
-      const body = request.body as { planId?: string; provider?: string };
+      const body = request.body as { planId?: string; provider?: string; promoCode?: string };
       const planId = body?.planId || 'STANDAR';
       const selectedPlan = PLANS[planId];
 
       if (!selectedPlan) {
         return reply.status(400).send({ error: 'Paket tidak valid' });
       }
+
+      // Kode promo: { KODE: diskon 0..1 }. FORGE1 = 99% untuk satu kali percobaan per user.
+      const PROMO_CODES: Record<string, number> = { FORGE1: 0.99 };
+      const promoCode = (body?.promoCode || '').trim().toUpperCase();
+      let discount = 0;
+      if (promoCode) {
+        discount = PROMO_CODES[promoCode] ?? -1;
+        if (discount < 0) {
+          return reply.status(400).send({ error: 'Kode referal tidak valid atau sudah kadaluarsa' });
+        }
+        const used = await (prisma as any).transaction.findFirst({
+          where: { userId: getUserId(request), promoCode, status: 'SETTLEMENT' },
+        });
+        if (used) {
+          return reply.status(400).send({ error: 'Kode referal hanya bisa dipakai satu kali' });
+        }
+      }
+      const finalPrice = Math.max(0, Math.round(selectedPlan.price * (1 - discount)));
 
       const userId = getUserId(request);
 
@@ -125,7 +143,7 @@ export default async function paymentRoutes(server: FastifyInstance) {
         const ipaymuResult = await createIpaymuRedirectInvoice({
           referenceId: orderId,
           productName: selectedPlan.name,
-          price: selectedPlan.price,
+          price: finalPrice,
           qty: 1,
           buyerName: user.name || 'Pelanggan ClipForge',
           buyerEmail: user.email,
@@ -142,7 +160,7 @@ export default async function paymentRoutes(server: FastifyInstance) {
             email: user.email,
             mobile: user.phone || '081234567890',
           },
-          items: [{ quantity: 1, rate: selectedPlan.price, description: selectedPlan.name }],
+          items: [{ quantity: 1, rate: finalPrice, description: selectedPlan.name }],
         });
         payLink = mayarResult.link;
         payId = mayarResult.id;
@@ -154,12 +172,13 @@ export default async function paymentRoutes(server: FastifyInstance) {
           orderId,
           userId: user.id,
           plan: selectedPlan.id,
-          amount: selectedPlan.price,
+          amount: finalPrice,
           creditsAdded: selectedPlan.credits,
           status: 'PENDING',
           snapToken: payId,
           snapUrl: payLink,
           paymentType: paymentProvider,
+          promoCode: promoCode || null,
         },
       });
 
