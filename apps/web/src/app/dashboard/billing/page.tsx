@@ -416,26 +416,6 @@ export default function BillingPage() {
                               Bayar Sekarang
                             </a>
                           )}
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              try {
-                                const res = await apiFetch('/api/payment/simulate-success', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ orderId: tx.orderId })
-                                });
-                                if (res.ok) {
-                                  alert('Simulasi pembayaran sukses. Kredit telah ditambahkan.');
-                                  fetchData();
-                                }
-                              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                              } catch (e) {}
-                            }}
-                            className="px-2.5 py-1 bg-[#FDF3D8] hover:bg-[#F9EDC0] text-[#854D0E] rounded-lg text-[11px] font-bold transition-all"
-                          >
-                            Simulasi Bayar
-                          </button>
                         </div>
                       )}
                     </td>
