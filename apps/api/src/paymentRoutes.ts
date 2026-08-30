@@ -121,7 +121,8 @@ export default async function paymentRoutes(server: FastifyInstance) {
           return reply.status(400).send({ error: 'Kode referal hanya bisa dipakai satu kali' });
         }
       }
-      const finalPrice = Math.max(0, Math.round(selectedPlan.price * (1 - discount)));
+      // Mayar menolak tagihan < Rp 1.000 ('Tagihan dibawah Rp 1.000 tidak dapat dibayar')
+      const finalPrice = Math.max(1000, Math.round(selectedPlan.price * (1 - discount)));
 
       const userId = getUserId(request);
 
