@@ -220,8 +220,14 @@ export default async function routes(server: FastifyInstance) {
         if (project) {
           reply.raw.write(`data: ${JSON.stringify(project)}\n\n`);
           if (project.status === 'READY' || project.status === 'FAILED') {
-            clearInterval(interval);
-            reply.raw.end();
+            // Keep SSE alive if any clips are still rendering
+            const hasActiveClips = project.clips?.some(
+              (c: any) => c.renderStatus === 'QUEUED' || c.renderStatus === 'RENDERING'
+            );
+            if (!hasActiveClips) {
+              clearInterval(interval);
+              reply.raw.end();
+            }
           }
         }
       } catch (e) { /* ignore SSE poll errors */ }

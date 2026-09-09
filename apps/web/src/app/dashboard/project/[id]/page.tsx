@@ -41,7 +41,23 @@ export default function ProjectPage() {
           setProject(data);
 
           if (data.status === 'READY' || data.status === 'FAILED') {
-            return true;
+            // Check if any clips are still rendering
+            const hasActiveClips = data.clips?.some((c: any) => c.renderStatus === 'QUEUED' || c.renderStatus === 'RENDERING');
+
+            // Clear renderLoadingId if the loading clip is no longer rendering
+            setRenderLoadingId(prev => {
+              if (!prev) return null;
+              const clip = data.clips?.find((c: any) => c.id === prev);
+              if (!clip || (clip.renderStatus !== 'QUEUED' && clip.renderStatus !== 'RENDERING')) {
+                return null;
+              }
+              return prev;
+            });
+            
+            // Only stop polling if no clips are actively rendering
+            if (!hasActiveClips) {
+              return true;
+            }
           }
         } else if (res.status === 404 || res.status === 403) {
           setError('Proyek tidak ditemukan atau sudah dihapus');
@@ -74,8 +90,14 @@ export default function ProjectPage() {
           const data = JSON.parse(event.data);
           setProject(data);
           if (data.status === 'READY' || data.status === 'FAILED') {
-            clearInterval(pollInterval);
-            eventSource?.close();
+            // Check if any clips are still rendering
+            const hasActiveClips = data.clips?.some((c: any) => c.renderStatus === 'QUEUED' || c.renderStatus === 'RENDERING');
+            
+            // Only close SSE and stop polling if no clips are actively rendering
+            if (!hasActiveClips) {
+              clearInterval(pollInterval);
+              eventSource?.close();
+            }
           }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {}
@@ -162,21 +184,9 @@ export default function ProjectPage() {
         method: 'POST'
       });
       if (!res.ok) throw new Error("Failed to trigger render");
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err) {
       alert("Gagal memicu render");
-    } finally {
-      // Re-fetch project to update clip status instantly
-      try {
-        const pRes = await apiFetch(`/api/projects/${id}/progress`);
-        if (pRes.ok) {
-          const data = await pRes.json();
-          setProject(data);
-          setPollTrigger(p => p + 1);
-        }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch(e) {}
-      
       setRenderLoadingId(null);
     }
   };
